@@ -16,7 +16,7 @@ repositories {
 
 dependencies {
     compile 'com.epam.reportportal:client-java-core:2.5.1'
-    compileOnly 'org.testng:testng:6.8.7'
+    compileOnly 'org.testng:testng:6.9.13.6'
 }
 
 task wrapper(type: Wrapper) {

@@ -20,13 +20,19 @@
  */
 package com.epam.reportportal.testng;
 
-import org.testng.*;
-import org.testng.internal.IResultListener2;
-
 import com.epam.reportportal.guice.Injector;
 import com.epam.reportportal.listeners.Statuses;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
+import org.testng.*;
+import org.testng.internal.IResultListener2;
+import org.testng.xml.XmlDefine;
+import org.testng.xml.XmlGroups;
+import org.testng.xml.XmlSuite;
+import org.testng.xml.XmlTest;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Report portal custom event listener. Support executing parallel of test
@@ -38,10 +44,14 @@ public class ReportPortalTestNGListener implements IExecutionListener, ISuiteLis
 	private Supplier<ITestNGService> testNGService;
 
 	// added to cover com.epam.reportportal.testng vulnerability
-	private ThreadLocal<Boolean> isSuiteStarted;
+	private ThreadLocal<Boolean> isSuiteStarted = new ThreadLocal<Boolean>() {
+		@Override
+		protected Boolean initialValue() {
+			return false;
+		}
+	};
 
 	public ReportPortalTestNGListener() {
-		isSuiteStarted = new ThreadLocal<Boolean>();
 		isSuiteStarted.set(false);
 		testNGService = Suppliers.memoize(new Supplier<ITestNGService>() {
 
@@ -66,9 +76,25 @@ public class ReportPortalTestNGListener implements IExecutionListener, ISuiteLis
 	public void onStart(ISuite suite) {
 		// added to cover com.epam.reportportal.testng vulnerability
 		if (!isSuiteStarted.get()) {
+			testNGService.get().addTags(getRequestedGroups(suite));
 			testNGService.get().startTestSuite(suite);
 			isSuiteStarted.set(true);
 		}
+	}
+
+	private Set<String> getRequestedGroups(ISuite suite) {
+		HashSet<String> groups = new HashSet<String>();
+		XmlSuite xmlSuite = suite.getXmlSuite();
+		XmlGroups xmlSuiteGroups = xmlSuite.getGroups();
+		if (xmlSuiteGroups != null) {
+			for (XmlDefine define : xmlSuiteGroups.getDefines()) {
+				groups.addAll(define.getIncludes());
+			}
+		}
+		for (XmlTest xmlTest : xmlSuite.getTests()) {
+			groups.addAll(xmlTest.getIncludedGroups());
+		}
+		return groups;
 	}
 
 	@Override

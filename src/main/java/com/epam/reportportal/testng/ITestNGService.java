@@ -24,6 +24,8 @@ import org.testng.ISuite;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
 
+import java.util.Set;
+
 /**
  * Describes all operations for com.epam.reportportal.testng RP listener handler
  * 
@@ -40,6 +42,11 @@ public interface ITestNGService {
 	 * Finish current launch
 	 */
 	void finishLaunch();
+
+	/**
+	 * Add tags to launch
+	 */
+	public void addTags(Set<String> tags);
 
 	/**
 	 * Start test suite event handler
