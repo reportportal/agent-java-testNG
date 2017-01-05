@@ -20,19 +20,6 @@
  */
 package com.epam.reportportal.testng;
 
-import static com.epam.reportportal.listeners.ListenersUtils.handleException;
-
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testng.ISuite;
-import org.testng.ISuiteResult;
-import org.testng.ITestContext;
-import org.testng.ITestResult;
-
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.ReportPortalListenerContext;
 import com.epam.reportportal.listeners.Statuses;
@@ -44,8 +31,21 @@ import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import com.epam.ta.reportportal.ws.model.launch.UpdateLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.google.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.ISuite;
+import org.testng.ISuiteResult;
+import org.testng.ITestContext;
+import org.testng.ITestResult;
+
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Set;
+
+import static com.epam.reportportal.listeners.ListenersUtils.handleException;
 
 /**
  * TestNG service implements operations for interaction report portal
@@ -94,6 +94,22 @@ public class TestNGService implements ITestNGService {
 		}
 		if (rs != null) {
 			testNGContext.setLaunchID(rs.getId());
+		}
+	}
+
+
+	@Override
+	public void addTags(Set<String> newTags) {
+		if (newTags.isEmpty()) {
+			return;
+		}
+		UpdateLaunchRQ rq = new UpdateLaunchRQ();
+		tags.addAll(newTags);
+		rq.setTags(tags);
+		try {
+			reportPortalService.updateLaunch(testNGContext.getLaunchID(), rq);
+		} catch (Exception e) {
+			handleException(e, logger, "Unable to update the launch tags: '" + testNGContext.getLaunchID() + "'");
 		}
 	}
 
