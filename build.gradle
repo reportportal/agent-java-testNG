@@ -15,7 +15,7 @@ repositories {
 }
 
 dependencies {
-    compile 'com.epam.reportportal:client-java-core:2.5.1'
+    compile 'com.epam.reportportal:client-java-core:2.7.0-BETA-1'
     compileOnly 'org.testng:testng:6.8.7'
 }
 
