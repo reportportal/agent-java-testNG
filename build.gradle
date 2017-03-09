@@ -4,19 +4,20 @@ plugins {
 }
 apply plugin: 'java'
 apply from: 'release.gradle'
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
 
 description = 'TestNG client'
 repositories {
     jcenter()
     mavenLocal()
     maven { url "http://dl.bintray.com/epam/reportportal" }
+    maven { url "https://jitpack.io" }
 }
 
 dependencies {
-    compile 'com.epam.reportportal:client-java-core:2.5.1'
-    compileOnly 'org.testng:testng:6.8.7'
+    compile 'com.epam.reportportal:client-java-core:3.0.0-SNAPSHOT'
+    compileOnly 'org.testng:testng:6.11'
 }
 
 task wrapper(type: Wrapper) {
