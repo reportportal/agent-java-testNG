@@ -140,7 +140,6 @@ public class TestNGService implements ITestNGService {
 
     @Override
     public void finishTest(ITestContext testContext) {
-        //        ReportPortalListenerContext.stopLogging();
         FinishTestItemRQ rq = new FinishTestItemRQ();
         rq.setEndTime(testContext.getEndDate());
         String status = isTestPassed(testContext) ? Statuses.PASSED : Statuses.FAILED;

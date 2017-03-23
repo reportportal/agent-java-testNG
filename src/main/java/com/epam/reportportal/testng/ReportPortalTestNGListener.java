@@ -48,7 +48,7 @@ public class ReportPortalTestNGListener implements IExecutionListener, ISuiteLis
         testNGService = Suppliers.memoize(new Supplier<ITestNGService>() {
             @Override
             public ITestNGService get() {
-                return Injector.create(new TestNGListenersModule()).getBean(ITestNGService.class);
+                return Injector.createDefault(new TestNGListenersModule()).getBean(ITestNGService.class);
             }
         });
     }
