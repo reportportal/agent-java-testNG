@@ -43,7 +43,7 @@ public class ReportPortalTestNGListener implements IExecutionListener, ISuiteLis
     private ThreadLocal<Boolean> isSuiteStarted;
 
     public ReportPortalTestNGListener() {
-        isSuiteStarted = new ThreadLocal<>();
+        isSuiteStarted = new ThreadLocal<Boolean>();
         isSuiteStarted.set(false);
         testNGService = Suppliers.memoize(new Supplier<ITestNGService>() {
             @Override
