@@ -48,26 +48,26 @@ import java.util.Date;
  * TestNG service implements operations for interaction report portal
  */
 public class TestNGService implements ITestNGService {
-    private final Logger logger = LoggerFactory.getLogger(TestNGService.class);
 
     public static final String NOT_ISSUE = "NOT_ISSUE";
-
     public static final String RP_ID = "rp_id";
 
+    private final Supplier<StartLaunchRQ> launchSupplier;
     private final ReportPortalClient reportPortalClient;
     private final TestNGContext testNGContext;
     private final boolean isSkippedAnIssue;
-    private final Supplier<StartLaunchRQ> launchSupplier;
     private final int logBufferSize;
+    private final boolean convertImages;
 
     private ReportPortal reportPortal;
 
     public TestNGService(final ListenerParameters parameters, ReportPortalClient reportPortalClient,
-            final TestNGContext testNGContext, String batchLogsSize) {
+            final TestNGContext testNGContext, int batchLogsSize, boolean convertImages) {
         this.isSkippedAnIssue = parameters.getIsSkippedAnIssue();
         this.reportPortalClient = reportPortalClient;
         this.testNGContext = testNGContext;
-        this.logBufferSize = Integer.parseInt(batchLogsSize);
+        this.logBufferSize = batchLogsSize;
+        this.convertImages = convertImages;
 
         this.launchSupplier = new Supplier<StartLaunchRQ>() {
             @Override
@@ -90,7 +90,7 @@ public class TestNGService implements ITestNGService {
     public void startLaunch() {
         StartLaunchRQ rq = launchSupplier.get();
         rq.setStartTime(Calendar.getInstance().getTime());
-        this.reportPortal = ReportPortal.startLaunch(reportPortalClient, logBufferSize, rq);
+        this.reportPortal = ReportPortal.startLaunch(reportPortalClient, logBufferSize, convertImages, rq);
     }
 
     @Override

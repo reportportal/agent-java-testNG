@@ -26,6 +26,7 @@ import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.utils.properties.ListenerProperty;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import org.apache.commons.lang.BooleanUtils;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -49,10 +50,16 @@ public class TestNGProvider implements Provider<ITestNGService> {
     @Inject
     private String batchLogsSize;
 
+    @ListenerPropertyValue(ListenerProperty.IS_CONVERT_IMAGE)
+    @Inject
+    private String convertImage;
+
     @Override
     public ITestNGService get() {
         if (listenerParameters.getEnable()) {
-            return new TestNGService(listenerParameters, reportPortalClient, testNGContext, batchLogsSize);
+            return new TestNGService(listenerParameters, reportPortalClient, testNGContext,
+                    Integer.parseInt(batchLogsSize), BooleanUtils
+                    .toBoolean(convertImage));
         }
         return (ITestNGService) Proxy
                 .newProxyInstance(this.getClass().getClassLoader(), new Class[] { ITestNGService.class },
