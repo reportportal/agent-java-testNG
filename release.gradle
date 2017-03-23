@@ -17,6 +17,16 @@ javadoc() {
 publishing {
     publications {
         mavenJava(MavenPublication) {
+            pom.withXml {
+                def root = asNode()
+                root.dependencies.'*'.findAll() {
+                    it.scope.text() == 'runtime' && project.configurations.compile.allDependencies.find { dep ->
+                        dep.name == it.artifactId.text()
+                    }
+                }.each() {
+                    it.scope*.value = 'compile'
+                }
+            }
             from components.java
             groupId 'com.epam.reportportal'
             artifactId "$project.name"

@@ -20,39 +20,40 @@
  */
 package com.epam.reportportal.testng;
 
+import io.reactivex.Maybe;
+
 /**
  * Context for TestNG Listener
- * 
  */
 public class TestNGContext {
 
-	private String launchName;
+    private String launchName;
 
-	private String launchID;
+    private Maybe<String> launchID;
 
-	private boolean isLaunchFailed;
+    private boolean isLaunchFailed;
 
-	public String getLaunchName() {
-		return launchName;
-	}
+    public String getLaunchName() {
+        return launchName;
+    }
 
-	public void setLaunchName(String launchName) {
-		this.launchName = launchName;
-	}
+    public void setLaunchName(String launchName) {
+        this.launchName = launchName;
+    }
 
-	public String getLaunchID() {
-		return launchID;
-	}
+    public Maybe<String> getLaunchID() {
+        return launchID;
+    }
 
-	public void setLaunchID(String launchID) {
-		this.launchID = launchID;
-	}
+    public void setLaunchID(Maybe<String> launchID) {
+        this.launchID = launchID;
+    }
 
-	public synchronized boolean getIsLaunchFailed() {
-		return isLaunchFailed;
-	}
+    public synchronized boolean getIsLaunchFailed() {
+        return isLaunchFailed;
+    }
 
-	public synchronized void setIsLaunchFailed(boolean isLaunchFailed) {
-		this.isLaunchFailed = isLaunchFailed;
-	}
+    public synchronized void setIsLaunchFailed(boolean isLaunchFailed) {
+        this.isLaunchFailed = isLaunchFailed;
+    }
 }
