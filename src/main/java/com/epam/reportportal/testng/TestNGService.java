@@ -29,20 +29,22 @@ import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.google.common.base.Strings;
 import com.google.common.base.Supplier;
 import io.reactivex.Maybe;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testng.IAttributes;
 import org.testng.ISuite;
 import org.testng.ISuiteResult;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
+import rp.com.google.common.base.Function;
 
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+
+import static java.lang.System.getProperty;
 
 /**
  * TestNG service implements operations for interaction report portal
@@ -200,31 +202,33 @@ public class TestNGService implements ITestNGService {
         testResult.setAttribute(RP_ID, itemID);
     }
 
-
     @Override
-    public void sendReportPortalMsg(ITestResult result) {
-        //        SaveLogRQ slrq = new SaveLogRQ();
-        //        slrq.setTestItemId(String.valueOf(result.getAttribute(ID)));
-        //        slrq.setLevel("ERROR");
-        //        slrq.setLogTime(Calendar.getInstance().getTime());
-        //        if (result.getThrowable() != null)
-        //            slrq.setMessage(result.getThrowable().getClass().getName() + ": " + result.getThrowable().getMessage()
-        //                    + System.getProperty("line.separator") + this.getStackTraceContext(result.getThrowable()));
-        //        else
-        //            slrq.setMessage("Just exception");
-        //        slrq.setLogTime(Calendar.getInstance().getTime());
-        //        try {
-        //            reportPortalService.log(slrq);
-        //        } catch (Exception e1) {
-        //            handleException(e1, logger, "Unable to send message to Report Portal");
-        //        }
+    public void sendReportPortalMsg(final ITestResult result) {
+        ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
+            @Override
+            public SaveLogRQ apply(String itemId) {
+                SaveLogRQ rq = new SaveLogRQ();
+                rq.setTestItemId(itemId);
+                rq.setLevel("ERROR");
+                rq.setLogTime(Calendar.getInstance().getTime());
+                if (result.getThrowable() != null) {
+                    rq.setMessage(result.getThrowable().getClass().getName() + ": " + result.getThrowable().getMessage()
+                            + getProperty("line.separator") + getStackTraceContext(result.getThrowable()));
+                } else
+                    rq.setMessage("Just exception");
+                rq.setLogTime(Calendar.getInstance().getTime());
+
+                return rq;
+            }
+        });
+
     }
 
     private String getStackTraceContext(Throwable e) {
         StringBuilder result = new StringBuilder();
         for (int i = 0; i < e.getStackTrace().length; i++) {
             result.append(e.getStackTrace()[i]);
-            result.append(System.getProperty("line.separator"));
+            result.append(getProperty("line.separator"));
         }
         return result.toString();
     }
@@ -280,14 +284,15 @@ public class TestNGService implements ITestNGService {
      * Check is current method passed according the number of failed tests and
      * configurations
      *
-     * @param testContext
-     * @return
+     * @param testContext TestNG's test content
+     * @return TRUE if passed, FALSE otherwise
      */
     private boolean isTestPassed(ITestContext testContext) {
         return testContext.getFailedTests().size() == 0 && testContext.getFailedConfigurations().size() == 0
                 && testContext.getSkippedConfigurations().size() == 0 && testContext.getSkippedTests().size() == 0;
     }
 
+    @SuppressWarnings("unchecked")
     <T> T getAttribute(IAttributes attributes, String attribute) {
         return (T) attributes.getAttribute(attribute);
     }
