@@ -22,14 +22,14 @@ package com.epam.reportportal.testng;
 
 import com.epam.reportportal.guice.Injector;
 import com.epam.reportportal.listeners.Statuses;
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import org.testng.IExecutionListener;
 import org.testng.ISuite;
 import org.testng.ISuiteListener;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
 import org.testng.internal.IResultListener2;
+import rp.com.google.common.base.Supplier;
+import rp.com.google.common.base.Suppliers;
 
 /**
  * Report portal custom event listener. Support executing parallel of test
@@ -137,6 +137,6 @@ public class ReportPortalTestNGListener implements IExecutionListener, ISuiteLis
     // this action temporary doesn't supported by report portal
     @Override
     public void onTestFailedButWithinSuccessPercentage(ITestResult result) {
-        // not implemented
+        testNGService.get().finishTestMethod(Statuses.FAILED, result);
     }
 }

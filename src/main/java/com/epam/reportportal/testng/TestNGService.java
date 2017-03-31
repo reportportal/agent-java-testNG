@@ -30,8 +30,6 @@ import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import com.google.common.base.Strings;
-import com.google.common.base.Supplier;
 import io.reactivex.Maybe;
 import org.testng.IAttributes;
 import org.testng.ISuite;
@@ -39,6 +37,9 @@ import org.testng.ISuiteResult;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
 import rp.com.google.common.base.Function;
+import rp.com.google.common.base.StandardSystemProperty;
+import rp.com.google.common.base.Strings;
+import rp.com.google.common.base.Supplier;
 
 import java.util.Calendar;
 import java.util.Collection;
@@ -228,7 +229,7 @@ public class TestNGService implements ITestNGService {
         StringBuilder result = new StringBuilder();
         for (int i = 0; i < e.getStackTrace().length; i++) {
             result.append(e.getStackTrace()[i]);
-            result.append(getProperty("line.separator"));
+            result.append(StandardSystemProperty.FILE_SEPARATOR.value());
         }
         return result.toString();
     }

@@ -24,10 +24,10 @@ import com.epam.reportportal.guice.ListenerPropertyValue;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.utils.properties.ListenerProperty;
-import com.google.inject.Inject;
-import com.google.inject.Provider;
 import org.apache.commons.lang.BooleanUtils;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
