@@ -22,15 +22,19 @@ package com.epam.reportportal.testng;
 
 import com.epam.reportportal.guice.ListenerPropertyValue;
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.LoggingContext;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.utils.properties.ListenerProperty;
-import org.apache.commons.lang.BooleanUtils;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+
+import static java.lang.Integer.parseInt;
+import static org.apache.commons.lang.BooleanUtils.toBoolean;
 
 /**
  * @author Dzmitry_Kavalets
@@ -48,18 +52,20 @@ public class TestNGProvider implements Provider<ITestNGService> {
 
     @ListenerPropertyValue(ListenerProperty.BATCH_SIZE_LOGS)
     @Inject
+    @Nullable
     private String batchLogsSize;
 
     @ListenerPropertyValue(ListenerProperty.IS_CONVERT_IMAGE)
     @Inject
+    @Nullable
     private String convertImage;
 
     @Override
     public ITestNGService get() {
         if (listenerParameters.getEnable()) {
             return new TestNGService(listenerParameters, reportPortalClient, testNGContext,
-                    Integer.parseInt(batchLogsSize), BooleanUtils
-                    .toBoolean(convertImage));
+                    null == batchLogsSize ? LoggingContext.DEFAULT_BUFFER_SIZE : parseInt(batchLogsSize),
+                    toBoolean(convertImage));
         }
         return (ITestNGService) Proxy
                 .newProxyInstance(this.getClass().getClassLoader(), new Class[] { ITestNGService.class },
