@@ -29,9 +29,10 @@ import org.testng.ITestContext;
 import org.testng.ITestResult;
 import org.testng.internal.IResultListener2;
 import rp.com.google.common.base.Supplier;
-import rp.com.google.common.base.Suppliers;
 
 import javax.inject.Provider;
+
+import static rp.com.google.common.base.Suppliers.memoize;
 
 /**
  * Report portal custom event listener. Support executing parallel of test
@@ -45,23 +46,27 @@ public class ReportPortalTestNGListener implements IExecutionListener, ISuiteLis
     private ThreadLocal<Boolean> isSuiteStarted;
 
     public ReportPortalTestNGListener() {
-        this(new Provider<Injector>() {
+        this(new Supplier<ITestNGService>() {
             @Override
-            public Injector get() {
-                return Injector.createDefault(new TestNGListenersModule());
+            public ITestNGService get() {
+                return Injector.createDefault(new TestNGListenersModule()).getBean(ITestNGService.class);
             }
         });
     }
 
     public ReportPortalTestNGListener(final Provider<Injector> injector) {
-        isSuiteStarted = new ThreadLocal<Boolean>();
-        isSuiteStarted.set(false);
-        testNGService = Suppliers.memoize(new Supplier<ITestNGService>() {
+        this(new Supplier<ITestNGService>() {
             @Override
             public ITestNGService get() {
                 return injector.get().getBean(ITestNGService.class);
             }
         });
+    }
+
+    public ReportPortalTestNGListener(final Supplier<ITestNGService> testNgService) {
+        isSuiteStarted = new ThreadLocal<Boolean>();
+        isSuiteStarted.set(false);
+        testNGService = memoize(testNgService);
     }
 
     @Override

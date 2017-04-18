@@ -20,21 +20,15 @@
  */
 package com.epam.reportportal.testng;
 
-import com.epam.reportportal.guice.ListenerPropertyValue;
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.LoggingContext;
 import com.epam.reportportal.service.ReportPortalClient;
-import com.epam.reportportal.utils.properties.ListenerProperty;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
-import static java.lang.Integer.parseInt;
-import static org.apache.commons.lang.BooleanUtils.toBoolean;
 
 /**
  * @author Dzmitry_Kavalets
@@ -50,22 +44,10 @@ public class TestNGProvider implements Provider<ITestNGService> {
     @Inject
     private ReportPortalClient reportPortalClient;
 
-    @ListenerPropertyValue(ListenerProperty.BATCH_SIZE_LOGS)
-    @Inject
-    @Nullable
-    private String batchLogsSize;
-
-    @ListenerPropertyValue(ListenerProperty.IS_CONVERT_IMAGE)
-    @Inject
-    @Nullable
-    private String convertImage;
-
     @Override
     public ITestNGService get() {
         if (listenerParameters.getEnable()) {
-            return createTestNgService(listenerParameters, reportPortalClient, testNGContext,
-                    null == batchLogsSize ? LoggingContext.DEFAULT_BUFFER_SIZE : parseInt(batchLogsSize),
-                    toBoolean(convertImage));
+            return createTestNgService(listenerParameters, reportPortalClient, testNGContext);
         }
         return (ITestNGService) Proxy
                 .newProxyInstance(this.getClass().getClassLoader(), new Class[] { ITestNGService.class },
@@ -78,8 +60,7 @@ public class TestNGProvider implements Provider<ITestNGService> {
     }
 
     protected TestNGService createTestNgService(ListenerParameters listenerParameters,
-            ReportPortalClient reportPortalClient, TestNGContext testNGContext, int batchLogsSize,
-            boolean convertImage) {
-        return new TestNGService(listenerParameters, reportPortalClient, testNGContext, batchLogsSize, convertImage);
+            ReportPortalClient reportPortalClient, TestNGContext testNGContext) {
+        return new TestNGService(listenerParameters, reportPortalClient, testNGContext);
     }
 }

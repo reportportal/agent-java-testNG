@@ -27,19 +27,9 @@ import io.reactivex.Maybe;
  */
 public class TestNGContext {
 
-    private String launchName;
-
     private Maybe<String> launchID;
 
     private boolean isLaunchFailed;
-
-    public String getLaunchName() {
-        return launchName;
-    }
-
-    public void setLaunchName(String launchName) {
-        this.launchName = launchName;
-    }
 
     public Maybe<String> getLaunchID() {
         return launchID;

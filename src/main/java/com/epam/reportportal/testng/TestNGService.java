@@ -64,12 +64,12 @@ public class TestNGService implements ITestNGService {
     private ReportPortal reportPortal;
 
     public TestNGService(final ListenerParameters parameters, ReportPortalClient reportPortalClient,
-            final TestNGContext testNGContext, int batchLogsSize, boolean convertImages) {
-        this.isSkippedAnIssue = parameters.getIsSkippedAnIssue();
+            final TestNGContext testNGContext) {
+        this.isSkippedAnIssue = parameters.getSkippedAnIssue();
         this.reportPortalClient = reportPortalClient;
         this.testNGContext = testNGContext;
-        this.logBufferSize = batchLogsSize;
-        this.convertImages = convertImages;
+        this.logBufferSize = parameters.getBatchLogsSize();
+        this.convertImages = parameters.isConvertImage();
 
         this.launchSupplier = new Supplier<StartLaunchRQ>() {
             @Override
@@ -136,16 +136,9 @@ public class TestNGService implements ITestNGService {
 
     @Override
     public final void startTestMethod(ITestResult testResult) {
-        if (testResult.getAttribute(RP_ID) != null) {
+        StartTestItemRQ rq = buildStartStepRq(testResult);
+        if (rq == null)
             return;
-        }
-        StartTestItemRQ rq = new StartTestItemRQ();
-        String testStepName = testResult.getMethod().getMethodName();
-        rq.setName(testStepName);
-
-        rq.setDescription(createStepDescription(testResult));
-        rq.setStartTime(Calendar.getInstance().getTime());
-        rq.setType(TestMethodType.getStepType(testResult.getMethod()).toString());
         Maybe<String> stepMaybe = reportPortal
                 .startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
 
@@ -222,10 +215,10 @@ public class TestNGService implements ITestNGService {
 
     protected StartLaunchRQ buildStartLaunchRq(TestNGContext testNGContext, ListenerParameters parameters) {
         StartLaunchRQ rq = new StartLaunchRQ();
-        rq.setName(testNGContext.getLaunchName());
+        rq.setName(parameters.getLaunchName());
         rq.setStartTime(Calendar.getInstance().getTime());
         rq.setTags(parameters.getTags());
-        rq.setMode(parameters.getMode());
+        rq.setMode(parameters.getLaunchRunningMode());
         if (!isNullOrEmpty(parameters.getDescription())) {
             rq.setDescription(parameters.getDescription());
         }
@@ -240,6 +233,20 @@ public class TestNGService implements ITestNGService {
         rq.setDescription(testResult.getMethod().getDescription());
         rq.setStartTime(Calendar.getInstance().getTime());
         rq.setType(type == null ? null : type.toString());
+        return rq;
+    }
+
+    protected StartTestItemRQ buildStartStepRq(ITestResult testResult) {
+        if (testResult.getAttribute(RP_ID) != null) {
+            return null;
+        }
+        StartTestItemRQ rq = new StartTestItemRQ();
+        String testStepName = testResult.getMethod().getMethodName();
+        rq.setName(testStepName);
+
+        rq.setDescription(createStepDescription(testResult));
+        rq.setStartTime(Calendar.getInstance().getTime());
+        rq.setType(TestMethodType.getStepType(testResult.getMethod()).toString());
         return rq;
     }
 
