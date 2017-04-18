@@ -63,7 +63,7 @@ public class TestNGProvider implements Provider<ITestNGService> {
     @Override
     public ITestNGService get() {
         if (listenerParameters.getEnable()) {
-            return new TestNGService(listenerParameters, reportPortalClient, testNGContext,
+            return createTestNgService(listenerParameters, reportPortalClient, testNGContext,
                     null == batchLogsSize ? LoggingContext.DEFAULT_BUFFER_SIZE : parseInt(batchLogsSize),
                     toBoolean(convertImage));
         }
@@ -75,5 +75,11 @@ public class TestNGProvider implements Provider<ITestNGService> {
                                 return null;
                             }
                         });
+    }
+
+    protected TestNGService createTestNgService(ListenerParameters listenerParameters,
+            ReportPortalClient reportPortalClient, TestNGContext testNGContext, int batchLogsSize,
+            boolean convertImage) {
+        return new TestNGService(listenerParameters, reportPortalClient, testNGContext, batchLogsSize, convertImage);
     }
 }

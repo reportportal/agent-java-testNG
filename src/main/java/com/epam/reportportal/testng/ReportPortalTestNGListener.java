@@ -31,6 +31,8 @@ import org.testng.internal.IResultListener2;
 import rp.com.google.common.base.Supplier;
 import rp.com.google.common.base.Suppliers;
 
+import javax.inject.Provider;
+
 /**
  * Report portal custom event listener. Support executing parallel of test
  * methods, suites, test classes.
@@ -43,12 +45,21 @@ public class ReportPortalTestNGListener implements IExecutionListener, ISuiteLis
     private ThreadLocal<Boolean> isSuiteStarted;
 
     public ReportPortalTestNGListener() {
+        this(new Provider<Injector>() {
+            @Override
+            public Injector get() {
+                return Injector.createDefault(new TestNGListenersModule());
+            }
+        });
+    }
+
+    public ReportPortalTestNGListener(final Provider<Injector> injector) {
         isSuiteStarted = new ThreadLocal<Boolean>();
         isSuiteStarted.set(false);
         testNGService = Suppliers.memoize(new Supplier<ITestNGService>() {
             @Override
             public ITestNGService get() {
-                return Injector.createDefault(new TestNGListenersModule()).getBean(ITestNGService.class);
+                return injector.get().getBean(ITestNGService.class);
             }
         });
     }

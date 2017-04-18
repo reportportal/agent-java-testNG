@@ -26,7 +26,7 @@ import org.testng.ITestNGMethod;
  * Possible types of Test method
  * 
  */
-enum TestMethodType {
+public enum TestMethodType {
 	STEP, BEFORE_CLASS, BEFORE_GROUPS, BEFORE_METHOD, BEFORE_SUITE, BEFORE_TEST, AFTER_CLASS, AFTER_GROUPS, AFTER_METHOD, AFTER_SUITE, AFTER_TEST;
 
 	/**

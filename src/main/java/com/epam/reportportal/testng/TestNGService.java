@@ -38,14 +38,14 @@ import org.testng.ITestContext;
 import org.testng.ITestResult;
 import rp.com.google.common.base.Function;
 import rp.com.google.common.base.StandardSystemProperty;
-import rp.com.google.common.base.Strings;
 import rp.com.google.common.base.Supplier;
 
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 
-import static java.lang.System.getProperty;
+import static com.google.common.base.Throwables.getStackTraceAsString;
+import static rp.com.google.common.base.Strings.isNullOrEmpty;
 
 /**
  * TestNG service implements operations for interaction report portal
@@ -61,7 +61,6 @@ public class TestNGService implements ITestNGService {
     private final boolean isSkippedAnIssue;
     private final int logBufferSize;
     private final boolean convertImages;
-
     private ReportPortal reportPortal;
 
     public TestNGService(final ListenerParameters parameters, ReportPortalClient reportPortalClient,
@@ -75,50 +74,36 @@ public class TestNGService implements ITestNGService {
         this.launchSupplier = new Supplier<StartLaunchRQ>() {
             @Override
             public StartLaunchRQ get() {
-                StartLaunchRQ rq = new StartLaunchRQ();
-                rq.setName(testNGContext.getLaunchName());
-                rq.setStartTime(Calendar.getInstance().getTime());
-                rq.setTags(parameters.getTags());
-                rq.setMode(parameters.getMode());
-                if (!Strings.isNullOrEmpty(parameters.getDescription())) {
-                    rq.setDescription(parameters.getDescription());
-                }
-                return rq;
+                return buildStartLaunchRq(testNGContext, parameters);
             }
         };
 
     }
 
     @Override
-    public void startLaunch() {
+    public final void startLaunch() {
         StartLaunchRQ rq = launchSupplier.get();
         rq.setStartTime(Calendar.getInstance().getTime());
         this.reportPortal = ReportPortal.startLaunch(reportPortalClient, logBufferSize, convertImages, rq);
     }
 
     @Override
-    public void finishLaunch() {
-
+    public final void finishLaunch() {
         FinishExecutionRQ rq = new FinishExecutionRQ();
-
         rq.setEndTime(Calendar.getInstance().getTime());
         rq.setStatus(testNGContext.getIsLaunchFailed() ? Statuses.FAILED : Statuses.PASSED);
         reportPortal.finishLaunch(rq);
-        System.out.println("Launch finished");
     }
 
     @Override
-    public void startTestSuite(ISuite suite) {
-        StartTestItemRQ rq = new StartTestItemRQ();
-        rq.setName(suite.getName());
-        rq.setStartTime(Calendar.getInstance().getTime());
-        rq.setType("SUITE");
+    public final void startTestSuite(ISuite suite) {
+        StartTestItemRQ rq = buildStartSuiteRq(suite);
         final Maybe<String> item = reportPortal.startTestItem(rq);
         suite.setAttribute(RP_ID, item);
     }
 
     @Override
-    public void finishTestSuite(ISuite suite) {
+    public final void finishTestSuite(ISuite suite) {
         /* 'real' end time */
         Date now = Calendar.getInstance().getTime();
         FinishTestItemRQ rq = new FinishTestItemRQ();
@@ -128,11 +113,8 @@ public class TestNGService implements ITestNGService {
     }
 
     @Override
-    public void startTest(ITestContext testContext) {
-        StartTestItemRQ rq = new StartTestItemRQ();
-        rq.setName(testContext.getName());
-        rq.setStartTime(Calendar.getInstance().getTime());
-        rq.setType("TEST");
+    public final void startTest(ITestContext testContext) {
+        StartTestItemRQ rq = buildStartTestItemRq(testContext);
 
         final Maybe<String> testID = reportPortal
                 .startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
@@ -142,7 +124,7 @@ public class TestNGService implements ITestNGService {
     }
 
     @Override
-    public void finishTest(ITestContext testContext) {
+    public final void finishTest(ITestContext testContext) {
         FinishTestItemRQ rq = new FinishTestItemRQ();
         rq.setEndTime(testContext.getEndDate());
         String status = isTestPassed(testContext) ? Statuses.PASSED : Statuses.FAILED;
@@ -153,7 +135,7 @@ public class TestNGService implements ITestNGService {
     }
 
     @Override
-    public void startTestMethod(ITestResult testResult) {
+    public final void startTestMethod(ITestResult testResult) {
         if (testResult.getAttribute(RP_ID) != null) {
             return;
         }
@@ -171,7 +153,7 @@ public class TestNGService implements ITestNGService {
     }
 
     @Override
-    public void finishTestMethod(String status, ITestResult testResult) {
+    public final void finishTestMethod(String status, ITestResult testResult) {
         //        ReportPortalListenerContext.stopLogging();
         final Date now = Calendar.getInstance().getTime();
         FinishTestItemRQ rq = new FinishTestItemRQ();
@@ -188,15 +170,9 @@ public class TestNGService implements ITestNGService {
     }
 
     @Override
-    public void startConfiguration(ITestResult testResult) {
-        StartTestItemRQ rq = new StartTestItemRQ();
-        String configName = testResult.getMethod().getMethodName();
-        rq.setName(configName);
-
-        rq.setDescription(testResult.getMethod().getDescription());
-        rq.setStartTime(Calendar.getInstance().getTime());
+    public final void startConfiguration(ITestResult testResult) {
         TestMethodType type = TestMethodType.getStepType(testResult.getMethod());
-        rq.setType(type.toString());
+        StartTestItemRQ rq = buildStartConfigurationRq(testResult, type);
 
         Maybe<String> parentId = getConfigParent(testResult, type);
         final Maybe<String> itemID = reportPortal.startTestItem(parentId, rq);
@@ -213,10 +189,13 @@ public class TestNGService implements ITestNGService {
                 rq.setLevel("ERROR");
                 rq.setLogTime(Calendar.getInstance().getTime());
                 if (result.getThrowable() != null) {
-                    rq.setMessage(result.getThrowable().getClass().getName() + ": " + result.getThrowable().getMessage()
-                            + getProperty("line.separator") + getStackTraceContext(result.getThrowable()));
+                    rq.setMessage(result.getThrowable().getClass().getName() +
+                            ": " +
+                            result.getThrowable().getMessage() +
+                            StandardSystemProperty.LINE_SEPARATOR.toString() + getStackTraceAsString(
+                            result.getThrowable()));
                 } else
-                    rq.setMessage("Just exception");
+                    rq.setMessage("Test has failed without exception");
                 rq.setLogTime(Calendar.getInstance().getTime());
 
                 return rq;
@@ -225,16 +204,46 @@ public class TestNGService implements ITestNGService {
 
     }
 
-    private String getStackTraceContext(Throwable e) {
-        StringBuilder result = new StringBuilder();
-        for (int i = 0; i < e.getStackTrace().length; i++) {
-            result.append(e.getStackTrace()[i]);
-            result.append(StandardSystemProperty.FILE_SEPARATOR.value());
-        }
-        return result.toString();
+    protected StartTestItemRQ buildStartSuiteRq(ISuite suite) {
+        StartTestItemRQ rq = new StartTestItemRQ();
+        rq.setName(suite.getName());
+        rq.setStartTime(Calendar.getInstance().getTime());
+        rq.setType("SUITE");
+        return rq;
     }
 
-    private String createStepDescription(ITestResult testResult) {
+    protected StartTestItemRQ buildStartTestItemRq(ITestContext testContext) {
+        StartTestItemRQ rq = new StartTestItemRQ();
+        rq.setName(testContext.getName());
+        rq.setStartTime(Calendar.getInstance().getTime());
+        rq.setType("TEST");
+        return rq;
+    }
+
+    protected StartLaunchRQ buildStartLaunchRq(TestNGContext testNGContext, ListenerParameters parameters) {
+        StartLaunchRQ rq = new StartLaunchRQ();
+        rq.setName(testNGContext.getLaunchName());
+        rq.setStartTime(Calendar.getInstance().getTime());
+        rq.setTags(parameters.getTags());
+        rq.setMode(parameters.getMode());
+        if (!isNullOrEmpty(parameters.getDescription())) {
+            rq.setDescription(parameters.getDescription());
+        }
+        return rq;
+    }
+
+    protected StartTestItemRQ buildStartConfigurationRq(ITestResult testResult, TestMethodType type) {
+        StartTestItemRQ rq = new StartTestItemRQ();
+        String configName = testResult.getMethod().getMethodName();
+        rq.setName(configName);
+
+        rq.setDescription(testResult.getMethod().getDescription());
+        rq.setStartTime(Calendar.getInstance().getTime());
+        rq.setType(type == null ? null : type.toString());
+        return rq;
+    }
+
+    protected String createStepDescription(ITestResult testResult) {
         StringBuilder stringBuffer = new StringBuilder();
         if (testResult.getMethod().getDescription() != null) {
             stringBuffer.append(testResult.getMethod().getDescription());
@@ -252,7 +261,7 @@ public class TestNGService implements ITestNGService {
         return stringBuffer.toString();
     }
 
-    private String getSuiteStatus(ISuite suite) {
+    protected String getSuiteStatus(ISuite suite) {
         Collection<ISuiteResult> suiteResults = suite.getResults().values();
         String suiteStatus = Statuses.PASSED;
         for (ISuiteResult suiteResult : suiteResults) {
@@ -269,6 +278,23 @@ public class TestNGService implements ITestNGService {
     }
 
     /**
+     * Check is current method passed according the number of failed tests and
+     * configurations
+     *
+     * @param testContext TestNG's test content
+     * @return TRUE if passed, FALSE otherwise
+     */
+    protected boolean isTestPassed(ITestContext testContext) {
+        return testContext.getFailedTests().size() == 0 && testContext.getFailedConfigurations().size() == 0
+                && testContext.getSkippedConfigurations().size() == 0 && testContext.getSkippedTests().size() == 0;
+    }
+
+    @SuppressWarnings("unchecked")
+    <T> T getAttribute(IAttributes attributes, String attribute) {
+        return (T) attributes.getAttribute(attribute);
+    }
+
+    /**
      * Calculate parent id for configuration
      */
     private Maybe<String> getConfigParent(ITestResult testResult, TestMethodType type) {
@@ -279,22 +305,5 @@ public class TestNGService implements ITestNGService {
             parentId = getAttribute(testResult.getTestContext(), RP_ID);
         }
         return parentId;
-    }
-
-    /**
-     * Check is current method passed according the number of failed tests and
-     * configurations
-     *
-     * @param testContext TestNG's test content
-     * @return TRUE if passed, FALSE otherwise
-     */
-    private boolean isTestPassed(ITestContext testContext) {
-        return testContext.getFailedTests().size() == 0 && testContext.getFailedConfigurations().size() == 0
-                && testContext.getSkippedConfigurations().size() == 0 && testContext.getSkippedTests().size() == 0;
-    }
-
-    @SuppressWarnings("unchecked")
-    <T> T getAttribute(IAttributes attributes, String attribute) {
-        return (T) attributes.getAttribute(attribute);
     }
 }
