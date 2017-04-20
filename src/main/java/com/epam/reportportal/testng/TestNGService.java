@@ -43,9 +43,10 @@ import rp.com.google.common.base.Supplier;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.google.common.base.Throwables.getStackTraceAsString;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
+import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
 /**
  * TestNG service implements operations for interaction report portal
@@ -57,24 +58,23 @@ public class TestNGService implements ITestNGService {
 
     private final Supplier<StartLaunchRQ> launchSupplier;
     private final ReportPortalClient reportPortalClient;
-    private final TestNGContext testNGContext;
     private final boolean isSkippedAnIssue;
     private final int logBufferSize;
     private final boolean convertImages;
     private ReportPortal reportPortal;
 
-    public TestNGService(final ListenerParameters parameters, ReportPortalClient reportPortalClient,
-            final TestNGContext testNGContext) {
+    private AtomicBoolean isLaunchFailed = new AtomicBoolean();
+
+    public TestNGService(final ListenerParameters parameters, ReportPortalClient reportPortalClient) {
         this.isSkippedAnIssue = parameters.getSkippedAnIssue();
         this.reportPortalClient = reportPortalClient;
-        this.testNGContext = testNGContext;
         this.logBufferSize = parameters.getBatchLogsSize();
         this.convertImages = parameters.isConvertImage();
 
         this.launchSupplier = new Supplier<StartLaunchRQ>() {
             @Override
             public StartLaunchRQ get() {
-                return buildStartLaunchRq(testNGContext, parameters);
+                return buildStartLaunchRq(parameters);
             }
         };
 
@@ -91,7 +91,7 @@ public class TestNGService implements ITestNGService {
     public final void finishLaunch() {
         FinishExecutionRQ rq = new FinishExecutionRQ();
         rq.setEndTime(Calendar.getInstance().getTime());
-        rq.setStatus(testNGContext.getIsLaunchFailed() ? Statuses.FAILED : Statuses.PASSED);
+        rq.setStatus(isLaunchFailed.get() ? Statuses.FAILED : Statuses.PASSED);
         reportPortal.finishLaunch(rq);
     }
 
@@ -197,6 +197,12 @@ public class TestNGService implements ITestNGService {
 
     }
 
+    /**
+     * Extension point to customize suite creation event/request
+     *
+     * @param suite TestNG suite
+     * @return Request to ReportPortal
+     */
     protected StartTestItemRQ buildStartSuiteRq(ISuite suite) {
         StartTestItemRQ rq = new StartTestItemRQ();
         rq.setName(suite.getName());
@@ -205,6 +211,12 @@ public class TestNGService implements ITestNGService {
         return rq;
     }
 
+    /**
+     * Extension point to customize test creation event/request
+     *
+     * @param testContext TestNG test context
+     * @return Request to ReportPortal
+     */
     protected StartTestItemRQ buildStartTestItemRq(ITestContext testContext) {
         StartTestItemRQ rq = new StartTestItemRQ();
         rq.setName(testContext.getName());
@@ -213,7 +225,13 @@ public class TestNGService implements ITestNGService {
         return rq;
     }
 
-    protected StartLaunchRQ buildStartLaunchRq(TestNGContext testNGContext, ListenerParameters parameters) {
+    /**
+     * Extension point to customize launch creation event/request
+     *
+     * @param parameters Launch Configuration parameters
+     * @return Request to ReportPortal
+     */
+    protected StartLaunchRQ buildStartLaunchRq(ListenerParameters parameters) {
         StartLaunchRQ rq = new StartLaunchRQ();
         rq.setName(parameters.getLaunchName());
         rq.setStartTime(Calendar.getInstance().getTime());
@@ -225,6 +243,13 @@ public class TestNGService implements ITestNGService {
         return rq;
     }
 
+    /**
+     * Extension point to customize beforeXXX creation event/request
+     *
+     * @param testResult TestNG's testResult context
+     * @param type       Type of method
+     * @return Request to ReportPortal
+     */
     protected StartTestItemRQ buildStartConfigurationRq(ITestResult testResult, TestMethodType type) {
         StartTestItemRQ rq = new StartTestItemRQ();
         String configName = testResult.getMethod().getMethodName();
@@ -236,6 +261,12 @@ public class TestNGService implements ITestNGService {
         return rq;
     }
 
+    /**
+     * Extension point to customize test step creation event/request
+     *
+     * @param testResult TestNG's testResult context
+     * @return Request to ReportPortal
+     */
     protected StartTestItemRQ buildStartStepRq(ITestResult testResult) {
         if (testResult.getAttribute(RP_ID) != null) {
             return null;
@@ -250,6 +281,12 @@ public class TestNGService implements ITestNGService {
         return rq;
     }
 
+    /**
+     * Extension point to customize test step description
+     *
+     * @param testResult TestNG's testResult context
+     * @return Test/Step Description being sent to ReportPortal
+     */
     protected String createStepDescription(ITestResult testResult) {
         StringBuilder stringBuffer = new StringBuilder();
         if (testResult.getMethod().getDescription() != null) {
@@ -268,6 +305,12 @@ public class TestNGService implements ITestNGService {
         return stringBuffer.toString();
     }
 
+    /**
+     * Extension point to customize test suite status being sent to ReportPortal
+     *
+     * @param suite TestNG's suite
+     * @return Status PASSED/FAILED/etc
+     */
     protected String getSuiteStatus(ISuite suite) {
         Collection<ISuiteResult> suiteResults = suite.getResults().values();
         String suiteStatus = Statuses.PASSED;
@@ -278,9 +321,7 @@ public class TestNGService implements ITestNGService {
             }
         }
         // if at least one suite failed launch should be failed
-        if (!testNGContext.getIsLaunchFailed()) {
-            testNGContext.setIsLaunchFailed(suiteStatus.equals(Statuses.FAILED));
-        }
+        isLaunchFailed.compareAndSet(false, suiteStatus.equals(Statuses.FAILED));
         return suiteStatus;
     }
 

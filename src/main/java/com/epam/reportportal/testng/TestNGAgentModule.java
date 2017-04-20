@@ -20,30 +20,19 @@
  */
 package com.epam.reportportal.testng;
 
-import io.reactivex.Maybe;
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
 
 /**
- * Context for TestNG Listener
+ * Guice module with TestNG beans.
+ *
+ * @author Ilya_Koshaleu
+ * @author Andrei Varabyeu
  */
-public class TestNGContext {
+public class TestNGAgentModule extends AbstractModule {
 
-    private Maybe<String> launchID;
-
-    private boolean isLaunchFailed;
-
-    public Maybe<String> getLaunchID() {
-        return launchID;
-    }
-
-    public void setLaunchID(Maybe<String> launchID) {
-        this.launchID = launchID;
-    }
-
-    public synchronized boolean getIsLaunchFailed() {
-        return isLaunchFailed;
-    }
-
-    public synchronized void setIsLaunchFailed(boolean isLaunchFailed) {
-        this.isLaunchFailed = isLaunchFailed;
+    @Override
+    protected void configure() {
+        bind(ITestNGService.class).toProvider(TestNGProvider.class).in(Scopes.SINGLETON);
     }
 }

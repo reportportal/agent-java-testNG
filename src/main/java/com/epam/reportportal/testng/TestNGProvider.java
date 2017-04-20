@@ -29,38 +29,34 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
-
 /**
  * @author Dzmitry_Kavalets
  */
 public class TestNGProvider implements Provider<ITestNGService> {
 
-    @Inject
-    private ListenerParameters listenerParameters;
+    private static final ITestNGService NOOP_PROXY = (ITestNGService) Proxy
+            .newProxyInstance(TestNGProvider.class.getClassLoader(), new Class[] { ITestNGService.class },
+                    new InvocationHandler() {
+                        @Override
+                        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                            return null;
+                        }
+                    });
 
     @Inject
-    private TestNGContext testNGContext;
+    private ListenerParameters listenerParameters;
 
     @Inject
     private ReportPortalClient reportPortalClient;
 
     @Override
     public ITestNGService get() {
-        if (listenerParameters.getEnable()) {
-            return createTestNgService(listenerParameters, reportPortalClient, testNGContext);
-        }
-        return (ITestNGService) Proxy
-                .newProxyInstance(this.getClass().getClassLoader(), new Class[] { ITestNGService.class },
-                        new InvocationHandler() {
-                            @Override
-                            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                                return null;
-                            }
-                        });
+        return listenerParameters.getEnable() ? createTestNgService(listenerParameters, reportPortalClient) :
+                NOOP_PROXY;
     }
 
     protected TestNGService createTestNgService(ListenerParameters listenerParameters,
-            ReportPortalClient reportPortalClient, TestNGContext testNGContext) {
-        return new TestNGService(listenerParameters, reportPortalClient, testNGContext);
+            ReportPortalClient reportPortalClient) {
+        return new TestNGService(listenerParameters, reportPortalClient);
     }
 }
