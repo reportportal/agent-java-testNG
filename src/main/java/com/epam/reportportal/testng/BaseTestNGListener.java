@@ -22,7 +22,7 @@ package com.epam.reportportal.testng;
 
 import com.epam.reportportal.guice.Injector;
 import com.epam.reportportal.listeners.Statuses;
-import com.google.inject.Module;
+import rp.com.google.inject.Module;
 import org.testng.IExecutionListener;
 import org.testng.ISuite;
 import org.testng.ISuiteListener;

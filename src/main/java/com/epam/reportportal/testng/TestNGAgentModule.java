@@ -20,8 +20,8 @@
  */
 package com.epam.reportportal.testng;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
+import rp.com.google.inject.AbstractModule;
+import rp.com.google.inject.Scopes;
 
 /**
  * Guice module with TestNG beans.

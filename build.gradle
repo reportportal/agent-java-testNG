@@ -17,11 +17,11 @@ repositories {
 }
 
 dependencies {
-    compile 'com.epam.reportportal:client-java:3.0.0'
+    compile 'com.epam.reportportal:client-java:3.0.1'
     compile 'com.epam.reportportal:commons-model:3.0.0'
     compileOnly 'org.testng:testng:6.11'
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '3.0'
+    gradleVersion = '3.5'
 }
