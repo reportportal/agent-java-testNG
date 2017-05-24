@@ -185,7 +185,7 @@ public class TestNGService implements ITestNGService {
                     rq.setMessage(result.getThrowable().getClass().getName() +
                             ": " +
                             result.getThrowable().getMessage() +
-                            StandardSystemProperty.LINE_SEPARATOR.toString() + getStackTraceAsString(
+                            StandardSystemProperty.LINE_SEPARATOR.value() + getStackTraceAsString(
                             result.getThrowable()));
                 } else
                     rq.setMessage("Test has failed without exception");
