@@ -44,7 +44,7 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
     private Supplier<ITestNGService> testNGService;
 
     // added to cover com.epam.reportportal.testng vulnerability
-    private ThreadLocal<Boolean> isSuiteStarted;
+    private static ThreadLocal<Boolean> isSuiteStarted;
 
     public BaseTestNGListener() {
         this(new TestNGAgentModule());
