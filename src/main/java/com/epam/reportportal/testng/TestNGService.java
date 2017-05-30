@@ -81,14 +81,14 @@ public class TestNGService implements ITestNGService {
     }
 
     @Override
-    public final void startLaunch() {
+    public void startLaunch() {
         StartLaunchRQ rq = launchSupplier.get();
         rq.setStartTime(Calendar.getInstance().getTime());
         this.reportPortal = ReportPortal.startLaunch(reportPortalClient, logBufferSize, convertImages, rq);
     }
 
     @Override
-    public final void finishLaunch() {
+    public void finishLaunch() {
         FinishExecutionRQ rq = new FinishExecutionRQ();
         rq.setEndTime(Calendar.getInstance().getTime());
         rq.setStatus(isLaunchFailed.get() ? Statuses.FAILED : Statuses.PASSED);
@@ -96,14 +96,14 @@ public class TestNGService implements ITestNGService {
     }
 
     @Override
-    public final void startTestSuite(ISuite suite) {
+    public void startTestSuite(ISuite suite) {
         StartTestItemRQ rq = buildStartSuiteRq(suite);
         final Maybe<String> item = reportPortal.startTestItem(rq);
         suite.setAttribute(RP_ID, item);
     }
 
     @Override
-    public final void finishTestSuite(ISuite suite) {
+    public void finishTestSuite(ISuite suite) {
         /* 'real' end time */
         Date now = Calendar.getInstance().getTime();
         FinishTestItemRQ rq = new FinishTestItemRQ();
@@ -113,7 +113,7 @@ public class TestNGService implements ITestNGService {
     }
 
     @Override
-    public final void startTest(ITestContext testContext) {
+    public void startTest(ITestContext testContext) {
         StartTestItemRQ rq = buildStartTestItemRq(testContext);
 
         final Maybe<String> testID = reportPortal
@@ -124,7 +124,7 @@ public class TestNGService implements ITestNGService {
     }
 
     @Override
-    public final void finishTest(ITestContext testContext) {
+    public void finishTest(ITestContext testContext) {
         FinishTestItemRQ rq = new FinishTestItemRQ();
         rq.setEndTime(testContext.getEndDate());
         String status = isTestPassed(testContext) ? Statuses.PASSED : Statuses.FAILED;
@@ -135,7 +135,7 @@ public class TestNGService implements ITestNGService {
     }
 
     @Override
-    public final void startTestMethod(ITestResult testResult) {
+    public void startTestMethod(ITestResult testResult) {
         StartTestItemRQ rq = buildStartStepRq(testResult);
         if (rq == null)
             return;
@@ -146,8 +146,7 @@ public class TestNGService implements ITestNGService {
     }
 
     @Override
-    public final void finishTestMethod(String status, ITestResult testResult) {
-        //        ReportPortalListenerContext.stopLogging();
+    public void finishTestMethod(String status, ITestResult testResult) {
         final Date now = Calendar.getInstance().getTime();
         FinishTestItemRQ rq = new FinishTestItemRQ();
         rq.setEndTime(now);
@@ -163,7 +162,7 @@ public class TestNGService implements ITestNGService {
     }
 
     @Override
-    public final void startConfiguration(ITestResult testResult) {
+    public void startConfiguration(ITestResult testResult) {
         TestMethodType type = TestMethodType.getStepType(testResult.getMethod());
         StartTestItemRQ rq = buildStartConfigurationRq(testResult, type);
 
@@ -338,7 +337,7 @@ public class TestNGService implements ITestNGService {
     }
 
     @SuppressWarnings("unchecked")
-    <T> T getAttribute(IAttributes attributes, String attribute) {
+    protected <T> T getAttribute(IAttributes attributes, String attribute) {
         return (T) attributes.getAttribute(attribute);
     }
 
