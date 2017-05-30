@@ -7,3 +7,11 @@
 
 * Extension modules support
 * Async execution support
+
+
+## 3.0.3
+##### Released: 30 May 2017
+
+### Bugfixes
+
+* Remove final from TestNgService to improve extensibility
