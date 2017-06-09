@@ -15,3 +15,10 @@
 ### Bugfixes
 
 * Remove final from TestNgService to improve extensibility
+
+## 3.0.4
+##### Released: 9 June 2017
+
+### Bugfixes
+
+* Maintenance release 
