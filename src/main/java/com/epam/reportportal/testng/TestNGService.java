@@ -252,8 +252,7 @@ public class TestNGService implements ITestNGService {
 		slrq.setLevel("ERROR");
 		slrq.setLogTime(Calendar.getInstance().getTime());
 		if (result.getThrowable() != null)
-			slrq.setMessage(result.getThrowable().getClass().getName() + ": " + result.getThrowable().getMessage()
-					+ System.getProperty("line.separator") + this.getStackTraceContext(result.getThrowable()));
+			slrq.setMessage(this.getStackTraceContext(result.getThrowable()));
 		else
 			slrq.setMessage("Just exception");
 		slrq.setLogTime(Calendar.getInstance().getTime());
