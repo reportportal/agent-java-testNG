@@ -37,7 +37,6 @@ import org.testng.ISuiteResult;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
 import rp.com.google.common.base.Function;
-import rp.com.google.common.base.StandardSystemProperty;
 import rp.com.google.common.base.Supplier;
 
 import java.util.Calendar;
@@ -181,11 +180,7 @@ public class TestNGService implements ITestNGService {
                 rq.setLevel("ERROR");
                 rq.setLogTime(Calendar.getInstance().getTime());
                 if (result.getThrowable() != null) {
-                    rq.setMessage(result.getThrowable().getClass().getName() +
-                            ": " +
-                            result.getThrowable().getMessage() +
-                            StandardSystemProperty.LINE_SEPARATOR.value() + getStackTraceAsString(
-                            result.getThrowable()));
+                    rq.setMessage(getStackTraceAsString(result.getThrowable()));
                 } else
                     rq.setMessage("Test has failed without exception");
                 rq.setLogTime(Calendar.getInstance().getTime());
