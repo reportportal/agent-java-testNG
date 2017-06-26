@@ -17,8 +17,9 @@
 * Remove final from TestNgService to improve extensibility
 
 ## 3.0.4
-##### Released: 9 June 2017
+##### Released: 26 June 2017
 
 ### Bugfixes
 
-* Maintenance release 
+* Warning if several listeners are initialized
+* Merge [Fix stacktrace messaging](https://github.com/reportportal/agent-java-testNG/pull/10)

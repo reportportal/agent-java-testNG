@@ -22,7 +22,8 @@ package com.epam.reportportal.testng;
 
 import com.epam.reportportal.guice.Injector;
 import com.epam.reportportal.listeners.Statuses;
-import rp.com.google.inject.Module;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.IExecutionListener;
 import org.testng.ISuite;
 import org.testng.ISuiteListener;
@@ -30,6 +31,9 @@ import org.testng.ITestContext;
 import org.testng.ITestResult;
 import org.testng.internal.IResultListener2;
 import rp.com.google.common.base.Supplier;
+import rp.com.google.inject.Module;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static rp.com.google.common.base.Suppliers.memoize;
 
@@ -41,10 +45,11 @@ import static rp.com.google.common.base.Suppliers.memoize;
  */
 public class BaseTestNGListener implements IExecutionListener, ISuiteListener, IResultListener2 {
 
-    private Supplier<ITestNGService> testNGService;
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseTestNGListener.class);
 
-    // added to cover com.epam.reportportal.testng vulnerability
-    private static ThreadLocal<Boolean> isSuiteStarted = new ThreadLocal<Boolean>();
+    private static final AtomicInteger INSTANCES = new AtomicInteger(0);
+
+    private Supplier<ITestNGService> testNGService;
 
     public BaseTestNGListener() {
         this(new TestNGAgentModule());
@@ -64,8 +69,14 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
     }
 
     public BaseTestNGListener(final Supplier<ITestNGService> testNgService) {
-        isSuiteStarted.set(false);
         testNGService = memoize(testNgService);
+        if (INSTANCES.incrementAndGet() > 1) {
+            final String warning = "WARNING! More than one ReportPortal listener is added";
+            LOGGER.warn(warning);
+
+            //even if logger is not configured, print the message to default stdout
+            System.out.println(warning);
+        }
     }
 
     @Override
@@ -80,19 +91,12 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
 
     @Override
     public void onStart(ISuite suite) {
-        // added to cover com.epam.reportportal.testng vulnerability
-        if (!isSuiteStarted.get()) {
-            testNGService.get().startTestSuite(suite);
-            isSuiteStarted.set(true);
-        }
+        testNGService.get().startTestSuite(suite);
     }
 
     @Override
     public void onFinish(ISuite suite) {
-        if (isSuiteStarted.get()) {
-            testNGService.get().finishTestSuite(suite);
-            isSuiteStarted.set(false);
-        }
+        testNGService.get().finishTestSuite(suite);
     }
 
     @Override

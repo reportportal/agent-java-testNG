@@ -94,21 +94,32 @@ public class TestNGService implements ITestNGService {
         reportPortal.finishLaunch(rq);
     }
 
+    /*
+     * sometimes testng triggers on suite start several times.
+     * This is why method is synchronized and check for attribute presence is added
+     */
     @Override
-    public void startTestSuite(ISuite suite) {
-        StartTestItemRQ rq = buildStartSuiteRq(suite);
-        final Maybe<String> item = reportPortal.startTestItem(rq);
-        suite.setAttribute(RP_ID, item);
+    public synchronized void startTestSuite(ISuite suite) {
+        //avoid starting same suite twice
+        if (null == getAttribute(suite, RP_ID)) {
+            StartTestItemRQ rq = buildStartSuiteRq(suite);
+            final Maybe<String> item = reportPortal.startTestItem(rq);
+            suite.setAttribute(RP_ID, item);
+        }
     }
 
     @Override
-    public void finishTestSuite(ISuite suite) {
+    public synchronized void finishTestSuite(ISuite suite) {
+        if (null != suite.getAttribute(RP_ID)) {
         /* 'real' end time */
-        Date now = Calendar.getInstance().getTime();
-        FinishTestItemRQ rq = new FinishTestItemRQ();
-        rq.setEndTime(now);
-        rq.setStatus(getSuiteStatus(suite));
-        reportPortal.finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
+            Date now = Calendar.getInstance().getTime();
+            FinishTestItemRQ rq = new FinishTestItemRQ();
+            rq.setEndTime(now);
+            rq.setStatus(getSuiteStatus(suite));
+            reportPortal.finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
+            suite.removeAttribute(RP_ID);
+        }
+
     }
 
     @Override
