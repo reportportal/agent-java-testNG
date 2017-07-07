@@ -308,7 +308,7 @@ public class TestNGService implements ITestNGService {
             stringBuffer.deleteCharAt(stringBuffer.lastIndexOf("|"));
             stringBuffer.append(" ] ");
         }
-        Map<String, String> parameters = testResult.getTestContext().getCurrentXmlTest().getAllParameters();
+        Map<String, String> parameters = testResult.getMethod().findMethodParameters(testResult.getTestContext().getCurrentXmlTest());
         if (null != parameters) {
             for (Map.Entry<String, String> entry : parameters.entrySet()) {
                 stringBuffer.append(entry.getKey()).append(" = ").append(entry.getValue());
