@@ -42,6 +42,7 @@ import rp.com.google.common.base.Supplier;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
@@ -306,6 +307,12 @@ public class TestNGService implements ITestNGService {
             }
             stringBuffer.deleteCharAt(stringBuffer.lastIndexOf("|"));
             stringBuffer.append(" ] ");
+        }
+        Map<String, String> parameters = testResult.getTestContext().getCurrentXmlTest().getAllParameters();
+        if (null != parameters) {
+            for (Map.Entry<String, String> entry : parameters.entrySet()) {
+                stringBuffer.append(entry.getKey()).append(" = ").append(entry.getValue());
+            }
         }
         return stringBuffer.toString();
     }
