@@ -31,18 +31,11 @@ import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
-import org.testng.IAttributes;
-import org.testng.ISuite;
-import org.testng.ISuiteResult;
-import org.testng.ITestContext;
-import org.testng.ITestResult;
+import org.testng.*;
 import rp.com.google.common.base.Function;
 import rp.com.google.common.base.Supplier;
 
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
@@ -282,9 +275,20 @@ public class TestNGService implements ITestNGService {
         rq.setName(testStepName);
 
         rq.setDescription(createStepDescription(testResult));
+        rq.setParameters(createStepParameters(testResult));
         rq.setStartTime(Calendar.getInstance().getTime());
         rq.setType(TestMethodType.getStepType(testResult.getMethod()).toString());
         return rq;
+    }
+
+    protected List<String> createStepParameters(ITestResult testResult) {
+        List<String> result = new ArrayList<String>();
+        if (testResult.getParameters() != null && testResult.getParameters().length != 0) {
+            for (Object parameter : testResult.getParameters()) {
+                result.add(parameter.toString());
+            }
+        }
+        return result;
     }
 
     /**
@@ -297,22 +301,6 @@ public class TestNGService implements ITestNGService {
         StringBuilder stringBuffer = new StringBuilder();
         if (testResult.getMethod().getDescription() != null) {
             stringBuffer.append(testResult.getMethod().getDescription());
-        }
-        if (testResult.getParameters() != null && testResult.getParameters().length != 0) {
-            stringBuffer.append(" [ ");
-            for (Object parameter : testResult.getParameters()) {
-                stringBuffer.append(" ");
-                stringBuffer.append(parameter);
-                stringBuffer.append(" |");
-            }
-            stringBuffer.deleteCharAt(stringBuffer.lastIndexOf("|"));
-            stringBuffer.append(" ] ");
-        }
-        Map<String, String> parameters = testResult.getMethod().findMethodParameters(testResult.getTestContext().getCurrentXmlTest());
-        if (null != parameters) {
-            for (Map.Entry<String, String> entry : parameters.entrySet()) {
-                stringBuffer.append(entry.getKey()).append(" = ").append(entry.getValue());
-            }
         }
         return stringBuffer.toString();
     }

@@ -18,7 +18,7 @@ repositories {
 
 dependencies {
     compile 'com.epam.reportportal:client-java:3.0.3'
-    compile 'com.epam.reportportal:commons-model:3.0.0'
+    compile 'com.github.reportportal:commons-model:3d3314c'
     compileOnly 'org.testng:testng:6.11'
 }
 
