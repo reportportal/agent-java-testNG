@@ -336,7 +336,7 @@ public class TestNGService implements ITestNGService {
 			String key = null;
 			String value = values[i].toString();
 			if (parameterAnnotations[i].length > 0) {
-				for (int j = 0; j < length; j++) {
+				for (int j = 0; j < parameterAnnotations[i].length; j++) {
 					Annotation annotation = parameterAnnotations[i][j];
 					if (annotation.annotationType().equals(ReportPortalParameter.class)) {
 						key = ((ReportPortalParameter) annotation).value();
