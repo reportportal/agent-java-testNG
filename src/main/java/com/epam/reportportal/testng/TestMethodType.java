@@ -44,8 +44,8 @@ public enum TestMethodType {
     /**
      * Return method type basing on ITestNGMethod object
      *
-     * @param method
-     * @return
+     * @param method Method to find type of
+     * @return Type of method
      */
     public static TestMethodType getStepType(ITestNGMethod method) {
         if (method.isTest()) {

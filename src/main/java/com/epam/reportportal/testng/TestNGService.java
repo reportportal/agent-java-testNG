@@ -56,18 +56,16 @@ public class TestNGService implements ITestNGService {
 
     private final Supplier<StartLaunchRQ> launchSupplier;
     private final ReportPortalClient reportPortalClient;
-    private final boolean isSkippedAnIssue;
-    private final int logBufferSize;
-    private final boolean convertImages;
+    private final ListenerParameters parameters;
+
     private ReportPortal reportPortal;
+
 
     private AtomicBoolean isLaunchFailed = new AtomicBoolean();
 
     public TestNGService(final ListenerParameters parameters, ReportPortalClient reportPortalClient) {
-        this.isSkippedAnIssue = parameters.getSkippedAnIssue();
+        this.parameters = parameters;
         this.reportPortalClient = reportPortalClient;
-        this.logBufferSize = parameters.getBatchLogsSize();
-        this.convertImages = parameters.isConvertImage();
 
         this.launchSupplier = new Supplier<StartLaunchRQ>() {
             @Override
@@ -82,7 +80,7 @@ public class TestNGService implements ITestNGService {
     public void startLaunch() {
         StartLaunchRQ rq = launchSupplier.get();
         rq.setStartTime(Calendar.getInstance().getTime());
-        this.reportPortal = ReportPortal.startLaunch(reportPortalClient, logBufferSize, convertImages, rq);
+        this.reportPortal = ReportPortal.startLaunch(reportPortalClient, parameters, rq);
     }
 
     @Override
@@ -161,7 +159,7 @@ public class TestNGService implements ITestNGService {
         rq.setEndTime(now);
         rq.setStatus(status);
         // Allows indicate that SKIPPED is not to investigate items for WS
-        if (status.equals(Statuses.SKIPPED) && !isSkippedAnIssue) {
+        if (status.equals(Statuses.SKIPPED) && !parameters.getSkippedAnIssue()) {
             Issue issue = new Issue();
             issue.setIssueType(NOT_ISSUE);
             rq.setIssue(issue);
