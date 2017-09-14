@@ -296,46 +296,35 @@ public class TestNGService implements ITestNGService {
         } else if (null != parametersAnnotation) {
             parameters = createXmlParameters(testResult, parametersAnnotation);
         }
-        return parameters;
+        return parameters.isEmpty() ? null : parameters;
     }
 
-	/**
-	 * Returns method annotation by specified annotation class.
-	 *
-	 * @param annotation Annotation class to find
-	 * @param testResult Where to find
-	 * @return {@link Annotation}
-	 */
-	private <T extends Annotation> T getMethodAnnotation(Class<T> annotation, ITestResult testResult) {
-		return testResult.getMethod().getConstructorOrMethod().getMethod().getAnnotation(annotation);
-	}
-
     private List<ParameterResource> createXmlParameters(ITestResult testResult, Parameters parametersAnnotation) {
-        List<ParameterResource> resources = Lists.newArrayList();
+        List<ParameterResource> params = Lists.newArrayList();
         String[] keys = parametersAnnotation.value();
 		Object[] parameters = testResult.getParameters();
 		if (parameters.length != keys.length) {
-			return resources;
+			return params;
 		}
 		for (int i = 0; i < keys.length; i++) {
 			ParameterResource parameter = new ParameterResource();
 			parameter.setKey(keys[i]);
 			parameter.setValue(parameters[i].toString());
-			resources.add(parameter);
+			params.add(parameter);
 		}
-		return resources;
+		return params;
     }
 
     private List<ParameterResource> createDataProviderParameters(ITestResult testResult) {
-		List<ParameterResource> result = Lists.newArrayList();
+		List<ParameterResource> params = Lists.newArrayList();
 		if (testResult.getParameters() != null && testResult.getParameters().length != 0) {
 			for (Object parameter : testResult.getParameters()) {
 				ParameterResource parameterResource = new ParameterResource();
 				parameterResource.setValue(parameter.toString());
-				result.add(parameterResource);
+				params.add(parameterResource);
 			}
 		}
-		return result.isEmpty() ? null : result;
+		return params;
 	}
 
 	/**
@@ -389,7 +378,19 @@ public class TestNGService implements ITestNGService {
         return (T) attributes.getAttribute(attribute);
     }
 
-    /**
+	/**
+	 * Returns method annotation by specified annotation class.
+	 *
+	 * @param annotation Annotation class to find
+	 * @param testResult Where to find
+	 * @return {@link Annotation}
+	 */
+	protected  <T extends Annotation> T getMethodAnnotation(Class<T> annotation, ITestResult testResult) {
+		return testResult.getMethod().getConstructorOrMethod().getMethod().getAnnotation(annotation);
+	}
+
+
+	/**
      * Calculate parent id for configuration
      */
     private Maybe<String> getConfigParent(ITestResult testResult, TestMethodType type) {
