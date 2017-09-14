@@ -302,7 +302,8 @@ public class TestNGService implements ITestNGService {
     }
 
     private String extractUniqueID(ITestResult testResult) {
-        return getMethodAnnotation(TestItemUniqueID.class, testResult).value();
+		TestItemUniqueID itemUniqueID = getMethodAnnotation(TestItemUniqueID.class, testResult);
+		return itemUniqueID != null ? itemUniqueID.value() : null;
     }
 
     private List<ParameterResource> createXmlParameters(ITestResult testResult, Parameters parametersAnnotation) {
