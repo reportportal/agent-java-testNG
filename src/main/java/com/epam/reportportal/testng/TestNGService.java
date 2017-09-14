@@ -26,16 +26,21 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import com.epam.ta.reportportal.ws.model.ParameterResource;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.testng.*;
+import org.testng.collections.Lists;
 import rp.com.google.common.base.Function;
 import rp.com.google.common.base.Supplier;
 
-import java.util.*;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
@@ -281,14 +286,17 @@ public class TestNGService implements ITestNGService {
         return rq;
     }
 
-    protected List<String> createStepParameters(ITestResult testResult) {
-        List<String> result = new ArrayList<String>();
+    protected List<ParameterResource> createStepParameters(ITestResult testResult) {
+        List<ParameterResource> result = Lists.newArrayList();
         if (testResult.getParameters() != null && testResult.getParameters().length != 0) {
             for (Object parameter : testResult.getParameters()) {
-                result.add(parameter.toString());
+                ParameterResource parameterResource = new ParameterResource();
+                //parameterResource.setKey(parameter.toString());
+                parameterResource.setValue(parameter.toString());
+                result.add(parameterResource);
             }
         }
-        return result;
+        return result.isEmpty() ? null : result;
     }
 
     /**
