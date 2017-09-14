@@ -20,6 +20,7 @@
  */
 package com.epam.reportportal.testng;
 
+import com.epam.reportportal.annotations.TestItemUniqueID;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.ReportPortal;
@@ -282,6 +283,7 @@ public class TestNGService implements ITestNGService {
 
         rq.setDescription(createStepDescription(testResult));
         rq.setParameters(createStepParameters(testResult));
+        rq.setUniqueId(extractUniqueID(testResult));
         rq.setStartTime(Calendar.getInstance().getTime());
         rq.setType(TestMethodType.getStepType(testResult.getMethod()).toString());
         return rq;
@@ -297,6 +299,10 @@ public class TestNGService implements ITestNGService {
             parameters = createXmlParameters(testResult, parametersAnnotation);
         }
         return parameters.isEmpty() ? null : parameters;
+    }
+
+    private String extractUniqueID(ITestResult testResult) {
+        return getMethodAnnotation(TestItemUniqueID.class, testResult).value();
     }
 
     private List<ParameterResource> createXmlParameters(ITestResult testResult, Parameters parametersAnnotation) {
