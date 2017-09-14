@@ -20,6 +20,7 @@
  */
 package com.epam.reportportal.testng;
 
+import com.epam.reportportal.annotations.ReportPortalParameter;
 import com.epam.reportportal.annotations.TestItemUniqueID;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
@@ -323,15 +324,30 @@ public class TestNGService implements ITestNGService {
     }
 
     private List<ParameterResource> createDataProviderParameters(ITestResult testResult) {
-		List<ParameterResource> params = Lists.newArrayList();
-		if (testResult.getParameters() != null && testResult.getParameters().length != 0) {
-			for (Object parameter : testResult.getParameters()) {
-				ParameterResource parameterResource = new ParameterResource();
-				parameterResource.setValue(parameter.toString());
-				params.add(parameterResource);
-			}
+		List<ParameterResource> result = Lists.newArrayList();
+        Annotation[][] parameterAnnotations = testResult.getMethod().getConstructorOrMethod().getMethod().getParameterAnnotations();
+		Object[] values = testResult.getParameters();
+		int length = parameterAnnotations.length;
+		if (length != values.length) {
+			return result;
 		}
-		return params;
+		for (int i = 0; i < length; i++) {
+			ParameterResource parameter = new ParameterResource();
+			String key = null;
+			String value = values[i].toString();
+			if (parameterAnnotations[i].length > 0) {
+				for (int j = 0; j < length; j++) {
+					Annotation annotation = parameterAnnotations[i][j];
+					if (annotation.annotationType().equals(ReportPortalParameter.class)) {
+						key = ((ReportPortalParameter) annotation).value();
+					}
+				}
+			}
+			parameter.setKey(key);
+			parameter.setValue(value);
+			result.add(parameter);
+		}
+		return result;
 	}
 
 	/**
