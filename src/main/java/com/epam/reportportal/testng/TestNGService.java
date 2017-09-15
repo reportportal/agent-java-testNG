@@ -20,6 +20,7 @@
  */
 package com.epam.reportportal.testng;
 
+import com.epam.reportportal.annotations.ReportPortalParameter;
 import com.epam.reportportal.annotations.TestItemUniqueID;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
@@ -37,10 +38,13 @@ import org.testng.*;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 import org.testng.collections.Lists;
+import org.testng.internal.ConstructorOrMethod;
 import rp.com.google.common.base.Function;
 import rp.com.google.common.base.Supplier;
 
+import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
@@ -289,26 +293,34 @@ public class TestNGService implements ITestNGService {
         return rq;
     }
 
-    protected List<ParameterResource> createStepParameters(ITestResult testResult) {
+	/**
+	 * Extension point to customize Report Portal test parameters
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Test/Step Parameters being sent to Report Portal
+	 */
+	protected List<ParameterResource> createStepParameters(ITestResult testResult) {
 		List<ParameterResource> parameters = Lists.newArrayList();
 		Test testAnnotation = getMethodAnnotation(Test.class, testResult);
-        Parameters parametersAnnotation = getMethodAnnotation(Parameters.class, testResult);
-        if (!isNullOrEmpty(testAnnotation.dataProvider())) {
-            parameters = createDataProviderParameters(testResult);
-        } else if (null != parametersAnnotation) {
-            parameters = createXmlParameters(testResult, parametersAnnotation);
-        }
-        return parameters.isEmpty() ? null : parameters;
-    }
+		Parameters parametersAnnotation = getMethodAnnotation(Parameters.class, testResult);
+		if (null != testAnnotation && !isNullOrEmpty(testAnnotation.dataProvider())) {
+			parameters = createDataProviderParameters(testResult);
+		} else if (null != parametersAnnotation) {
+			parameters = createAnnotationParameters(testResult, parametersAnnotation);
+		}
+		return parameters.isEmpty() ? null : parameters;
+	}
 
-    private String extractUniqueID(ITestResult testResult) {
-		TestItemUniqueID itemUniqueID = getMethodAnnotation(TestItemUniqueID.class, testResult);
-		return itemUniqueID != null ? itemUniqueID.value() : null;
-    }
-
-    private List<ParameterResource> createXmlParameters(ITestResult testResult, Parameters parametersAnnotation) {
-        List<ParameterResource> params = Lists.newArrayList();
-        String[] keys = parametersAnnotation.value();
+	/**
+	 * Process testResult to create parameters provided via {@link Parameters}
+	 *
+	 * @param testResult           TestNG's testResult context
+	 * @param parametersAnnotation Annotation with parameters
+	 * @return Step Parameters being sent to Report Portal
+	 */
+	private List<ParameterResource> createAnnotationParameters(ITestResult testResult, Parameters parametersAnnotation) {
+		List<ParameterResource> params = Lists.newArrayList();
+		String[] keys = parametersAnnotation.value();
 		Object[] parameters = testResult.getParameters();
 		if (parameters.length != keys.length) {
 			return params;
@@ -320,18 +332,40 @@ public class TestNGService implements ITestNGService {
 			params.add(parameter);
 		}
 		return params;
-    }
+	}
 
-    private List<ParameterResource> createDataProviderParameters(ITestResult testResult) {
-		List<ParameterResource> params = Lists.newArrayList();
-		if (testResult.getParameters() != null && testResult.getParameters().length != 0) {
-			for (Object parameter : testResult.getParameters()) {
-				ParameterResource parameterResource = new ParameterResource();
-				parameterResource.setValue(parameter.toString());
-				params.add(parameterResource);
-			}
+	/**
+	 * Processes testResult to create parameters provided by {@link org.testng.annotations.DataProvider}
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Step Parameters being sent to ReportPortal
+	 */
+
+	private List<ParameterResource> createDataProviderParameters(ITestResult testResult) {
+		List<ParameterResource> result = Lists.newArrayList();
+		Annotation[][] parameterAnnotations = testResult.getMethod().getConstructorOrMethod().getMethod().getParameterAnnotations();
+		Object[] values = testResult.getParameters();
+		int length = parameterAnnotations.length;
+		if (length != values.length) {
+			return result;
 		}
-		return params;
+		for (int i = 0; i < length; i++) {
+			ParameterResource parameter = new ParameterResource();
+			String key = null;
+			String value = values[i].toString();
+			if (parameterAnnotations[i].length > 0) {
+				for (int j = 0; j < parameterAnnotations[i].length; j++) {
+					Annotation annotation = parameterAnnotations[i][j];
+					if (annotation.annotationType().equals(ReportPortalParameter.class)) {
+						key = ((ReportPortalParameter) annotation).value();
+					}
+				}
+			}
+			parameter.setKey(key);
+			parameter.setValue(value);
+			result.add(parameter);
+		}
+		return result;
 	}
 
 	/**
@@ -386,16 +420,40 @@ public class TestNGService implements ITestNGService {
     }
 
 	/**
-	 * Returns method annotation by specified annotation class.
+	 * Returns test item ID from annotation if it provided.
+	 *
+	 * @param testResult Where to find
+	 * @return test item ID or null
+	 */
+	@Nullable
+	private String extractUniqueID(ITestResult testResult) {
+		TestItemUniqueID itemUniqueID = getMethodAnnotation(TestItemUniqueID.class, testResult);
+		return itemUniqueID != null ? itemUniqueID.value() : null;
+	}
+
+	/**
+	 * Returns method annotation by specified annotation class from
+	 * from TestNG Method or null if the method does not contain
+	 * such annotation.
 	 *
 	 * @param annotation Annotation class to find
 	 * @param testResult Where to find
-	 * @return {@link Annotation}
+	 * @return {@link Annotation} or null if doesn't exsists
 	 */
-	protected  <T extends Annotation> T getMethodAnnotation(Class<T> annotation, ITestResult testResult) {
-		return testResult.getMethod().getConstructorOrMethod().getMethod().getAnnotation(annotation);
+	@Nullable
+	private <T extends Annotation> T getMethodAnnotation(Class<T> annotation, ITestResult testResult) {
+		ITestNGMethod testNGMethod = testResult.getMethod();
+		if (null != testNGMethod) {
+			ConstructorOrMethod constructorOrMethod = testNGMethod.getConstructorOrMethod();
+			if (null != constructorOrMethod) {
+				Method method = constructorOrMethod.getMethod();
+				if (null != method) {
+					return method.getAnnotation(annotation);
+				}
+			}
+		}
+		return null;
 	}
-
 
 	/**
      * Calculate parent id for configuration
