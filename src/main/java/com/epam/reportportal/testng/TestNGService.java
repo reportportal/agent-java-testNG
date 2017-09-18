@@ -20,7 +20,7 @@
  */
 package com.epam.reportportal.testng;
 
-import com.epam.reportportal.annotations.ReportPortalParameter;
+import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.TestItemUniqueID;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
@@ -328,7 +328,7 @@ public class TestNGService implements ITestNGService {
 		for (int i = 0; i < keys.length; i++) {
 			ParameterResource parameter = new ParameterResource();
 			parameter.setKey(keys[i]);
-			parameter.setValue(parameters[i] != null ? parameters[i].toString() : "null");
+			parameter.setValue(parameters[i] != null ? parameters[i].toString() : null);
 			params.add(parameter);
 		}
 		return params;
@@ -352,12 +352,12 @@ public class TestNGService implements ITestNGService {
 		for (int i = 0; i < length; i++) {
 			ParameterResource parameter = new ParameterResource();
 			String key = null;
-			String value = values[i] != null ? values[i].toString() : "null";
+			String value = values[i] != null ? values[i].toString() : null;
 			if (parameterAnnotations[i].length > 0) {
 				for (int j = 0; j < parameterAnnotations[i].length; j++) {
 					Annotation annotation = parameterAnnotations[i][j];
-					if (annotation.annotationType().equals(ReportPortalParameter.class)) {
-						key = ((ReportPortalParameter) annotation).value();
+					if (annotation.annotationType().equals(ParameterKey.class)) {
+						key = ((ParameterKey) annotation).value();
 					}
 				}
 			}
