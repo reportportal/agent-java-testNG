@@ -61,6 +61,7 @@ public class TestNGService implements ITestNGService {
 
     public static final String NOT_ISSUE = "NOT_ISSUE";
     public static final String RP_ID = "rp_id";
+	public static final String ARGUMENT = "arg";
 
     private final Supplier<StartLaunchRQ> launchSupplier;
     private final ReportPortalClient reportPortalClient;
@@ -335,7 +336,9 @@ public class TestNGService implements ITestNGService {
 	}
 
 	/**
-	 * Processes testResult to create parameters provided by {@link org.testng.annotations.DataProvider}
+	 * Processes testResult to create parameters provided
+	 * by {@link org.testng.annotations.DataProvider} If parameter key isn't provided
+	 * by {@link ParameterKey} annotation then it will be 'arg[index]'
 	 *
 	 * @param testResult TestNG's testResult context
 	 * @return Step Parameters being sent to ReportPortal
@@ -351,7 +354,7 @@ public class TestNGService implements ITestNGService {
 		}
 		for (int i = 0; i < length; i++) {
 			ParameterResource parameter = new ParameterResource();
-			String key = null;
+			String key = ARGUMENT + i;
 			String value = values[i] != null ? values[i].toString() : null;
 			if (parameterAnnotations[i].length > 0) {
 				for (int j = 0; j < parameterAnnotations[i].length; j++) {
