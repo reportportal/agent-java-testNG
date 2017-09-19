@@ -20,28 +20,35 @@
  */
 package com.epam.reportportal.testng;
 
+import com.epam.reportportal.annotations.ParameterKey;
+import com.epam.reportportal.annotations.UniqueID;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import com.epam.ta.reportportal.ws.model.ParameterResource;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
-import org.testng.IAttributes;
-import org.testng.ISuite;
-import org.testng.ISuiteResult;
-import org.testng.ITestContext;
-import org.testng.ITestResult;
+import org.testng.*;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
+import org.testng.collections.Lists;
+import org.testng.internal.ConstructorOrMethod;
 import rp.com.google.common.base.Function;
 import rp.com.google.common.base.Supplier;
 
+import javax.annotation.Nullable;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
@@ -54,6 +61,7 @@ public class TestNGService implements ITestNGService {
 
     public static final String NOT_ISSUE = "NOT_ISSUE";
     public static final String RP_ID = "rp_id";
+	public static final String ARGUMENT = "arg";
 
     private final Supplier<StartLaunchRQ> launchSupplier;
     private final ReportPortalClient reportPortalClient;
@@ -279,12 +287,91 @@ public class TestNGService implements ITestNGService {
         rq.setName(testStepName);
 
         rq.setDescription(createStepDescription(testResult));
+        rq.setParameters(createStepParameters(testResult));
+        rq.setUniqueId(extractUniqueID(testResult));
         rq.setStartTime(Calendar.getInstance().getTime());
         rq.setType(TestMethodType.getStepType(testResult.getMethod()).toString());
         return rq;
     }
 
-    /**
+	/**
+	 * Extension point to customize Report Portal test parameters
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Test/Step Parameters being sent to Report Portal
+	 */
+	protected List<ParameterResource> createStepParameters(ITestResult testResult) {
+		List<ParameterResource> parameters = Lists.newArrayList();
+		Test testAnnotation = getMethodAnnotation(Test.class, testResult);
+		Parameters parametersAnnotation = getMethodAnnotation(Parameters.class, testResult);
+		if (null != testAnnotation && !isNullOrEmpty(testAnnotation.dataProvider())) {
+			parameters = createDataProviderParameters(testResult);
+		} else if (null != parametersAnnotation) {
+			parameters = createAnnotationParameters(testResult, parametersAnnotation);
+		}
+		return parameters.isEmpty() ? null : parameters;
+	}
+
+	/**
+	 * Process testResult to create parameters provided via {@link Parameters}
+	 *
+	 * @param testResult           TestNG's testResult context
+	 * @param parametersAnnotation Annotation with parameters
+	 * @return Step Parameters being sent to Report Portal
+	 */
+	private List<ParameterResource> createAnnotationParameters(ITestResult testResult, Parameters parametersAnnotation) {
+		List<ParameterResource> params = Lists.newArrayList();
+		String[] keys = parametersAnnotation.value();
+		Object[] parameters = testResult.getParameters();
+		if (parameters.length != keys.length) {
+			return params;
+		}
+		for (int i = 0; i < keys.length; i++) {
+			ParameterResource parameter = new ParameterResource();
+			parameter.setKey(keys[i]);
+			parameter.setValue(parameters[i] != null ? parameters[i].toString() : null);
+			params.add(parameter);
+		}
+		return params;
+	}
+
+	/**
+	 * Processes testResult to create parameters provided
+	 * by {@link org.testng.annotations.DataProvider} If parameter key isn't provided
+	 * by {@link ParameterKey} annotation then it will be 'arg[index]'
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Step Parameters being sent to ReportPortal
+	 */
+
+	private List<ParameterResource> createDataProviderParameters(ITestResult testResult) {
+		List<ParameterResource> result = Lists.newArrayList();
+		Annotation[][] parameterAnnotations = testResult.getMethod().getConstructorOrMethod().getMethod().getParameterAnnotations();
+		Object[] values = testResult.getParameters();
+		int length = parameterAnnotations.length;
+		if (length != values.length) {
+			return result;
+		}
+		for (int i = 0; i < length; i++) {
+			ParameterResource parameter = new ParameterResource();
+			String key = ARGUMENT + i;
+			String value = values[i] != null ? values[i].toString() : null;
+			if (parameterAnnotations[i].length > 0) {
+				for (int j = 0; j < parameterAnnotations[i].length; j++) {
+					Annotation annotation = parameterAnnotations[i][j];
+					if (annotation.annotationType().equals(ParameterKey.class)) {
+						key = ((ParameterKey) annotation).value();
+					}
+				}
+			}
+			parameter.setKey(key);
+			parameter.setValue(value);
+			result.add(parameter);
+		}
+		return result;
+	}
+
+	/**
      * Extension point to customize test step description
      *
      * @param testResult TestNG's testResult context
@@ -294,16 +381,6 @@ public class TestNGService implements ITestNGService {
         StringBuilder stringBuffer = new StringBuilder();
         if (testResult.getMethod().getDescription() != null) {
             stringBuffer.append(testResult.getMethod().getDescription());
-        }
-        if (testResult.getParameters() != null && testResult.getParameters().length != 0) {
-            stringBuffer.append(" [ ");
-            for (Object parameter : testResult.getParameters()) {
-                stringBuffer.append(" ");
-                stringBuffer.append(parameter);
-                stringBuffer.append(" |");
-            }
-            stringBuffer.deleteCharAt(stringBuffer.lastIndexOf("|"));
-            stringBuffer.append(" ] ");
         }
         return stringBuffer.toString();
     }
@@ -345,7 +422,43 @@ public class TestNGService implements ITestNGService {
         return (T) attributes.getAttribute(attribute);
     }
 
-    /**
+	/**
+	 * Returns test item ID from annotation if it provided.
+	 *
+	 * @param testResult Where to find
+	 * @return test item ID or null
+	 */
+	@Nullable
+	private String extractUniqueID(ITestResult testResult) {
+		UniqueID itemUniqueID = getMethodAnnotation(UniqueID.class, testResult);
+		return itemUniqueID != null ? itemUniqueID.value() : null;
+	}
+
+	/**
+	 * Returns method annotation by specified annotation class from
+	 * from TestNG Method or null if the method does not contain
+	 * such annotation.
+	 *
+	 * @param annotation Annotation class to find
+	 * @param testResult Where to find
+	 * @return {@link Annotation} or null if doesn't exsists
+	 */
+	@Nullable
+	private <T extends Annotation> T getMethodAnnotation(Class<T> annotation, ITestResult testResult) {
+		ITestNGMethod testNGMethod = testResult.getMethod();
+		if (null != testNGMethod) {
+			ConstructorOrMethod constructorOrMethod = testNGMethod.getConstructorOrMethod();
+			if (null != constructorOrMethod) {
+				Method method = constructorOrMethod.getMethod();
+				if (null != method) {
+					return method.getAnnotation(annotation);
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
      * Calculate parent id for configuration
      */
     private Maybe<String> getConfigParent(ITestResult testResult, TestMethodType type) {
