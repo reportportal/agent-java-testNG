@@ -21,7 +21,7 @@
 package com.epam.reportportal.testng;
 
 import com.epam.reportportal.annotations.ParameterKey;
-import com.epam.reportportal.annotations.TestItemUniqueID;
+import com.epam.reportportal.annotations.UniqueID;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.ReportPortal;
@@ -430,7 +430,7 @@ public class TestNGService implements ITestNGService {
 	 */
 	@Nullable
 	private String extractUniqueID(ITestResult testResult) {
-		TestItemUniqueID itemUniqueID = getMethodAnnotation(TestItemUniqueID.class, testResult);
+		UniqueID itemUniqueID = getMethodAnnotation(UniqueID.class, testResult);
 		return itemUniqueID != null ? itemUniqueID.value() : null;
 	}
 
