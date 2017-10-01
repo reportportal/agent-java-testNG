@@ -45,10 +45,7 @@ import rp.com.google.common.base.Supplier;
 import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
@@ -283,9 +280,7 @@ public class TestNGService implements ITestNGService {
             return null;
         }
         StartTestItemRQ rq = new StartTestItemRQ();
-        String testStepName = testResult.getMethod().getMethodName();
-        rq.setName(testStepName);
-
+        rq.setName(Optional.ofNullable(testResult.getTestName()).orElse(testResult.getMethod().getMethodName()));
         rq.setDescription(createStepDescription(testResult));
         rq.setParameters(createStepParameters(testResult));
         rq.setUniqueId(extractUniqueID(testResult));
