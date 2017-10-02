@@ -116,15 +116,10 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public synchronized void finishTestSuite(ISuite suite) {
 		if (null != suite.getAttribute(RP_ID)) {
-		/* 'real' end time */
-			Date now = Calendar.getInstance().getTime();
-			FinishTestItemRQ rq = new FinishTestItemRQ();
-			rq.setEndTime(now);
-			rq.setStatus(getSuiteStatus(suite));
+			FinishTestItemRQ rq = buildFinishTestSuiteRq(suite);
 			reportPortal.finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
 			suite.removeAttribute(RP_ID);
 		}
-
 	}
 
 	@Override
@@ -280,7 +275,22 @@ public class TestNGService implements ITestNGService {
 	}
 
 	/**
-	 * Extension point to customize item on it's finish
+	 * Extension point to customize test suite on it's finish
+	 *
+	 * @param suite TestNG's suite context
+	 * @return Request to ReportPortal
+	 */
+	protected FinishTestItemRQ buildFinishTestSuiteRq(ISuite suite) {
+		/* 'real' end time */
+		Date now = Calendar.getInstance().getTime();
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		rq.setEndTime(now);
+		rq.setStatus(getSuiteStatus(suite));
+		return rq;
+	}
+
+	/**
+	 * Extension point to customize test on it's finish
 	 *
 	 * @param testContext TestNG test context
 	 * @return Request to ReportPortal
@@ -294,7 +304,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	/**
-	 * Extension point to customize item on it's finish
+	 * Extension point to customize test method on it's finish
 	 *
 	 * @param testResult TestNG's testResult context
 	 * @return Request to ReportPortal
