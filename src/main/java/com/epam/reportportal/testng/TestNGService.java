@@ -59,240 +59,259 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
  */
 public class TestNGService implements ITestNGService {
 
-    public static final String NOT_ISSUE = "NOT_ISSUE";
-    public static final String RP_ID = "rp_id";
+	public static final String NOT_ISSUE = "NOT_ISSUE";
+	public static final String RP_ID = "rp_id";
 	public static final String ARGUMENT = "arg";
 
-    private final Supplier<StartLaunchRQ> launchSupplier;
-    private final ReportPortalClient reportPortalClient;
-    private final ListenerParameters parameters;
+	private final Supplier<StartLaunchRQ> launchSupplier;
+	private final ReportPortalClient reportPortalClient;
+	private final ListenerParameters parameters;
 
-    private ReportPortal reportPortal;
+	private ReportPortal reportPortal;
 
+	private AtomicBoolean isLaunchFailed = new AtomicBoolean();
 
-    private AtomicBoolean isLaunchFailed = new AtomicBoolean();
+	public TestNGService(final ListenerParameters parameters, ReportPortalClient reportPortalClient) {
+		this.parameters = parameters;
+		this.reportPortalClient = reportPortalClient;
 
-    public TestNGService(final ListenerParameters parameters, ReportPortalClient reportPortalClient) {
-        this.parameters = parameters;
-        this.reportPortalClient = reportPortalClient;
+		this.launchSupplier = new Supplier<StartLaunchRQ>() {
+			@Override
+			public StartLaunchRQ get() {
+				return buildStartLaunchRq(parameters);
+			}
+		};
 
-        this.launchSupplier = new Supplier<StartLaunchRQ>() {
-            @Override
-            public StartLaunchRQ get() {
-                return buildStartLaunchRq(parameters);
-            }
-        };
+	}
 
-    }
+	@Override
+	public void startLaunch() {
+		StartLaunchRQ rq = launchSupplier.get();
+		rq.setStartTime(Calendar.getInstance().getTime());
+		this.reportPortal = ReportPortal.startLaunch(reportPortalClient, parameters, rq);
+	}
 
-    @Override
-    public void startLaunch() {
-        StartLaunchRQ rq = launchSupplier.get();
-        rq.setStartTime(Calendar.getInstance().getTime());
-        this.reportPortal = ReportPortal.startLaunch(reportPortalClient, parameters, rq);
-    }
+	@Override
+	public void finishLaunch() {
+		FinishExecutionRQ rq = new FinishExecutionRQ();
+		rq.setEndTime(Calendar.getInstance().getTime());
+		rq.setStatus(isLaunchFailed.get() ? Statuses.FAILED : Statuses.PASSED);
+		reportPortal.finishLaunch(rq);
+	}
 
-    @Override
-    public void finishLaunch() {
-        FinishExecutionRQ rq = new FinishExecutionRQ();
-        rq.setEndTime(Calendar.getInstance().getTime());
-        rq.setStatus(isLaunchFailed.get() ? Statuses.FAILED : Statuses.PASSED);
-        reportPortal.finishLaunch(rq);
-    }
+	/*
+	 * sometimes testng triggers on suite start several times.
+	 * This is why method is synchronized and check for attribute presence is added
+	 */
+	@Override
+	public synchronized void startTestSuite(ISuite suite) {
+		//avoid starting same suite twice
+		if (null == getAttribute(suite, RP_ID)) {
+			StartTestItemRQ rq = buildStartSuiteRq(suite);
+			final Maybe<String> item = reportPortal.startTestItem(rq);
+			suite.setAttribute(RP_ID, item);
+		}
+	}
 
-    /*
-     * sometimes testng triggers on suite start several times.
-     * This is why method is synchronized and check for attribute presence is added
-     */
-    @Override
-    public synchronized void startTestSuite(ISuite suite) {
-        //avoid starting same suite twice
-        if (null == getAttribute(suite, RP_ID)) {
-            StartTestItemRQ rq = buildStartSuiteRq(suite);
-            final Maybe<String> item = reportPortal.startTestItem(rq);
-            suite.setAttribute(RP_ID, item);
-        }
-    }
+	@Override
+	public synchronized void finishTestSuite(ISuite suite) {
+		if (null != suite.getAttribute(RP_ID)) {
+		/* 'real' end time */
+			Date now = Calendar.getInstance().getTime();
+			FinishTestItemRQ rq = new FinishTestItemRQ();
+			rq.setEndTime(now);
+			rq.setStatus(getSuiteStatus(suite));
+			reportPortal.finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
+			suite.removeAttribute(RP_ID);
+		}
 
-    @Override
-    public synchronized void finishTestSuite(ISuite suite) {
-        if (null != suite.getAttribute(RP_ID)) {
-        /* 'real' end time */
-            Date now = Calendar.getInstance().getTime();
-            FinishTestItemRQ rq = new FinishTestItemRQ();
-            rq.setEndTime(now);
-            rq.setStatus(getSuiteStatus(suite));
-            reportPortal.finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
-            suite.removeAttribute(RP_ID);
-        }
+	}
 
-    }
+	@Override
+	public void startTest(ITestContext testContext) {
+		StartTestItemRQ rq = buildStartTestItemRq(testContext);
 
-    @Override
-    public void startTest(ITestContext testContext) {
-        StartTestItemRQ rq = buildStartTestItemRq(testContext);
+		final Maybe<String> testID = reportPortal.startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
 
-        final Maybe<String> testID = reportPortal
-                .startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
+		testContext.setAttribute(RP_ID, testID);
 
-        testContext.setAttribute(RP_ID, testID);
+	}
 
-    }
+	@Override
+	public void finishTest(ITestContext testContext) {
+		FinishTestItemRQ rq = buildFinishTestRq(testContext);
+		reportPortal.finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
 
-    @Override
-    public void finishTest(ITestContext testContext) {
-        FinishTestItemRQ rq = new FinishTestItemRQ();
-        rq.setEndTime(testContext.getEndDate());
-        String status = isTestPassed(testContext) ? Statuses.PASSED : Statuses.FAILED;
+	}
 
-        rq.setStatus(status);
-        reportPortal.finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
+	@Override
+	public void startTestMethod(ITestResult testResult) {
+		StartTestItemRQ rq = buildStartStepRq(testResult);
+		if (rq == null) {
+			return;
+		}
+		Maybe<String> stepMaybe = reportPortal.startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
 
-    }
+		testResult.setAttribute(RP_ID, stepMaybe);
+	}
 
-    @Override
-    public void startTestMethod(ITestResult testResult) {
-        StartTestItemRQ rq = buildStartStepRq(testResult);
-        if (rq == null)
-            return;
-        Maybe<String> stepMaybe = reportPortal
-                .startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
+	@Override
+	public void finishTestMethod(String status, ITestResult testResult) {
+		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
+		reportPortal.finishTestItem(this.<Maybe<String>>getAttribute(testResult, RP_ID), rq);
+	}
 
-        testResult.setAttribute(RP_ID, stepMaybe);
-    }
+	@Override
+	public void startConfiguration(ITestResult testResult) {
+		TestMethodType type = TestMethodType.getStepType(testResult.getMethod());
+		StartTestItemRQ rq = buildStartConfigurationRq(testResult, type);
 
-    @Override
-    public void finishTestMethod(String status, ITestResult testResult) {
-        final Date now = Calendar.getInstance().getTime();
-        FinishTestItemRQ rq = new FinishTestItemRQ();
-        rq.setEndTime(now);
-        rq.setStatus(status);
-        // Allows indicate that SKIPPED is not to investigate items for WS
-        if (status.equals(Statuses.SKIPPED) && !parameters.getSkippedAnIssue()) {
-            Issue issue = new Issue();
-            issue.setIssueType(NOT_ISSUE);
-            rq.setIssue(issue);
-        }
+		Maybe<String> parentId = getConfigParent(testResult, type);
+		final Maybe<String> itemID = reportPortal.startTestItem(parentId, rq);
+		testResult.setAttribute(RP_ID, itemID);
+	}
 
-        reportPortal.finishTestItem(this.<Maybe<String>>getAttribute(testResult, RP_ID), rq);
-    }
+	@Override
+	public void sendReportPortalMsg(final ITestResult result) {
+		ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
+			@Override
+			public SaveLogRQ apply(String itemId) {
+				SaveLogRQ rq = new SaveLogRQ();
+				rq.setTestItemId(itemId);
+				rq.setLevel("ERROR");
+				rq.setLogTime(Calendar.getInstance().getTime());
+				if (result.getThrowable() != null) {
+					rq.setMessage(getStackTraceAsString(result.getThrowable()));
+				} else {
+					rq.setMessage("Test has failed without exception");
+				}
+				rq.setLogTime(Calendar.getInstance().getTime());
 
-    @Override
-    public void startConfiguration(ITestResult testResult) {
-        TestMethodType type = TestMethodType.getStepType(testResult.getMethod());
-        StartTestItemRQ rq = buildStartConfigurationRq(testResult, type);
+				return rq;
+			}
+		});
 
-        Maybe<String> parentId = getConfigParent(testResult, type);
-        final Maybe<String> itemID = reportPortal.startTestItem(parentId, rq);
-        testResult.setAttribute(RP_ID, itemID);
-    }
+	}
 
-    @Override
-    public void sendReportPortalMsg(final ITestResult result) {
-        ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
-            @Override
-            public SaveLogRQ apply(String itemId) {
-                SaveLogRQ rq = new SaveLogRQ();
-                rq.setTestItemId(itemId);
-                rq.setLevel("ERROR");
-                rq.setLogTime(Calendar.getInstance().getTime());
-                if (result.getThrowable() != null) {
-                    rq.setMessage(getStackTraceAsString(result.getThrowable()));
-                } else
-                    rq.setMessage("Test has failed without exception");
-                rq.setLogTime(Calendar.getInstance().getTime());
+	/**
+	 * Extension point to customize suite creation event/request
+	 *
+	 * @param suite TestNG suite
+	 * @return Request to ReportPortal
+	 */
+	protected StartTestItemRQ buildStartSuiteRq(ISuite suite) {
+		StartTestItemRQ rq = new StartTestItemRQ();
+		rq.setName(suite.getName());
+		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setType("SUITE");
+		return rq;
+	}
 
-                return rq;
-            }
-        });
+	/**
+	 * Extension point to customize test creation event/request
+	 *
+	 * @param testContext TestNG test context
+	 * @return Request to ReportPortal
+	 */
+	protected StartTestItemRQ buildStartTestItemRq(ITestContext testContext) {
+		StartTestItemRQ rq = new StartTestItemRQ();
+		rq.setName(testContext.getName());
+		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setType("TEST");
+		return rq;
+	}
 
-    }
+	/**
+	 * Extension point to customize launch creation event/request
+	 *
+	 * @param parameters Launch Configuration parameters
+	 * @return Request to ReportPortal
+	 */
+	protected StartLaunchRQ buildStartLaunchRq(ListenerParameters parameters) {
+		StartLaunchRQ rq = new StartLaunchRQ();
+		rq.setName(parameters.getLaunchName());
+		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setTags(parameters.getTags());
+		rq.setMode(parameters.getLaunchRunningMode());
+		if (!isNullOrEmpty(parameters.getDescription())) {
+			rq.setDescription(parameters.getDescription());
+		}
+		return rq;
+	}
 
-    /**
-     * Extension point to customize suite creation event/request
-     *
-     * @param suite TestNG suite
-     * @return Request to ReportPortal
-     */
-    protected StartTestItemRQ buildStartSuiteRq(ISuite suite) {
-        StartTestItemRQ rq = new StartTestItemRQ();
-        rq.setName(suite.getName());
-        rq.setStartTime(Calendar.getInstance().getTime());
-        rq.setType("SUITE");
-        return rq;
-    }
+	/**
+	 * Extension point to customize beforeXXX creation event/request
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @param type       Type of method
+	 * @return Request to ReportPortal
+	 */
+	protected StartTestItemRQ buildStartConfigurationRq(ITestResult testResult, TestMethodType type) {
+		StartTestItemRQ rq = new StartTestItemRQ();
+		String configName = testResult.getMethod().getMethodName();
+		rq.setName(configName);
 
-    /**
-     * Extension point to customize test creation event/request
-     *
-     * @param testContext TestNG test context
-     * @return Request to ReportPortal
-     */
-    protected StartTestItemRQ buildStartTestItemRq(ITestContext testContext) {
-        StartTestItemRQ rq = new StartTestItemRQ();
-        rq.setName(testContext.getName());
-        rq.setStartTime(Calendar.getInstance().getTime());
-        rq.setType("TEST");
-        return rq;
-    }
+		rq.setDescription(testResult.getMethod().getDescription());
+		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setType(type == null ? null : type.toString());
+		return rq;
+	}
 
-    /**
-     * Extension point to customize launch creation event/request
-     *
-     * @param parameters Launch Configuration parameters
-     * @return Request to ReportPortal
-     */
-    protected StartLaunchRQ buildStartLaunchRq(ListenerParameters parameters) {
-        StartLaunchRQ rq = new StartLaunchRQ();
-        rq.setName(parameters.getLaunchName());
-        rq.setStartTime(Calendar.getInstance().getTime());
-        rq.setTags(parameters.getTags());
-        rq.setMode(parameters.getLaunchRunningMode());
-        if (!isNullOrEmpty(parameters.getDescription())) {
-            rq.setDescription(parameters.getDescription());
-        }
-        return rq;
-    }
+	/**
+	 * Extension point to customize test step creation event/request
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Request to ReportPortal
+	 */
+	protected StartTestItemRQ buildStartStepRq(ITestResult testResult) {
+		if (testResult.getAttribute(RP_ID) != null) {
+			return null;
+		}
+		StartTestItemRQ rq = new StartTestItemRQ();
+		String testStepName = testResult.getMethod().getMethodName();
+		rq.setName(testStepName);
 
-    /**
-     * Extension point to customize beforeXXX creation event/request
-     *
-     * @param testResult TestNG's testResult context
-     * @param type       Type of method
-     * @return Request to ReportPortal
-     */
-    protected StartTestItemRQ buildStartConfigurationRq(ITestResult testResult, TestMethodType type) {
-        StartTestItemRQ rq = new StartTestItemRQ();
-        String configName = testResult.getMethod().getMethodName();
-        rq.setName(configName);
+		rq.setDescription(createStepDescription(testResult));
+		rq.setParameters(createStepParameters(testResult));
+		rq.setUniqueId(extractUniqueID(testResult));
+		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setType(TestMethodType.getStepType(testResult.getMethod()).toString());
+		return rq;
+	}
 
-        rq.setDescription(testResult.getMethod().getDescription());
-        rq.setStartTime(Calendar.getInstance().getTime());
-        rq.setType(type == null ? null : type.toString());
-        return rq;
-    }
+	/**
+	 * Extension point to customize item on it's finish
+	 *
+	 * @param testContext TestNG test context
+	 * @return Request to ReportPortal
+	 */
+	protected FinishTestItemRQ buildFinishTestRq(ITestContext testContext) {
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		rq.setEndTime(testContext.getEndDate());
+		String status = isTestPassed(testContext) ? Statuses.PASSED : Statuses.FAILED;
+		rq.setStatus(status);
+		return rq;
+	}
 
-    /**
-     * Extension point to customize test step creation event/request
-     *
-     * @param testResult TestNG's testResult context
-     * @return Request to ReportPortal
-     */
-    protected StartTestItemRQ buildStartStepRq(ITestResult testResult) {
-        if (testResult.getAttribute(RP_ID) != null) {
-            return null;
-        }
-        StartTestItemRQ rq = new StartTestItemRQ();
-        String testStepName = testResult.getMethod().getMethodName();
-        rq.setName(testStepName);
-
-        rq.setDescription(createStepDescription(testResult));
-        rq.setParameters(createStepParameters(testResult));
-        rq.setUniqueId(extractUniqueID(testResult));
-        rq.setStartTime(Calendar.getInstance().getTime());
-        rq.setType(TestMethodType.getStepType(testResult.getMethod()).toString());
-        return rq;
-    }
+	/**
+	 * Extension point to customize item on it's finish
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Request to ReportPortal
+	 */
+	protected FinishTestItemRQ buildFinishTestMethodRq(String status, ITestResult testResult) {
+		final Date now = Calendar.getInstance().getTime();
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		rq.setEndTime(now);
+		rq.setStatus(status);
+		// Allows indicate that SKIPPED is not to investigate items for WS
+		if (status.equals(Statuses.SKIPPED) && !parameters.getSkippedAnIssue()) {
+			Issue issue = new Issue();
+			issue.setIssueType(NOT_ISSUE);
+			rq.setIssue(issue);
+		}
+		return rq;
+	}
 
 	/**
 	 * Extension point to customize Report Portal test parameters
@@ -372,55 +391,55 @@ public class TestNGService implements ITestNGService {
 	}
 
 	/**
-     * Extension point to customize test step description
-     *
-     * @param testResult TestNG's testResult context
-     * @return Test/Step Description being sent to ReportPortal
-     */
-    protected String createStepDescription(ITestResult testResult) {
-        StringBuilder stringBuffer = new StringBuilder();
-        if (testResult.getMethod().getDescription() != null) {
-            stringBuffer.append(testResult.getMethod().getDescription());
-        }
-        return stringBuffer.toString();
-    }
+	 * Extension point to customize test step description
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Test/Step Description being sent to ReportPortal
+	 */
+	protected String createStepDescription(ITestResult testResult) {
+		StringBuilder stringBuffer = new StringBuilder();
+		if (testResult.getMethod().getDescription() != null) {
+			stringBuffer.append(testResult.getMethod().getDescription());
+		}
+		return stringBuffer.toString();
+	}
 
-    /**
-     * Extension point to customize test suite status being sent to ReportPortal
-     *
-     * @param suite TestNG's suite
-     * @return Status PASSED/FAILED/etc
-     */
-    protected String getSuiteStatus(ISuite suite) {
-        Collection<ISuiteResult> suiteResults = suite.getResults().values();
-        String suiteStatus = Statuses.PASSED;
-        for (ISuiteResult suiteResult : suiteResults) {
-            if (!(isTestPassed(suiteResult.getTestContext()))) {
-                suiteStatus = Statuses.FAILED;
-                break;
-            }
-        }
-        // if at least one suite failed launch should be failed
-        isLaunchFailed.compareAndSet(false, suiteStatus.equals(Statuses.FAILED));
-        return suiteStatus;
-    }
+	/**
+	 * Extension point to customize test suite status being sent to ReportPortal
+	 *
+	 * @param suite TestNG's suite
+	 * @return Status PASSED/FAILED/etc
+	 */
+	protected String getSuiteStatus(ISuite suite) {
+		Collection<ISuiteResult> suiteResults = suite.getResults().values();
+		String suiteStatus = Statuses.PASSED;
+		for (ISuiteResult suiteResult : suiteResults) {
+			if (!(isTestPassed(suiteResult.getTestContext()))) {
+				suiteStatus = Statuses.FAILED;
+				break;
+			}
+		}
+		// if at least one suite failed launch should be failed
+		isLaunchFailed.compareAndSet(false, suiteStatus.equals(Statuses.FAILED));
+		return suiteStatus;
+	}
 
-    /**
-     * Check is current method passed according the number of failed tests and
-     * configurations
-     *
-     * @param testContext TestNG's test content
-     * @return TRUE if passed, FALSE otherwise
-     */
-    protected boolean isTestPassed(ITestContext testContext) {
-        return testContext.getFailedTests().size() == 0 && testContext.getFailedConfigurations().size() == 0
-                && testContext.getSkippedConfigurations().size() == 0 && testContext.getSkippedTests().size() == 0;
-    }
+	/**
+	 * Check is current method passed according the number of failed tests and
+	 * configurations
+	 *
+	 * @param testContext TestNG's test content
+	 * @return TRUE if passed, FALSE otherwise
+	 */
+	protected boolean isTestPassed(ITestContext testContext) {
+		return testContext.getFailedTests().size() == 0 && testContext.getFailedConfigurations().size() == 0
+				&& testContext.getSkippedConfigurations().size() == 0 && testContext.getSkippedTests().size() == 0;
+	}
 
-    @SuppressWarnings("unchecked")
-    protected <T> T getAttribute(IAttributes attributes, String attribute) {
-        return (T) attributes.getAttribute(attribute);
-    }
+	@SuppressWarnings("unchecked")
+	protected <T> T getAttribute(IAttributes attributes, String attribute) {
+		return (T) attributes.getAttribute(attribute);
+	}
 
 	/**
 	 * Returns test item ID from annotation if it provided.
@@ -459,15 +478,15 @@ public class TestNGService implements ITestNGService {
 	}
 
 	/**
-     * Calculate parent id for configuration
-     */
-    private Maybe<String> getConfigParent(ITestResult testResult, TestMethodType type) {
-        Maybe<String> parentId;
-        if (TestMethodType.BEFORE_SUITE.equals(type) || TestMethodType.AFTER_SUITE.equals(type)) {
-            parentId = getAttribute(testResult.getTestContext().getSuite(), RP_ID);
-        } else {
-            parentId = getAttribute(testResult.getTestContext(), RP_ID);
-        }
-        return parentId;
-    }
+	 * Calculate parent id for configuration
+	 */
+	private Maybe<String> getConfigParent(ITestResult testResult, TestMethodType type) {
+		Maybe<String> parentId;
+		if (TestMethodType.BEFORE_SUITE.equals(type) || TestMethodType.AFTER_SUITE.equals(type)) {
+			parentId = getAttribute(testResult.getTestContext().getSuite(), RP_ID);
+		} else {
+			parentId = getAttribute(testResult.getTestContext(), RP_ID);
+		}
+		return parentId;
+	}
 }
