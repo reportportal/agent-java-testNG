@@ -6,7 +6,7 @@ apply plugin: 'java'
 apply from: 'release.gradle'
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
-
+apply plugin: 'maven'
 description = 'TestNG Agent'
 
 repositories {
@@ -25,3 +25,4 @@ dependencies {
 task wrapper(type: Wrapper) {
     gradleVersion = '4.1'
 }
+
