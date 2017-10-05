@@ -7,8 +7,19 @@
 [![UserVoice](https://img.shields.io/badge/uservoice-vote%20ideas-orange.svg?style=flat)](https://rpp.uservoice.com/forums/247117-report-portal)
 [![Build with Love](https://img.shields.io/badge/build%20with-❤%EF%B8%8F%E2%80%8D-lightgrey.svg)](http://reportportal.io?style=flat)
 
+- Objects interrelation TestNG - ReportPortal
+- Dependencies
+- Install listener
+  - Listener class
+  - Maven Surefire plugin
+  - Specify listener in testng.xml
+  - Custom runner
+  - Using command line
+  - Using \@Listeners annotation
+  - Using ServiceLoader
+- Code example How to overload params in run-time
 
-[TestNG](http://testng.org) provides support for attaching custom listeners, reporters, annotation transformers and method interceptors to your tests.
+**[TestNG](http://testng.org)** provides support for attaching custom listeners, reporters, annotation transformers and method interceptors to your tests.
 Handling events
 
 TestNG agent can handle next events:
@@ -56,7 +67,7 @@ Add to POM.xml
 
 **dependency**
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ xml
+```xml
 <repositories>
      <repository>
         <snapshots>
@@ -84,7 +95,7 @@ Add to POM.xml
   <artifactId>logger-java-log4j</artifactId>
   <version>3.0.0</version>
 </dependency>
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 ### Install listener
 
@@ -93,24 +104,19 @@ Choose latest version.
 
 By default, TestNG attaches a few basic listeners to generate HTML and XML
 reports. For reporting TestNG test events (ie start of test, successful finish
-of test, test fail) to Report Portal user should add Report Portal TestNg
+of test, test fail) to ReportPortal user should add ReportPortal TestNg
 listener to run and configure input parameters. Description of listeners input
-parameters and how to configure it see “Parameters” in [Configuration section](/docs/TestNG>configuration).
+parameters and how to configure it see “Parameters” in [Configuration section](http://reportportal.io/docs/JVM-based-clients-configuration).
 
-**Listener class:** *com.epam.reportportal.testng.ReportPortalTestNGListener*
+**Listener class:** `com.epam.reportportal.testng.ReportPortalTestNGListener`
 
 There are several ways how to install listener:
 
 - Maven Surefire plugin
-
 - In TestNG configuration file
-
 - Register listener in code
-
 - Via command line
-
 - Via \@Listeners annotation
-
 - Via ServiceLoader class
 
 > Please note, that listener must be configured in a single place only.
@@ -215,7 +221,7 @@ Specifying listeners with ServiceLoader.
 
 
 
-#### Code example How to overload params in run-time
+### Code example How to overload params in run-time
 
 As a sample you can use code for **Override UUID** in run-time
 ```java
