@@ -7,17 +7,17 @@
 [![UserVoice](https://img.shields.io/badge/uservoice-vote%20ideas-orange.svg?style=flat)](https://rpp.uservoice.com/forums/247117-report-portal)
 [![Build with Love](https://img.shields.io/badge/build%20with-❤%EF%B8%8F%E2%80%8D-lightgrey.svg)](http://reportportal.io?style=flat)
 
-- Objects interrelation TestNG - ReportPortal
-- Dependencies
-- Install listener
-  - Listener class
-  - Maven Surefire plugin
-  - Specify listener in testng.xml
-  - Custom runner
-  - Using command line
-  - Using \@Listeners annotation
-  - Using ServiceLoader
-- Code example How to overload params in run-time
+- [Objects interrelation TestNG - ReportPortal](https://github.com/reportportal/agent-java-testNG#objects-interrelation-testng---reportportal)
+- [Dependencies](https://github.com/reportportal/agent-java-testNG#dependencies)
+- [Install listener](https://github.com/reportportal/agent-java-testNG#install-listener)
+  - [Listener class]()
+  - [Maven Surefire plugin]()
+  - [Specify listener in testng.xml]()
+  - [Custom runner]()
+  - [Using command line]()
+  - [Using \@Listeners annotation]()
+  - [Using ServiceLoader]()
+- [Code example How to overload params in run-time]()
 
 **[TestNG](http://testng.org)** provides support for attaching custom listeners, reporters, annotation transformers and method interceptors to your tests.
 Handling events
@@ -39,7 +39,7 @@ TestNG agent can handle next events:
 -   Successful finish of configuration
 -   Skip configuration
 
-### Objects interrelation TestNG - ReportPortal
+## Objects interrelation TestNG - ReportPortal
 
 | **TestNG object**    | **ReportPortal object**       |
 |----------------------|-------------------------------|
@@ -61,7 +61,7 @@ TestNG agent can handle next events:
 
 TestItem – report portal specified object for representing:  suite, test, method objects in different test systems. Used as tree structure and can be recursively placed inside himself.
 
-### Dependencies
+## Dependencies
 
 Add to POM.xml
 
@@ -97,7 +97,7 @@ Add to POM.xml
 </dependency>
 ```
 
-### Install listener
+## Install listener
 
 Download package [here](<https://bintray.com/epam/reportportal/agent-java-testng>).
 Choose latest version.
@@ -108,7 +108,8 @@ of test, test fail) to ReportPortal user should add ReportPortal TestNg
 listener to run and configure input parameters. Description of listeners input
 parameters and how to configure it see “Parameters” in [Configuration section](http://reportportal.io/docs/JVM-based-clients-configuration).
 
-**Listener class:** `com.epam.reportportal.testng.ReportPortalTestNGListener`
+### Listener class:
+`com.epam.reportportal.testng.ReportPortalTestNGListener`
 
 There are several ways how to install listener:
 
@@ -127,7 +128,7 @@ There are several ways how to install listener:
 Maven surefire plugin allows configuring multiple custom listeners. For logging
 to Report Portal user should add Report Portal listener to “Listener” property.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ xml
+```xml
 <plugins>
     [...]
       <plugin>
@@ -149,16 +150,16 @@ to Report Portal user should add Report Portal listener to “Listener” proper
       </plugin>
     [...]
 </plugins>
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 >   If you use maven surefire plugin set report portal listener only in
 >   "listener" property in pom.xml.
 
-**Specify listener in testng.xml**
+### Specify listener in testng.xml
 
 Here is how you can define report portal listener in your testng.xml file.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ xml
+```xml
 <suite>
    
   <listeners>
@@ -166,9 +167,9 @@ Here is how you can define report portal listener in your testng.xml file.
     <listener class-name="com.epam.reportportal.testng.ReportPortalTestNGListener" />
   </listeners>
 .....
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
-**Custom runner**
+### Custom runner
 
 TestNG allows users to create own runners. In this case user can instantiate
 listener by himself and add it to TestNG object.
@@ -183,7 +184,7 @@ testNg.addListener((Object) listener);
 testNg.run();
 ```
 
-**Using command line**
+### Using command line
 
 Assuming that you have TestNG and Report Portal client jars in your class path,
 you can run TestNG tests with Report Portal listener as follows:
@@ -191,21 +192,21 @@ you can run TestNG tests with Report Portal listener as follows:
 *java org.testng.TestNG testng1.xml –listener
 com.epam.reportportal.testng.ReportPortalTestNGListener*
 
-**Using \@Listeners annotation**
+### Using \@Listeners annotation
 
 Report Portal listener can be set using \@Listener annotation.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ java
+```java
 @Listeners({ReportPortalTestNGListener.class})
 public class FailedParameterizedTest {
 …..
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 \@Listeners annotation will apply to your entire suite file, just as if you had
 specified it in a testng.xml file. Please do not restrict its scope.
 
-**Using ServiceLoader**
+### Using ServiceLoader
 
 JDK offers a very elegant mechanism to specify implementations of interfaces on
 the class path via the
@@ -221,7 +222,7 @@ Specifying listeners with ServiceLoader.
 
 
 
-### Code example How to overload params in run-time
+## Code example How to overload params in run-time
 
 As a sample you can use code for **Override UUID** in run-time
 ```java
