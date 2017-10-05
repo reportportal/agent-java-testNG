@@ -11,6 +11,7 @@
 - [Dependencies](https://github.com/reportportal/agent-java-testNG#dependencies)
 - [Install listener](https://github.com/reportportal/agent-java-testNG#install-listener)
   - [Listener class](https://github.com/reportportal/agent-java-testNG#listener-class)
+  - [Listener parameters](https://github.com/reportportal/agent-java-testNG/#listener-parameters)
   - [Maven Surefire plugin](https://github.com/reportportal/agent-java-testNG#maven-surefire-plugin)
   - [Specify listener in testng.xml](https://github.com/reportportal/agent-java-testNG#specify-listener-in-testngxml)
   - [Custom runner](https://github.com/reportportal/agent-java-testNG#custom-runner)
@@ -109,6 +110,7 @@ listener to run and configure input parameters.
 
 ### Listener parameters
 Description of listeners input parameters and how to configure it see “Parameters” in [Configuration section](http://reportportal.io/docs/JVM-based-clients-configuration).
+Which are common for all **JVM based** agents.
 
 ### Listener class:
 `com.epam.reportportal.testng.ReportPortalTestNGListener`
