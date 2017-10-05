@@ -169,7 +169,7 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public void sendReportPortalMsg(final ITestResult result) {
-		Launch.emitLog(new Function<String, SaveLogRQ>() {
+		ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
 			@Override
 			public SaveLogRQ apply(String itemId) {
 				SaveLogRQ rq = new SaveLogRQ();
