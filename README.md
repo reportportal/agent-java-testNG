@@ -257,4 +257,4 @@ public class MyListener extends BaseTestNGListener {
 
 There is an code example, based on TestNG test:
 
-https://github.com/reportportal/example-java-TestNG)
+https://github.com/reportportal/example-java-TestNG
