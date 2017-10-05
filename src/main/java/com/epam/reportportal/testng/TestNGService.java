@@ -24,8 +24,8 @@ import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.UniqueID;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
+import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
-import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
@@ -42,9 +42,9 @@ import org.testng.internal.ConstructorOrMethod;
 import rp.com.google.common.base.Function;
 import rp.com.google.common.base.Supplier;
 
-import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
@@ -64,21 +64,22 @@ public class TestNGService implements ITestNGService {
 	public static final String ARGUMENT = "arg";
 
 	private final Supplier<StartLaunchRQ> launchSupplier;
-	private final ReportPortalClient reportPortalClient;
-	private final ListenerParameters parameters;
+	private final ReportPortal reportPortal;
+	private final AtomicBoolean isLaunchFailed = new AtomicBoolean();
 
-	private ReportPortal reportPortal;
+	private Launch launch;
 
-	private AtomicBoolean isLaunchFailed = new AtomicBoolean();
+	public TestNGService(final ListenerParameters parameters) throws MalformedURLException {
+		this(ReportPortal.builder().withParameters(parameters).build());
 
-	public TestNGService(final ListenerParameters parameters, ReportPortalClient reportPortalClient) {
-		this.parameters = parameters;
-		this.reportPortalClient = reportPortalClient;
+	}
 
+	public TestNGService(final ReportPortal reportPortal) {
+		this.reportPortal = reportPortal;
 		this.launchSupplier = new Supplier<StartLaunchRQ>() {
 			@Override
 			public StartLaunchRQ get() {
-				return buildStartLaunchRq(parameters);
+				return buildStartLaunchRq(reportPortal.getParameters());
 			}
 		};
 
@@ -88,7 +89,7 @@ public class TestNGService implements ITestNGService {
 	public void startLaunch() {
 		StartLaunchRQ rq = launchSupplier.get();
 		rq.setStartTime(Calendar.getInstance().getTime());
-		this.reportPortal = ReportPortal.startLaunch(reportPortalClient, parameters, rq);
+		this.launch = this.reportPortal.startLaunch(rq);
 	}
 
 	@Override
@@ -96,7 +97,7 @@ public class TestNGService implements ITestNGService {
 		FinishExecutionRQ rq = new FinishExecutionRQ();
 		rq.setEndTime(Calendar.getInstance().getTime());
 		rq.setStatus(isLaunchFailed.get() ? Statuses.FAILED : Statuses.PASSED);
-		reportPortal.finishLaunch(rq);
+		launch.finish(rq);
 	}
 
 	/*
@@ -108,7 +109,7 @@ public class TestNGService implements ITestNGService {
 		//avoid starting same suite twice
 		if (null == getAttribute(suite, RP_ID)) {
 			StartTestItemRQ rq = buildStartSuiteRq(suite);
-			final Maybe<String> item = reportPortal.startTestItem(rq);
+			final Maybe<String> item = launch.startTestItem(rq);
 			suite.setAttribute(RP_ID, item);
 		}
 	}
@@ -117,7 +118,7 @@ public class TestNGService implements ITestNGService {
 	public synchronized void finishTestSuite(ISuite suite) {
 		if (null != suite.getAttribute(RP_ID)) {
 			FinishTestItemRQ rq = buildFinishTestSuiteRq(suite);
-			reportPortal.finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
+			launch.finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
 			suite.removeAttribute(RP_ID);
 		}
 	}
@@ -126,7 +127,7 @@ public class TestNGService implements ITestNGService {
 	public void startTest(ITestContext testContext) {
 		StartTestItemRQ rq = buildStartTestItemRq(testContext);
 
-		final Maybe<String> testID = reportPortal.startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
+		final Maybe<String> testID = launch.startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
 
 		testContext.setAttribute(RP_ID, testID);
 
@@ -135,7 +136,7 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public void finishTest(ITestContext testContext) {
 		FinishTestItemRQ rq = buildFinishTestRq(testContext);
-		reportPortal.finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
+		launch.finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
 
 	}
 
@@ -145,7 +146,7 @@ public class TestNGService implements ITestNGService {
 		if (rq == null) {
 			return;
 		}
-		Maybe<String> stepMaybe = reportPortal.startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
+		Maybe<String> stepMaybe = launch.startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
 
 		testResult.setAttribute(RP_ID, stepMaybe);
 	}
@@ -153,7 +154,7 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public void finishTestMethod(String status, ITestResult testResult) {
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
-		reportPortal.finishTestItem(this.<Maybe<String>>getAttribute(testResult, RP_ID), rq);
+		launch.finishTestItem(this.<Maybe<String>>getAttribute(testResult, RP_ID), rq);
 	}
 
 	@Override
@@ -162,13 +163,13 @@ public class TestNGService implements ITestNGService {
 		StartTestItemRQ rq = buildStartConfigurationRq(testResult, type);
 
 		Maybe<String> parentId = getConfigParent(testResult, type);
-		final Maybe<String> itemID = reportPortal.startTestItem(parentId, rq);
+		final Maybe<String> itemID = launch.startTestItem(parentId, rq);
 		testResult.setAttribute(RP_ID, itemID);
 	}
 
 	@Override
 	public void sendReportPortalMsg(final ITestResult result) {
-		ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
+		Launch.emitLog(new Function<String, SaveLogRQ>() {
 			@Override
 			public SaveLogRQ apply(String itemId) {
 				SaveLogRQ rq = new SaveLogRQ();
@@ -315,7 +316,7 @@ public class TestNGService implements ITestNGService {
 		rq.setEndTime(now);
 		rq.setStatus(status);
 		// Allows indicate that SKIPPED is not to investigate items for WS
-		if (status.equals(Statuses.SKIPPED) && !parameters.getSkippedAnIssue()) {
+		if (status.equals(Statuses.SKIPPED) && !reportPortal.getParameters().getSkippedAnIssue()) {
 			Issue issue = new Issue();
 			issue.setIssueType(NOT_ISSUE);
 			rq.setIssue(issue);
@@ -457,7 +458,6 @@ public class TestNGService implements ITestNGService {
 	 * @param testResult Where to find
 	 * @return test item ID or null
 	 */
-	@Nullable
 	private String extractUniqueID(ITestResult testResult) {
 		UniqueID itemUniqueID = getMethodAnnotation(UniqueID.class, testResult);
 		return itemUniqueID != null ? itemUniqueID.value() : null;
@@ -472,7 +472,6 @@ public class TestNGService implements ITestNGService {
 	 * @param testResult Where to find
 	 * @return {@link Annotation} or null if doesn't exsists
 	 */
-	@Nullable
 	private <T extends Annotation> T getMethodAnnotation(Class<T> annotation, ITestResult testResult) {
 		ITestNGMethod testNGMethod = testResult.getMethod();
 		if (null != testNGMethod) {
