@@ -11,12 +11,12 @@
 - [Dependencies](https://github.com/reportportal/agent-java-testNG#dependencies)
 - [Install listener](https://github.com/reportportal/agent-java-testNG#install-listener)
   - [Listener class](https://github.com/reportportal/agent-java-testNG#listener-class)
-  - [Maven Surefire plugin]()
-  - [Specify listener in testng.xml]()
-  - [Custom runner]()
-  - [Using command line]()
-  - [Using \@Listeners annotation]()
-  - [Using ServiceLoader]()
+  - [Maven Surefire plugin](https://github.com/reportportal/agent-java-testNG#maven-surefire-plugin)
+  - [Specify listener in testng.xml](https://github.com/reportportal/agent-java-testNG#specify-listener-in-testngxml)
+  - [Custom runner](https://github.com/reportportal/agent-java-testNG#custom-runner)
+  - [Using command line](https://github.com/reportportal/agent-java-testNG#using-command-line)
+  - [Using \@Listeners annotation](https://github.com/reportportal/agent-java-testNG#using-listeners-annotation)
+  - [Using ServiceLoader](https://github.com/reportportal/agent-java-testNG#using-serviceloader)
 - [Code example How to overload params in run-time]()
 
 **[TestNG](http://testng.org)** provides support for attaching custom listeners, reporters, annotation transformers and method interceptors to your tests.
@@ -105,20 +105,22 @@ Choose latest version.
 By default, TestNG attaches a few basic listeners to generate HTML and XML
 reports. For reporting TestNG test events (ie start of test, successful finish
 of test, test fail) to ReportPortal user should add ReportPortal TestNg
-listener to run and configure input parameters. Description of listeners input
-parameters and how to configure it see “Parameters” in [Configuration section](http://reportportal.io/docs/JVM-based-clients-configuration).
+listener to run and configure input parameters. 
+
+### Listener parameters
+Description of listeners input parameters and how to configure it see “Parameters” in [Configuration section](http://reportportal.io/docs/JVM-based-clients-configuration).
 
 ### Listener class:
 `com.epam.reportportal.testng.ReportPortalTestNGListener`
 
 There are several ways how to install listener:
 
-- Maven Surefire plugin
-- In TestNG configuration file
-- Register listener in code
-- Via command line
-- Via \@Listeners annotation
-- Via ServiceLoader class
+- [Maven Surefire plugin](https://github.com/reportportal/agent-java-testNG#maven-surefire-plugin)
+- [Specify listener in testng.xml](https://github.com/reportportal/agent-java-testNG#specify-listener-in-testngxml)
+- [Custom runner](https://github.com/reportportal/agent-java-testNG#custom-runner)
+- [Using command line](https://github.com/reportportal/agent-java-testNG#using-command-line)
+- [Using \@Listeners annotation](https://github.com/reportportal/agent-java-testNG#using-listeners-annotation)
+- [Using ServiceLoader](https://github.com/reportportal/agent-java-testNG#using-serviceloader)
 
 > Please note, that listener must be configured in a single place only.
 > Configuring multiple listeners will lead to incorrect application behavior.
