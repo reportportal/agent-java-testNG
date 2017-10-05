@@ -10,7 +10,7 @@
 - [Objects interrelation TestNG - ReportPortal](https://github.com/reportportal/agent-java-testNG#objects-interrelation-testng---reportportal)
 - [Dependencies](https://github.com/reportportal/agent-java-testNG#dependencies)
 - [Install listener](https://github.com/reportportal/agent-java-testNG#install-listener)
-  - [Listener class]()
+  - [Listener class](https://github.com/reportportal/agent-java-testNG#listener-class)
   - [Maven Surefire plugin]()
   - [Specify listener in testng.xml]()
   - [Custom runner]()
@@ -123,7 +123,7 @@ There are several ways how to install listener:
 > Please note, that listener must be configured in a single place only.
 > Configuring multiple listeners will lead to incorrect application behavior.
 
-**Maven Surefire plugin**
+### Maven Surefire plugin
 
 Maven surefire plugin allows configuring multiple custom listeners. For logging
 to Report Portal user should add Report Portal listener to “Listener” property.
