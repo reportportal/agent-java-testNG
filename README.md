@@ -18,7 +18,10 @@
   - [Using command line](https://github.com/reportportal/agent-java-testNG#using-command-line)
   - [Using \@Listeners annotation](https://github.com/reportportal/agent-java-testNG#using-listeners-annotation)
   - [Using ServiceLoader](https://github.com/reportportal/agent-java-testNG#using-serviceloader)
-- [Code example How to overload params in run-time]()
+- [Code example How to overload params in run-time](https://github.com/reportportal/agent-java-testNG#code-example-how-to-overload-params-in-run-time)
+- [Example repository](https://github.com/reportportal/example-java-TestNG)
+
+
 
 **[TestNG](http://testng.org)** provides support for attaching custom listeners, reporters, annotation transformers and method interceptors to your tests.
 Handling events
@@ -249,3 +252,9 @@ public class MyListener extends BaseTestNGListener {
     }
 }
 ```
+
+## Example repository
+
+There is an code example, based on TestNG test:
+
+https://github.com/reportportal/example-java-TestNG)
