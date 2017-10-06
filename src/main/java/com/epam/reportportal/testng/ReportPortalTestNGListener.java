@@ -32,15 +32,15 @@ import rp.com.google.common.base.Suppliers;
 public class ReportPortalTestNGListener extends BaseTestNGListener {
 
 	/* static instance with lazy init */
-	private static final Supplier<ReportPortal> RP = Suppliers.memoize(new Supplier<ReportPortal>() {
+	private static final Supplier<ITestNGService> SERVICE = Suppliers.memoize(new Supplier<ITestNGService>() {
 		@Override
-		public ReportPortal get() {
-			return ReportPortal.builder().build();
+		public ITestNGService get() {
+			return new TestNGService(ReportPortal.builder().build());
 		}
 	});
 
 	public ReportPortalTestNGListener() {
-		super(RP.get());
+		super(SERVICE.get());
 	}
 
 }

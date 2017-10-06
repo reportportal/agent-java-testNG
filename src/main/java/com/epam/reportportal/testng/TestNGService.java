@@ -45,7 +45,6 @@ import rp.com.google.common.base.Suppliers;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
@@ -64,31 +63,28 @@ public class TestNGService implements ITestNGService {
 	public static final String RP_ID = "rp_id";
 	public static final String ARGUMENT = "arg";
 
-	private final ReportPortal reportPortal;
 	private final AtomicBoolean isLaunchFailed = new AtomicBoolean();
 
 	private Supplier<Launch> launch;
 
-	public TestNGService(final ListenerParameters parameters) throws MalformedURLException {
-		this(ReportPortal.builder().withParameters(parameters).build());
-
-	}
-
 	public TestNGService(final ReportPortal reportPortal) {
-		this.reportPortal = reportPortal;
 		this.launch = Suppliers.memoize(new Supplier<Launch>() {
 			@Override
 			public Launch get() {
 				StartLaunchRQ rq = buildStartLaunchRq(reportPortal.getParameters());
 				rq.setStartTime(Calendar.getInstance().getTime());
 				return reportPortal.startLaunch(rq);
-
 			}
 		});
 	}
 
+	public TestNGService(Supplier<Launch> launch) {
+		this.launch = Suppliers.memoize(launch);
+	}
+
 	@Override
 	public void startLaunch() {
+		this.launch.get();
 	}
 
 	@Override
@@ -316,7 +312,7 @@ public class TestNGService implements ITestNGService {
 		rq.setEndTime(now);
 		rq.setStatus(status);
 		// Allows indicate that SKIPPED is not to investigate items for WS
-		if (status.equals(Statuses.SKIPPED) && !reportPortal.getParameters().getSkippedAnIssue()) {
+		if (status.equals(Statuses.SKIPPED) && !launch.get().getParameters().getSkippedAnIssue()) {
 			Issue issue = new Issue();
 			issue.setIssueType(NOT_ISSUE);
 			rq.setIssue(issue);
