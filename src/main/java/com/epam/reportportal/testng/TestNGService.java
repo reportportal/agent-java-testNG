@@ -41,6 +41,7 @@ import org.testng.collections.Lists;
 import org.testng.internal.ConstructorOrMethod;
 import rp.com.google.common.base.Function;
 import rp.com.google.common.base.Supplier;
+import rp.com.google.common.base.Suppliers;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -63,11 +64,10 @@ public class TestNGService implements ITestNGService {
 	public static final String RP_ID = "rp_id";
 	public static final String ARGUMENT = "arg";
 
-	private final Supplier<StartLaunchRQ> launchSupplier;
 	private final ReportPortal reportPortal;
 	private final AtomicBoolean isLaunchFailed = new AtomicBoolean();
 
-	private Launch launch;
+	private Supplier<Launch> launch;
 
 	public TestNGService(final ListenerParameters parameters) throws MalformedURLException {
 		this(ReportPortal.builder().withParameters(parameters).build());
@@ -76,20 +76,19 @@ public class TestNGService implements ITestNGService {
 
 	public TestNGService(final ReportPortal reportPortal) {
 		this.reportPortal = reportPortal;
-		this.launchSupplier = new Supplier<StartLaunchRQ>() {
+		this.launch = Suppliers.memoize(new Supplier<Launch>() {
 			@Override
-			public StartLaunchRQ get() {
-				return buildStartLaunchRq(reportPortal.getParameters());
-			}
-		};
+			public Launch get() {
+				StartLaunchRQ rq = buildStartLaunchRq(reportPortal.getParameters());
+				rq.setStartTime(Calendar.getInstance().getTime());
+				return reportPortal.startLaunch(rq);
 
+			}
+		});
 	}
 
 	@Override
 	public void startLaunch() {
-		StartLaunchRQ rq = launchSupplier.get();
-		rq.setStartTime(Calendar.getInstance().getTime());
-		this.launch = this.reportPortal.startLaunch(rq);
 	}
 
 	@Override
@@ -97,7 +96,8 @@ public class TestNGService implements ITestNGService {
 		FinishExecutionRQ rq = new FinishExecutionRQ();
 		rq.setEndTime(Calendar.getInstance().getTime());
 		rq.setStatus(isLaunchFailed.get() ? Statuses.FAILED : Statuses.PASSED);
-		launch.finish(rq);
+		launch.get().finish(rq);
+
 	}
 
 	/*
@@ -109,7 +109,7 @@ public class TestNGService implements ITestNGService {
 		//avoid starting same suite twice
 		if (null == getAttribute(suite, RP_ID)) {
 			StartTestItemRQ rq = buildStartSuiteRq(suite);
-			final Maybe<String> item = launch.startTestItem(rq);
+			final Maybe<String> item = launch.get().startTestItem(rq);
 			suite.setAttribute(RP_ID, item);
 		}
 	}
@@ -118,7 +118,7 @@ public class TestNGService implements ITestNGService {
 	public synchronized void finishTestSuite(ISuite suite) {
 		if (null != suite.getAttribute(RP_ID)) {
 			FinishTestItemRQ rq = buildFinishTestSuiteRq(suite);
-			launch.finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
+			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
 			suite.removeAttribute(RP_ID);
 		}
 	}
@@ -127,7 +127,7 @@ public class TestNGService implements ITestNGService {
 	public void startTest(ITestContext testContext) {
 		StartTestItemRQ rq = buildStartTestItemRq(testContext);
 
-		final Maybe<String> testID = launch.startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
+		final Maybe<String> testID = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
 
 		testContext.setAttribute(RP_ID, testID);
 
@@ -136,7 +136,7 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public void finishTest(ITestContext testContext) {
 		FinishTestItemRQ rq = buildFinishTestRq(testContext);
-		launch.finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
+		launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
 
 	}
 
@@ -146,7 +146,7 @@ public class TestNGService implements ITestNGService {
 		if (rq == null) {
 			return;
 		}
-		Maybe<String> stepMaybe = launch.startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
+		Maybe<String> stepMaybe = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
 
 		testResult.setAttribute(RP_ID, stepMaybe);
 	}
@@ -154,7 +154,7 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public void finishTestMethod(String status, ITestResult testResult) {
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
-		launch.finishTestItem(this.<Maybe<String>>getAttribute(testResult, RP_ID), rq);
+		launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testResult, RP_ID), rq);
 	}
 
 	@Override
@@ -163,7 +163,7 @@ public class TestNGService implements ITestNGService {
 		StartTestItemRQ rq = buildStartConfigurationRq(testResult, type);
 
 		Maybe<String> parentId = getConfigParent(testResult, type);
-		final Maybe<String> itemID = launch.startTestItem(parentId, rq);
+		final Maybe<String> itemID = launch.get().startTestItem(parentId, rq);
 		testResult.setAttribute(RP_ID, itemID);
 	}
 
