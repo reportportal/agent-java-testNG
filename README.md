@@ -67,7 +67,7 @@ TestItem – report portal specified object for representing:  suite, test, meth
 
 ## Dependencies
 
-Add to POM.xml
+Add to `POM.xml`
 
 **dependency**
 
