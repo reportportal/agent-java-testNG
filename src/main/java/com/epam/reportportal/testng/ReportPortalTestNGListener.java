@@ -71,9 +71,9 @@ import rp.com.google.inject.Module;
  * Report portal custom event listener. Support parallel execution of test methods, suites, test
  * classes.
  */
-public class BaseTestNGListener implements IExecutionListener, ISuiteListener, IResultListener2 {
+public class ReportPortalTestNGListener implements IExecutionListener, ISuiteListener, IResultListener2 {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(BaseTestNGListener.class);
+  protected static final Logger LOGGER = LoggerFactory.getLogger(ReportPortalTestNGListener.class);
 
   private static final AtomicInteger INSTANCES = new AtomicInteger(0);
   private AtomicBoolean isLaunchFailed = new AtomicBoolean();
@@ -92,15 +92,15 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
 
   protected ReportPortal reportPortal;
 
-  public BaseTestNGListener() {
+  public ReportPortalTestNGListener() {
     this(new Module[]{});
   }
 
-  public BaseTestNGListener(final Module... extensions) {
+  public ReportPortalTestNGListener(final Module... extensions) {
     this(Injector.createDefault(extensions));
   }
 
-  public BaseTestNGListener(Injector injector) {
+  public ReportPortalTestNGListener(Injector injector) {
     if (INSTANCES.incrementAndGet() > 1) {
       final String error = "WARNING! More than one ReportPortal listener is added";
       LOGGER.warn(error);
@@ -141,7 +141,7 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
        * This is why method is synchronized and check for attribute presence is added
        * avoid starting same suite twice
        */
-    if (null == getAttribute(suite, RP_ID)) {
+    if (getRP_ID(suite) == null) {
       StartTestItemRQ rq = buildStartSuiteRq(suite);
       final Maybe<String> item = reportPortal.startTestItem(rq);
       suite.setAttribute(RP_ID, item);
@@ -156,7 +156,7 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
       FinishTestItemRQ rq = new FinishTestItemRQ();
       rq.setEndTime(now);
       rq.setStatus(getSuiteStatus(suite));
-      reportPortal.finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
+      reportPortal.finishTestItem(getRP_ID(suite), rq);
       suite.removeAttribute(RP_ID);
     }
   }
@@ -164,9 +164,7 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
   @Override
   public void onStart(ITestContext testContext) {
     StartTestItemRQ rq = buildStartTestItemRq(testContext);
-
-    final Maybe<String> testID = reportPortal
-        .startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
+    final Maybe<String> testID = reportPortal.startTestItem(getRP_ID(testContext.getSuite()), rq);
 
     testContext.setAttribute(RP_ID, testID);
   }
@@ -178,20 +176,17 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
     String status = isTestPassed(testContext) ? Statuses.PASSED : Statuses.FAILED;
 
     rq.setStatus(status);
-    reportPortal.finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
+    reportPortal.finishTestItem(getRP_ID(testContext), rq);
   }
 
   @Override
   public void onTestStart(ITestResult testResult) {
-    StartTestItemRQ rq = buildStartStepRq(testResult);
-    if (rq == null) {
+    if (testResult.getAttribute(RP_ID) != null) {
       return;
     }
-    Maybe<String> stepMaybe = reportPortal
-        .startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
-
+    StartTestItemRQ rq = buildStartStepRq(testResult);
+    Maybe<String> stepMaybe = reportPortal.startTestItem(getRP_ID(testResult.getTestContext()), rq);
     testResult.setAttribute(RP_ID, stepMaybe);
-
   }
 
   @Override
@@ -212,6 +207,10 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
   }
 
   public void finishTestMethod(String status, ITestResult testResult) {
+    reportPortal.finishTestItem(getRP_ID(testResult), getFinishTestItemRQ(status));
+  }
+
+  protected FinishTestItemRQ getFinishTestItemRQ(String status) {
     final Date now = Calendar.getInstance().getTime();
     FinishTestItemRQ rq = new FinishTestItemRQ();
     rq.setEndTime(now);
@@ -222,8 +221,7 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
       issue.setIssueType(NOT_ISSUE);
       rq.setIssue(issue);
     }
-
-    reportPortal.finishTestItem(this.<Maybe<String>>getAttribute(testResult, RP_ID), rq);
+    return rq;
   }
 
 
@@ -257,7 +255,7 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
 
   public void startConfiguration(ITestResult testResult) {
     TestMethodType type = TestMethodType.getStepType(testResult.getMethod());
-    StartTestItemRQ rq = buildStartConfigurationRq(testResult, type);
+    StartTestItemRQ rq = buildStartConfigurationRq(testResult);
 
     Maybe<String> parentId = getConfigParent(testResult, type);
     final Maybe<String> itemID = reportPortal.startTestItem(parentId, rq);
@@ -335,16 +333,16 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
    * Extension point to customize beforeXXX creation event/request
    *
    * @param testResult TestNG's testResult context
-   * @param type Type of method
    * @return Request to ReportPortal
    */
-  protected StartTestItemRQ buildStartConfigurationRq(ITestResult testResult, TestMethodType type) {
+  protected StartTestItemRQ buildStartConfigurationRq(ITestResult testResult) {
     StartTestItemRQ rq = new StartTestItemRQ();
     String configName = testResult.getMethod().getMethodName();
     rq.setName(configName);
 
     rq.setDescription(testResult.getMethod().getDescription());
     rq.setStartTime(Calendar.getInstance().getTime());
+    TestMethodType type = TestMethodType.getStepType(testResult.getMethod());
     rq.setType(type == null ? null : type.toString());
     return rq;
   }
@@ -356,15 +354,35 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
    * @return Request to ReportPortal
    */
   protected StartTestItemRQ buildStartStepRq(ITestResult testResult) {
-    if (testResult.getAttribute(RP_ID) != null) {
-      return null;
-    }
     StartTestItemRQ rq = new StartTestItemRQ();
     String testStepName = testResult.getMethod().getMethodName();
     rq.setName(testStepName);
 
     rq.setDescription(createStepDescription(testResult));
-    rq.setParameters(createStepParameters(testResult));
+    List<ParameterResource> params = createStepParameters(testResult);
+    rq.setParameters(params);
+    // Currently parameters are not displayed on UI, put them to name
+    if (params != null && params.size() > 0) {
+      StringBuilder sb = new StringBuilder(rq.getName());
+      sb.append('(');
+      boolean isFirst = true;
+      for (ParameterResource param: params) {
+        if (!isFirst) {
+          sb.append(", ");
+        }
+        isFirst = false;
+        sb.append(param.getKey()).append('=').append(param.getValue());
+      }
+      sb.append(')');
+      // in case we use more than 255 characters, we need to trim the string and put the rest to description
+      if (sb.length() > 255) {
+        String extra = sb.substring(250);
+        rq.setDescription(rq.getDescription() + " The rest parameters are: ..."+extra);
+        sb.setLength(250);
+        sb.append("...");
+      }
+      rq.setName(sb.toString());
+    }
     rq.setUniqueId(extractUniqueID(testResult));
     rq.setStartTime(Calendar.getInstance().getTime());
     rq.setType(TestMethodType.getStepType(testResult.getMethod()).toString());
@@ -498,8 +516,8 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
   }
 
   @SuppressWarnings("unchecked")
-  protected <T> T getAttribute(IAttributes attributes, String attribute) {
-    return (T) attributes.getAttribute(attribute);
+  protected Maybe<String> getRP_ID(IAttributes attributes) {
+    return (Maybe<String>) attributes.getAttribute(RP_ID);
   }
 
   /**
@@ -544,9 +562,9 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
   private Maybe<String> getConfigParent(ITestResult testResult, TestMethodType type) {
     Maybe<String> parentId;
     if (TestMethodType.BEFORE_SUITE.equals(type) || TestMethodType.AFTER_SUITE.equals(type)) {
-      parentId = getAttribute(testResult.getTestContext().getSuite(), RP_ID);
+      parentId = getRP_ID(testResult.getTestContext().getSuite());
     } else {
-      parentId = getAttribute(testResult.getTestContext(), RP_ID);
+      parentId = getRP_ID(testResult.getTestContext());
     }
     return parentId;
   }
