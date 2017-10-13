@@ -135,7 +135,7 @@ public class ReportPortalTestNGListener implements IExecutionListener, ISuiteLis
   }
 
   @Override
-  public void onStart(ISuite suite) {
+  public synchronized void onStart(ISuite suite) {
        /*
        * sometimes testng triggers on suite start several times.
        * This is why method is synchronized and check for attribute presence is added
@@ -149,7 +149,7 @@ public class ReportPortalTestNGListener implements IExecutionListener, ISuiteLis
   }
 
   @Override
-  public void onFinish(ISuite suite) {
+  public synchronized void onFinish(ISuite suite) {
     if (null != suite.getAttribute(RP_ID)) {
         /* 'real' end time */
       Date now = Calendar.getInstance().getTime();
@@ -568,5 +568,4 @@ public class ReportPortalTestNGListener implements IExecutionListener, ISuiteLis
     }
     return parentId;
   }
-
 }

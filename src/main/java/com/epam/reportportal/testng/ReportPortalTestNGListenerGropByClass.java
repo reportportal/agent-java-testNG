@@ -8,8 +8,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import org.testng.ISuite;
 import org.testng.ITestContext;
-import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
 import rp.com.google.inject.Module;
 
@@ -24,7 +24,7 @@ public class ReportPortalTestNGListenerGropByClass extends ReportPortalTestNGLis
   /**
    * Map canonical class name to your test item id.
    *
-   * com.company.smoke.OneTest -> 2r2a4wer234
+   * com.company.smoke.OneTest -> TestResultsPerClass[rp_id:2r2a4wer234, status: PASSED]
    */
   final protected static Map<String, TestResultsPerClass> results = new HashMap<String, TestResultsPerClass>();
 
@@ -63,8 +63,7 @@ public class ReportPortalTestNGListenerGropByClass extends ReportPortalTestNGLis
    * Class level: create new node in RP
    */
   protected TestResultsPerClass createNewItemForClass(ITestResult testResult) {
-    Class theClass = testResult.getTestClass().getRealClass();
-    String classCanonicalName = theClass.getCanonicalName();
+    String classCanonicalName = testResult.getTestClass().getRealClass().getCanonicalName();
     TestResultsPerClass result;
     synchronized (results) {
       result = results.get(classCanonicalName);
@@ -75,37 +74,24 @@ public class ReportPortalTestNGListenerGropByClass extends ReportPortalTestNGLis
       if (result.rp_id == null) {
         // This is the first method for the class, lets create testItem in RP.
         Maybe<String> parentId = getRP_ID(testResult.getTestContext().getSuite());
-        StartTestItemRQ rq = buildStartTestItemRq(theClass);
+        StartTestItemRQ rq = buildStartTestItemRq(testResult);
         result.rp_id = reportPortal.startTestItem(parentId, rq);
       }
     }
     return result;
   }
 
-  protected StartTestItemRQ buildStartTestItemRq(Class theClass) {
+  protected StartTestItemRQ buildStartTestItemRq(ITestResult result) {
     StartTestItemRQ rq = new StartTestItemRQ();
-    rq.setName(theClass.getSimpleName());
+    String name = result.getTestName();
+    if (name == null || name.trim().length() == 0) {
+      name = result.getTestClass().getRealClass().getSimpleName();
+    }
+    rq.setName(name);
+    rq.setDescription(result.getTestClass().getRealClass().getSimpleName());
     rq.setStartTime(Calendar.getInstance().getTime());
     rq.setType("TEST");
     return rq;
-  }
-
-  @Override
-  public void finishTestMethod(String status, ITestResult testResult) {
-    super.finishTestMethod(status, testResult);
-
-    // Calculate, is the whole class is over, so we may close test group.
-    /*
-    Class testClass = testResult.getTestClass().getRealClass();
-    synchronized (results) {
-      final TestResultsPerClass resultsPerClass = results.get(testClass.getCanonicalName());
-      resultsPerClass.storeResult(status);
-      resultsPerClass.methodsRemain--;
-      if (resultsPerClass.methodsRemain <= 0) {
-        reportFinishTestClass(new Date(testResult.getEndMillis()), resultsPerClass);
-      }
-    }
-    */
   }
 
   protected void reportFinishTestClass(Date time, TestResultsPerClass resultsPerClass) {
@@ -118,33 +104,23 @@ public class ReportPortalTestNGListenerGropByClass extends ReportPortalTestNGLis
   @Override
   public void onStart(ITestContext testContext) {
     // ignore super method, we should skip single <test> from testng.xml
-    // Increase counter, to finish testItem when all method complete and we have counter=0
-    /*
-    synchronized (results) {
-      for (ITestNGMethod method : testContext.getAllTestMethods()) {
-        final String className = method.getRealClass().getCanonicalName();
-        TestResultsPerClass result = results.get(className);
-        if (result == null) {
-          result = new TestResultsPerClass();
-          results.put(className, result);
-        }
-      }
-    }
-    */
   }
 
   @Override
   public void onFinish(ITestContext testContext) {
     // ignore super method as well as onStart(ITestContext testContext)
-    // Just as backup, close test classes groups that not closed by some reason.
+  }
+
+  @Override
+  public void onFinish(ISuite suite) {
+    // Close test classes groups that not closed by some reason.
     synchronized (results) {
       for (String className : results.keySet()) {
         TestResultsPerClass result = results.get(className);
-//        if (result.methodsRemain > 0) {
-//          LOGGER.warn("By some reason we did not close class" + className);
-          reportFinishTestClass(new Date(), result);
-//        }
+        reportFinishTestClass(new Date(), result);
       }
+      results.clear();
     }
+    super.onFinish(suite);
   }
 }
