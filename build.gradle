@@ -17,8 +17,8 @@ repositories {
 }
 
 dependencies {
-    compile 'com.github.reportportal:client-java:9f366e4'
-    compile 'com.github.reportportal:commons-model:4ba7434'
+    compile 'com.github.reportportal:client-java:2ae35e1'
+    compile 'com.github.reportportal:commons-model:2939603'
     compileOnly 'org.testng:testng:6.11'
 }
 
