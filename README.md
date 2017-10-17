@@ -22,7 +22,6 @@
 - [Integration code example repository](https://github.com/reportportal/example-java-TestNG)
 ---
 
-=======
 **[TestNG](http://testng.org)** provides support for attaching custom listeners, reporters, annotation transformers and method interceptors to your tests.
 Handling events
 
