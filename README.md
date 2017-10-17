@@ -16,7 +16,8 @@
   - [Custom runner](https://github.com/reportportal/agent-java-testNG#custom-runner)
   - [Using command line](https://github.com/reportportal/agent-java-testNG#using-command-line)
   - [Using \@Listeners annotation](https://github.com/reportportal/agent-java-testNG#using-listeners-annotation)
-  - [Using ServiceLoader](https://github.com/reportportal/agent-java-testNG#using-serviceloader)
+  - [Using ServiceLoader](https://github.com/reportportal/agent-ava-testNG#using-serviceloader)
+  - [Alternative listener](#alternative-listener)
 - [Code example How to overload params in run-time](https://github.com/reportportal/agent-java-testNG#code-example-how-to-overload-params-in-run-time)
 - [Integration code example repository](https://github.com/reportportal/example-java-TestNG)
 ---
@@ -179,7 +180,6 @@ Here is how you can define report portal listener in your testng.xml file.
 
 TestNG allows users to create own runners. In this case user can instantiate
 listener by himself and add it to TestNG object.
->>>>>>> upstream/master
 
 ```java
 ReportPortalTestNGListener listener = new ReportPortalTestNGListener();
