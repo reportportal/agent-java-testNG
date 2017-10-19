@@ -39,10 +39,11 @@ import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 import org.testng.collections.Lists;
 import org.testng.internal.ConstructorOrMethod;
+import rp.com.google.common.annotations.VisibleForTesting;
 import rp.com.google.common.base.Function;
 import rp.com.google.common.base.Supplier;
-import rp.com.google.common.base.Suppliers;
 
+import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Calendar;
@@ -65,26 +66,29 @@ public class TestNGService implements ITestNGService {
 
 	private final AtomicBoolean isLaunchFailed = new AtomicBoolean();
 
-	private Supplier<Launch> launch;
+	private MemoizingSupplier<Launch> launch;
 
-	public TestNGService(final ReportPortal reportPortal) {
-		this.launch = Suppliers.memoize(new Supplier<Launch>() {
+	public TestNGService() {
+		this.launch = new MemoizingSupplier<Launch>(new Supplier<Launch>() {
 			@Override
 			public Launch get() {
+				//this reads property, so we want to
+				//init ReportPortal object each time Launch object is going to be created
+				final ReportPortal reportPortal = ReportPortal.builder().build();
 				StartLaunchRQ rq = buildStartLaunchRq(reportPortal.getParameters());
 				rq.setStartTime(Calendar.getInstance().getTime());
-				return reportPortal.startLaunch(rq);
+				return reportPortal.newLaunch(rq);
 			}
 		});
 	}
 
 	public TestNGService(Supplier<Launch> launch) {
-		this.launch = Suppliers.memoize(launch);
+		this.launch = new MemoizingSupplier<Launch>(launch);
 	}
 
 	@Override
 	public void startLaunch() {
-		this.launch.get();
+		this.launch.get().start();
 	}
 
 	@Override
@@ -93,6 +97,8 @@ public class TestNGService implements ITestNGService {
 		rq.setEndTime(Calendar.getInstance().getTime());
 		rq.setStatus(isLaunchFailed.get() ? Statuses.FAILED : Statuses.PASSED);
 		launch.get().finish(rq);
+
+		this.launch.reset();
 
 	}
 
@@ -493,5 +499,40 @@ public class TestNGService implements ITestNGService {
 			parentId = getAttribute(testResult.getTestContext(), RP_ID);
 		}
 		return parentId;
+	}
+
+	@VisibleForTesting
+	static class MemoizingSupplier<T> implements Supplier<T>, Serializable {
+		final Supplier<T> delegate;
+		transient volatile boolean initialized;
+		transient T value;
+		private static final long serialVersionUID = 0L;
+
+		MemoizingSupplier(Supplier<T> delegate) {
+			this.delegate = delegate;
+		}
+
+		public T get() {
+			if (!this.initialized) {
+				synchronized (this) {
+					if (!this.initialized) {
+						T t = this.delegate.get();
+						this.value = t;
+						this.initialized = true;
+						return t;
+					}
+				}
+			}
+
+			return this.value;
+		}
+
+		public synchronized void reset() {
+			this.initialized = false;
+		}
+
+		public String toString() {
+			return "Suppliers.memoize(" + this.delegate + ")";
+		}
 	}
 }

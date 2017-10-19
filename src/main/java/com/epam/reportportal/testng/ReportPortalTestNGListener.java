@@ -20,7 +20,6 @@
  */
 package com.epam.reportportal.testng;
 
-import com.epam.reportportal.service.ReportPortal;
 import rp.com.google.common.base.Supplier;
 import rp.com.google.common.base.Suppliers;
 
@@ -35,7 +34,7 @@ public class ReportPortalTestNGListener extends BaseTestNGListener {
 	private static final Supplier<ITestNGService> SERVICE = Suppliers.memoize(new Supplier<ITestNGService>() {
 		@Override
 		public ITestNGService get() {
-			return new TestNGService(ReportPortal.builder().build());
+			return new TestNGService();
 		}
 	});
 
