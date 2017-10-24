@@ -266,7 +266,12 @@ public class TestNGService implements ITestNGService {
 			return null;
 		}
 		StartTestItemRQ rq = new StartTestItemRQ();
-		String testStepName = testResult.getMethod().getMethodName();
+		String testStepName;
+		if (testResult.getTestName() != null) {
+			testStepName = testResult.getTestName();
+		} else {
+			testStepName = testResult.getMethod().getMethodName();
+		}
 		rq.setName(testStepName);
 
 		rq.setDescription(createStepDescription(testResult));
