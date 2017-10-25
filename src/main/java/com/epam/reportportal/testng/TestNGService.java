@@ -279,6 +279,8 @@ public class TestNGService implements ITestNGService {
 		rq.setUniqueId(extractUniqueID(testResult));
 		rq.setStartTime(Calendar.getInstance().getTime());
 		rq.setType(TestMethodType.getStepType(testResult.getMethod()).toString());
+
+		rq.setRetry(testResult.getMethod().getCurrentInvocationCount() > 0);
 		return rq;
 	}
 
