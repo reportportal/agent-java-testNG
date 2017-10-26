@@ -262,9 +262,9 @@ public class TestNGService implements ITestNGService {
 	 * @return Request to ReportPortal
 	 */
 	protected StartTestItemRQ buildStartStepRq(ITestResult testResult) {
-		if (testResult.getAttribute(RP_ID) != null) {
-			return null;
-		}
+//		if (testResult.getAttribute(RP_ID) != null) {
+//			return null;
+//		}
 		StartTestItemRQ rq = new StartTestItemRQ();
 		String testStepName;
 		if (testResult.getTestName() != null) {
