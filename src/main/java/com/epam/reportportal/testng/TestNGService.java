@@ -155,6 +155,10 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public void finishTestMethod(String status, ITestResult testResult) {
+		if (Statuses.SKIPPED.equals(status) && !isRetry(testResult)) {
+			startTestMethod(testResult);
+		}
+
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
 		launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testResult, RP_ID), rq);
 	}
@@ -280,7 +284,7 @@ public class TestNGService implements ITestNGService {
 		rq.setStartTime(Calendar.getInstance().getTime());
 		rq.setType(TestMethodType.getStepType(testResult.getMethod()).toString());
 
-		rq.setRetry(testResult.getMethod().getCurrentInvocationCount() > 0);
+		rq.setRetry(isRetry(testResult));
 		return rq;
 	}
 
@@ -506,6 +510,10 @@ public class TestNGService implements ITestNGService {
 			parentId = getAttribute(testResult.getTestContext(), RP_ID);
 		}
 		return parentId;
+	}
+
+	private boolean isRetry(ITestResult result) {
+		return result.getMethod().getCurrentInvocationCount() > 0;
 	}
 
 	@VisibleForTesting

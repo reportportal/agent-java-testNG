@@ -26,9 +26,6 @@ import org.slf4j.LoggerFactory;
 import org.testng.*;
 import org.testng.internal.IResultListener2;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -37,16 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Can be extended by providing {@link ITestNGService} implementation
  */
 public class BaseTestNGListener implements IExecutionListener, ISuiteListener, IResultListener2 {
-
-	private static final ITestNGService NOOP_PROXY = (ITestNGService) Proxy.newProxyInstance(BaseTestNGListener.class.getClassLoader(),
-			new Class[] { ITestNGService.class },
-			new InvocationHandler() {
-				@Override
-				public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-					return null;
-				}
-			}
-	);
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BaseTestNGListener.class);
 
@@ -113,7 +100,6 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
 
 	@Override
 	public void onTestSkipped(ITestResult testResult) {
-		testNGService.startTestMethod(testResult);
 		testNGService.finishTestMethod(Statuses.SKIPPED, testResult);
 	}
 
