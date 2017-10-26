@@ -281,7 +281,7 @@ public class TestNGService implements ITestNGService {
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
 		rq.setUniqueId(extractUniqueID(testResult));
-		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setStartTime(new Date(testResult.getStartMillis()));
 		rq.setType(TestMethodType.getStepType(testResult.getMethod()).toString());
 
 		rq.setRetry(isRetry(testResult));
@@ -324,9 +324,8 @@ public class TestNGService implements ITestNGService {
 	 * @return Request to ReportPortal
 	 */
 	protected FinishTestItemRQ buildFinishTestMethodRq(String status, ITestResult testResult) {
-		final Date now = Calendar.getInstance().getTime();
 		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(now);
+		rq.setEndTime(new Date(testResult.getEndMillis()));
 		rq.setStatus(status);
 		// Allows indicate that SKIPPED is not to investigate items for WS
 		if (status.equals(Statuses.SKIPPED) && !launch.get().getParameters().getSkippedAnIssue()) {
