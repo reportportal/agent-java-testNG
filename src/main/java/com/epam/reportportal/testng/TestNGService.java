@@ -155,7 +155,7 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public void finishTestMethod(String status, ITestResult testResult) {
-		if (Statuses.SKIPPED.equals(status) && !isRetry(testResult)) {
+		if (Statuses.SKIPPED.equals(status) && !isRetry(testResult) && null == testResult.getAttribute(RP_ID)) {
 			startTestMethod(testResult);
 		}
 
@@ -266,9 +266,9 @@ public class TestNGService implements ITestNGService {
 	 * @return Request to ReportPortal
 	 */
 	protected StartTestItemRQ buildStartStepRq(ITestResult testResult) {
-		if (testResult.getAttribute(RP_ID) != null) {
-			return null;
-		}
+//		if (testResult.getAttribute(RP_ID) != null) {
+//			return null;
+//		}
 		StartTestItemRQ rq = new StartTestItemRQ();
 		String testStepName;
 		if (testResult.getTestName() != null) {
