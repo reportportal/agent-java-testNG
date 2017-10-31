@@ -404,6 +404,11 @@ public class ReportPortalTestNGListener implements IExecutionListener, ISuiteLis
     } else if (null != parametersAnnotation) {
       parameters = createAnnotationParameters(testResult, parametersAnnotation);
     }
+    for (ParameterResource param : parameters) {
+      if (param.getValue().length() > 256) {
+        param.setValue(param.getValue().substring(0, 250) + " ...");
+      }
+    }
     return parameters.isEmpty() ? null : parameters;
   }
 
