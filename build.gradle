@@ -17,11 +17,11 @@ repositories {
 }
 
 dependencies {
-    compile 'com.github.reportportal:client-java:ccd348a'
-    compile 'com.github.reportportal:commons-model:4832ee1'
+    compile 'com.github.reportportal:client-java:cdfd389'
+    compile 'com.github.reportportal:commons-model:fd1bcd9'
     compileOnly 'org.testng:testng:6.11'
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '4.1'
+    gradleVersion = '3.1'
 }
