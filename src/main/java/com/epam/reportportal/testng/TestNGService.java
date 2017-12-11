@@ -149,15 +149,7 @@ public class TestNGService implements ITestNGService {
 			return;
 		}
 
-		Maybe<String> retry = this.getAttribute(testResult.getTestContext(), RP_ID);
-		Maybe<String> stepMaybe;
-
-		if (null != retry) {
-			stepMaybe = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
-		} else {
-			stepMaybe = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
-		}
-
+		Maybe<String> stepMaybe = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
 	}
 
