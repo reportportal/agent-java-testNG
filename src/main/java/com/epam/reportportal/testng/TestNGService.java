@@ -211,7 +211,7 @@ public class TestNGService implements ITestNGService {
 	protected StartTestItemRQ buildStartTestItemRq(ITestContext testContext) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setName(testContext.getName());
-		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setStartTime(testContext.getStartDate());
 		rq.setType("TEST");
 		return rq;
 	}
@@ -247,7 +247,7 @@ public class TestNGService implements ITestNGService {
 		rq.setName(configName);
 
 		rq.setDescription(testResult.getMethod().getDescription());
-		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setStartTime(new Date(testResult.getStartMillis()));
 		rq.setType(type == null ? null : type.toString());
 		return rq;
 	}
@@ -269,7 +269,7 @@ public class TestNGService implements ITestNGService {
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
 		rq.setUniqueId(extractUniqueID(testResult));
-		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setStartTime(new Date(testResult.getStartMillis()));
 		rq.setType(TestMethodType.getStepType(testResult.getMethod()).toString());
 		return rq;
 	}
@@ -310,9 +310,8 @@ public class TestNGService implements ITestNGService {
 	 * @return Request to ReportPortal
 	 */
 	protected FinishTestItemRQ buildFinishTestMethodRq(String status, ITestResult testResult) {
-		final Date now = Calendar.getInstance().getTime();
 		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(now);
+		rq.setEndTime(new Date(testResult.getEndMillis()));
 		rq.setStatus(status);
 		// Allows indicate that SKIPPED is not to investigate items for WS
 		if (status.equals(Statuses.SKIPPED) && !parameters.getSkippedAnIssue()) {
