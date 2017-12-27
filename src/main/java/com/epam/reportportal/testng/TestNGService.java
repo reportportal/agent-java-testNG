@@ -218,7 +218,7 @@ public class TestNGService implements ITestNGService {
 	protected StartTestItemRQ buildStartTestItemRq(ITestContext testContext) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setName(testContext.getName());
-		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setStartTime(testContext.getStartDate());
 		rq.setType("TEST");
 		return rq;
 	}
@@ -232,7 +232,6 @@ public class TestNGService implements ITestNGService {
 	protected StartLaunchRQ buildStartLaunchRq(ListenerParameters parameters) {
 		StartLaunchRQ rq = new StartLaunchRQ();
 		rq.setName(parameters.getLaunchName());
-		rq.setStartTime(Calendar.getInstance().getTime());
 		rq.setTags(parameters.getTags());
 		rq.setMode(parameters.getLaunchRunningMode());
 		if (!isNullOrEmpty(parameters.getDescription())) {
@@ -254,7 +253,7 @@ public class TestNGService implements ITestNGService {
 		rq.setName(configName);
 
 		rq.setDescription(testResult.getMethod().getDescription());
-		rq.setStartTime(Calendar.getInstance().getTime());
+		rq.setStartTime(new Date(testResult.getStartMillis()));
 		rq.setType(type == null ? null : type.toString());
 		return rq;
 	}
