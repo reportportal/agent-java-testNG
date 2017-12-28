@@ -20,7 +20,6 @@
  */
 package com.epam.reportportal.testng;
 
-import com.epam.reportportal.guice.Injector;
 import rp.com.google.common.base.Supplier;
 import rp.com.google.common.base.Suppliers;
 
@@ -31,16 +30,16 @@ import rp.com.google.common.base.Suppliers;
  */
 public class ReportPortalTestNGListener extends BaseTestNGListener {
 
-    /* static instance with lazy init */
-    private static final Supplier<Injector> INJECTOR = Suppliers.memoize(new Supplier<Injector>() {
-        @Override
-        public Injector get() {
-            return Injector.createDefault(new TestNGAgentModule());
-        }
-    });
+	/* static instance with lazy init */
+	private static final Supplier<ITestNGService> SERVICE = Suppliers.memoize(new Supplier<ITestNGService>() {
+		@Override
+		public ITestNGService get() {
+			return new TestNGService();
+		}
+	});
 
-    public ReportPortalTestNGListener() {
-        super(INJECTOR.get());
-    }
+	public ReportPortalTestNGListener() {
+		super(SERVICE.get());
+	}
 
 }

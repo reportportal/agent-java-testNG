@@ -20,142 +20,114 @@
  */
 package com.epam.reportportal.testng;
 
-import com.epam.reportportal.guice.Injector;
 import com.epam.reportportal.listeners.Statuses;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.IExecutionListener;
-import org.testng.ISuite;
-import org.testng.ISuiteListener;
-import org.testng.ITestContext;
-import org.testng.ITestResult;
+import org.testng.*;
 import org.testng.internal.IResultListener2;
-import rp.com.google.common.base.Supplier;
-import rp.com.google.inject.Module;
 
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static rp.com.google.common.base.Suppliers.memoize;
 
 /**
  * Report portal custom event listener. Support parallel execution of test
  * methods, suites, test classes.
  * Can be extended by providing {@link ITestNGService} implementation
- * or configured {@link Injector}
  */
 public class BaseTestNGListener implements IExecutionListener, ISuiteListener, IResultListener2 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(BaseTestNGListener.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(BaseTestNGListener.class);
 
-    private static final AtomicInteger INSTANCES = new AtomicInteger(0);
+	private static final AtomicInteger INSTANCES = new AtomicInteger(0);
 
-    private Supplier<ITestNGService> testNGService;
+	private ITestNGService testNGService;
 
-    public BaseTestNGListener() {
-        this(new TestNGAgentModule());
-    }
+	public BaseTestNGListener(ITestNGService testNgService) {
+		this.testNGService = testNgService;
+		if (INSTANCES.incrementAndGet() > 1) {
+			final String warning = "WARNING! More than one ReportPortal listener is added";
+			LOGGER.warn(warning);
 
-    public BaseTestNGListener(final Module... extensions) {
-        this(Injector.createDefault(extensions));
-    }
+			//even if logger is not configured, print the message to default stdout
+			System.out.println(warning);
+		}
+	}
 
-    public BaseTestNGListener(final Injector injector) {
-        this(new Supplier<ITestNGService>() {
-            @Override
-            public ITestNGService get() {
-                return injector.getBean(ITestNGService.class);
-            }
-        });
-    }
+	@Override
+	public void onExecutionStart() {
+		testNGService.startLaunch();
+	}
 
-    public BaseTestNGListener(final Supplier<ITestNGService> testNgService) {
-        testNGService = memoize(testNgService);
-        if (INSTANCES.incrementAndGet() > 1) {
-            final String warning = "WARNING! More than one ReportPortal listener is added";
-            LOGGER.warn(warning);
+	@Override
+	public void onExecutionFinish() {
+		testNGService.finishLaunch();
+	}
 
-            //even if logger is not configured, print the message to default stdout
-            System.out.println(warning);
-        }
-    }
+	@Override
+	public void onStart(ISuite suite) {
+		testNGService.startTestSuite(suite);
+	}
 
-    @Override
-    public void onExecutionStart() {
-        testNGService.get().startLaunch();
-    }
+	@Override
+	public void onFinish(ISuite suite) {
+		testNGService.finishTestSuite(suite);
+	}
 
-    @Override
-    public void onExecutionFinish() {
-        testNGService.get().finishLaunch();
-    }
+	@Override
+	public void onStart(ITestContext testContext) {
+		testNGService.startTest(testContext);
+	}
 
-    @Override
-    public void onStart(ISuite suite) {
-        testNGService.get().startTestSuite(suite);
-    }
+	@Override
+	public void onFinish(ITestContext testContext) {
+		testNGService.finishTest(testContext);
+	}
 
-    @Override
-    public void onFinish(ISuite suite) {
-        testNGService.get().finishTestSuite(suite);
-    }
+	@Override
+	public void onTestStart(ITestResult testResult) {
+		testNGService.startTestMethod(testResult);
+	}
 
-    @Override
-    public void onStart(ITestContext testContext) {
-        testNGService.get().startTest(testContext);
-    }
+	@Override
+	public void onTestSuccess(ITestResult testResult) {
+		testNGService.finishTestMethod(Statuses.PASSED, testResult);
+	}
 
-    @Override
-    public void onFinish(ITestContext testContext) {
-        testNGService.get().finishTest(testContext);
-    }
+	@Override
+	public void onTestFailure(ITestResult testResult) {
+		testNGService.sendReportPortalMsg(testResult);
+		testNGService.finishTestMethod(Statuses.FAILED, testResult);
+	}
 
-    @Override
-    public void onTestStart(ITestResult testResult) {
-        testNGService.get().startTestMethod(testResult);
-    }
+	@Override
+	public void onTestSkipped(ITestResult testResult) {
+		testNGService.finishTestMethod(Statuses.SKIPPED, testResult);
+	}
 
-    @Override
-    public void onTestSuccess(ITestResult testResult) {
-        testNGService.get().finishTestMethod(Statuses.PASSED, testResult);
-    }
+	@Override
+	public void beforeConfiguration(ITestResult testResult) {
+		testNGService.startConfiguration(testResult);
+	}
 
-    @Override
-    public void onTestFailure(ITestResult testResult) {
-        testNGService.get().sendReportPortalMsg(testResult);
-        testNGService.get().finishTestMethod(Statuses.FAILED, testResult);
-    }
+	@Override
+	public void onConfigurationFailure(ITestResult testResult) {
+		testNGService.sendReportPortalMsg(testResult);
+		testNGService.finishTestMethod(Statuses.FAILED, testResult);
+	}
 
-    @Override
-    public void onTestSkipped(ITestResult testResult) {
-        testNGService.get().startTestMethod(testResult);
-        testNGService.get().finishTestMethod(Statuses.SKIPPED, testResult);
-    }
+	@Override
+	public void onConfigurationSuccess(ITestResult testResult) {
+		testNGService.finishTestMethod(Statuses.PASSED, testResult);
+	}
 
-    @Override
-    public void beforeConfiguration(ITestResult testResult) {
-        testNGService.get().startConfiguration(testResult);
-    }
+	@Override
+	public void onConfigurationSkip(ITestResult testResult) {
+		testNGService.startConfiguration(testResult);
+		testNGService.finishTestMethod(Statuses.SKIPPED, testResult);
+	}
 
-    @Override
-    public void onConfigurationFailure(ITestResult testResult) {
-        testNGService.get().sendReportPortalMsg(testResult);
-        testNGService.get().finishTestMethod(Statuses.FAILED, testResult);
-    }
-
-    @Override
-    public void onConfigurationSuccess(ITestResult testResult) {
-        testNGService.get().finishTestMethod(Statuses.PASSED, testResult);
-    }
-
-    @Override
-    public void onConfigurationSkip(ITestResult testResult) {
-        testNGService.get().startConfiguration(testResult);
-        testNGService.get().finishTestMethod(Statuses.SKIPPED, testResult);
-    }
-
-    // this action temporary doesn't supported by report portal
-    @Override
-    public void onTestFailedButWithinSuccessPercentage(ITestResult result) {
-        testNGService.get().finishTestMethod(Statuses.FAILED, result);
-    }
+	// this action temporary doesn't supported by report portal
+	@Override
+	public void onTestFailedButWithinSuccessPercentage(ITestResult result) {
+		testNGService.finishTestMethod(Statuses.FAILED, result);
+	}
 }
