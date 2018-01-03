@@ -102,18 +102,11 @@ public class TestNGService implements ITestNGService {
 
 	}
 
-	/*
-	 * sometimes testng triggers on suite start several times.
-	 * This is why method is synchronized and check for attribute presence is added
-	 */
 	@Override
 	public synchronized void startTestSuite(ISuite suite) {
-		//avoid starting same suite twice
-		//if (null == getAttribute(suite, RP_ID)) {
-			StartTestItemRQ rq = buildStartSuiteRq(suite);
-			final Maybe<String> item = launch.get().startTestItem(rq);
-			suite.setAttribute(RP_ID, item);
-		//}
+		StartTestItemRQ rq = buildStartSuiteRq(suite);
+		final Maybe<String> item = launch.get().startTestItem(rq);
+		suite.setAttribute(RP_ID, item);
 	}
 
 	@Override
