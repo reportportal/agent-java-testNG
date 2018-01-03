@@ -109,11 +109,11 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public synchronized void startTestSuite(ISuite suite) {
 		//avoid starting same suite twice
-		if (null == getAttribute(suite, RP_ID)) {
+		//if (null == getAttribute(suite, RP_ID)) {
 			StartTestItemRQ rq = buildStartSuiteRq(suite);
 			final Maybe<String> item = launch.get().startTestItem(rq);
 			suite.setAttribute(RP_ID, item);
-		}
+		//}
 	}
 
 	@Override

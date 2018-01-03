@@ -19,7 +19,7 @@ repositories {
 dependencies {
     compile 'com.epam.reportportal:client-java:4.0.0-BETA-1'
     compile 'com.epam.reportportal:commons-model:4.0.0'
-    compileOnly 'org.testng:testng:6.11'
+    compileOnly 'org.testng:testng:6.13.1'
 }
 
 task wrapper(type: Wrapper) {
