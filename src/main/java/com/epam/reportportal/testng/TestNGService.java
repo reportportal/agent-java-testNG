@@ -34,6 +34,8 @@ import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.*;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -59,6 +61,8 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
  * TestNG service implements operations for interaction report portal
  */
 public class TestNGService implements ITestNGService {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(TestNGService.class);
 
 	public static final String NOT_ISSUE = "NOT_ISSUE";
 	public static final String RP_ID = "rp_id";
@@ -320,6 +324,9 @@ public class TestNGService implements ITestNGService {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(new Date(testResult.getEndMillis()));
 		rq.setStatus(status);
+		LOGGER.info("Test item {} is finished with invocation count {}.", testResult.getName(),
+				testResult.getMethod().getCurrentInvocationCount()
+		);
 		rq.setRetry(isRetry(testResult, 1));
 		// Allows indicate that SKIPPED is not to investigate items for WS
 		if (status.equals(Statuses.SKIPPED) && !launch.get().getParameters().getSkippedAnIssue()) {
