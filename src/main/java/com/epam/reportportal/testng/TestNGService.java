@@ -152,7 +152,7 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public void finishTestMethod(String status, ITestResult testResult) {
-		if (Statuses.SKIPPED.equals(status) && !isRetry(testResult, 0) && null == testResult.getAttribute(RP_ID)) {
+		if (Statuses.SKIPPED.equals(status) && !isRetry(testResult) && null == testResult.getAttribute(RP_ID)) {
 			startTestMethod(testResult);
 		}
 
@@ -281,7 +281,7 @@ public class TestNGService implements ITestNGService {
 		rq.setStartTime(new Date(testResult.getStartMillis()));
 		rq.setType(TestMethodType.getStepType(testResult.getMethod()).toString());
 
-		rq.setRetry(isRetry(testResult, 0));
+		rq.setRetry(isRetry(testResult));
 		return rq;
 	}
 
@@ -327,7 +327,7 @@ public class TestNGService implements ITestNGService {
 		LOGGER.info("Test item {} is finished with invocation count {}.", testResult.getName(),
 				testResult.getMethod().getCurrentInvocationCount()
 		);
-		rq.setRetry(isRetry(testResult, 1));
+		rq.setRetry(isRetry(testResult));
 		// Allows indicate that SKIPPED is not to investigate items for WS
 		if (status.equals(Statuses.SKIPPED) && !launch.get().getParameters().getSkippedAnIssue()) {
 			Issue issue = new Issue();
@@ -512,8 +512,8 @@ public class TestNGService implements ITestNGService {
 		return parentId;
 	}
 
-	private boolean isRetry(ITestResult result, int invocationCount) {
-		return result.getMethod().getCurrentInvocationCount() > invocationCount;
+	private boolean isRetry(ITestResult result) {
+		return result.getMethod().getCurrentInvocationCount() > 1;
 	}
 
 	@VisibleForTesting
