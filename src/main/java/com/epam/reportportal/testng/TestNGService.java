@@ -324,9 +324,6 @@ public class TestNGService implements ITestNGService {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(new Date(testResult.getEndMillis()));
 		rq.setStatus(status);
-		LOGGER.info("Test item {} is finished with invocation count {}.", testResult.getName(),
-				testResult.getMethod().getCurrentInvocationCount()
-		);
 		rq.setRetry(isRetry(testResult));
 		// Allows indicate that SKIPPED is not to investigate items for WS
 		if (status.equals(Statuses.SKIPPED) && !launch.get().getParameters().getSkippedAnIssue()) {
