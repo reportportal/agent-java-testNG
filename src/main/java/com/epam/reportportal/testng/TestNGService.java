@@ -482,7 +482,7 @@ public class TestNGService implements ITestNGService {
 	 *
 	 * @param annotation Annotation class to find
 	 * @param testResult Where to find
-	 * @return {@link Annotation} or null if doesn't exsists
+	 * @return {@link Annotation} or null if doesn't exists
 	 */
 	private <T extends Annotation> T getMethodAnnotation(Class<T> annotation, ITestResult testResult) {
 		ITestNGMethod testNGMethod = testResult.getMethod();
