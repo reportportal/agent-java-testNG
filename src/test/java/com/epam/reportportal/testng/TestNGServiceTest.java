@@ -23,26 +23,34 @@ package com.epam.reportportal.testng;
 
 import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
+import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import io.reactivex.Maybe;
 import org.mockito.Mockito;
+import org.testng.ISuite;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import rp.com.google.common.base.Supplier;
 
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Pavel Bortnik
  */
 public class TestNGServiceTest {
 
-	private static TestNGService testNGService;
+	public static final String RP_ID = "rp_id";
 
-	private static Launch launch;
+	private TestNGService testNGService;
+
+	private Launch launch;
+
+	private ISuite suite;
 
 	@BeforeClass
 	public void init() {
-		launch = Mockito.mock(Launch.class);
+		launch = mock(Launch.class);
+		suite = mock(ISuite.class);
 		testNGService = new TestNGService(new TestNGService.MemoizingSupplier<Launch>(new Supplier<Launch>() {
 			@Override
 			public Launch get() {
@@ -61,6 +69,13 @@ public class TestNGServiceTest {
 	public void finishLaunch() {
 		testNGService.finishLaunch();
 		verify(launch, times(1)).finish(Mockito.any(FinishExecutionRQ.class));
+	}
+
+	@Test
+	public void startTest() {
+		testNGService.startTestSuite(suite);
+		verify(launch, times(1)).startTestItem(any(StartTestItemRQ.class));
+		verify(suite, times(1)).setAttribute(eq(RP_ID), any(Maybe.class));
 	}
 
 }
