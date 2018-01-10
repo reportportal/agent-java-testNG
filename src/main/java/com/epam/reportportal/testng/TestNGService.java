@@ -34,6 +34,8 @@ import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.*;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -59,6 +61,8 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
  * TestNG service implements operations for interaction report portal
  */
 public class TestNGService implements ITestNGService {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(TestNGService.class);
 
 	public static final String NOT_ISSUE = "NOT_ISSUE";
 	public static final String RP_ID = "rp_id";
@@ -102,18 +106,11 @@ public class TestNGService implements ITestNGService {
 
 	}
 
-	/*
-	 * sometimes testng triggers on suite start several times.
-	 * This is why method is synchronized and check for attribute presence is added
-	 */
 	@Override
 	public synchronized void startTestSuite(ISuite suite) {
-		//avoid starting same suite twice
-		if (null == getAttribute(suite, RP_ID)) {
-			StartTestItemRQ rq = buildStartSuiteRq(suite);
-			final Maybe<String> item = launch.get().startTestItem(rq);
-			suite.setAttribute(RP_ID, item);
-		}
+		StartTestItemRQ rq = buildStartSuiteRq(suite);
+		final Maybe<String> item = launch.get().startTestItem(rq);
+		suite.setAttribute(RP_ID, item);
 	}
 
 	@Override
@@ -327,6 +324,7 @@ public class TestNGService implements ITestNGService {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(new Date(testResult.getEndMillis()));
 		rq.setStatus(status);
+		rq.setRetry(isRetry(testResult));
 		// Allows indicate that SKIPPED is not to investigate items for WS
 		if (status.equals(Statuses.SKIPPED) && !launch.get().getParameters().getSkippedAnIssue()) {
 			Issue issue = new Issue();
@@ -512,7 +510,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	private boolean isRetry(ITestResult result) {
-		return result.getMethod().getCurrentInvocationCount() > 0;
+		return result.getMethod().getCurrentInvocationCount() > 1;
 	}
 
 	@VisibleForTesting

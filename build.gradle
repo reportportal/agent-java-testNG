@@ -18,7 +18,7 @@ repositories {
 
 dependencies {
     compile 'com.epam.reportportal:client-java:4.0.0-BETA-1'
-    compile 'com.epam.reportportal:commons-model:4.0.0'
+    compile 'com.github.reportportal:commons-model:1fd1d5a'
     compile 'org.testng:testng:6.11'
 
     testCompile 'org.hamcrest:hamcrest-all:1.3'
