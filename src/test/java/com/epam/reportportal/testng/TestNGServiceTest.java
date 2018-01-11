@@ -32,10 +32,12 @@ import org.junit.Assert;
 import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.testng.ISuite;
 import org.testng.ITestContext;
 import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -52,18 +54,23 @@ import static org.mockito.Mockito.*;
 @SuppressWarnings("unchecked")
 public class TestNGServiceTest {
 
-	public static final String RP_ID = "rp_id";
+	private static final String RP_ID = "rp_id";
 
 	private TestNGService testNGService;
 
+	@Mock
 	private ITestContext testContext;
 
+	@Mock
 	private ITestResult testResult;
 
+	@Mock
 	private ITestNGMethod method;
 
+	@Mock
 	private Launch launch;
 
+	@Mock
 	private ISuite suite;
 
 	@Mock
@@ -71,12 +78,7 @@ public class TestNGServiceTest {
 
 	@BeforeClass
 	public void init() {
-		launch = mock(Launch.class);
-		testContext = mock(ITestContext.class);
-		testResult = mock(ITestResult.class);
-		method = mock(ITestNGMethod.class);
-		suite = mock(ISuite.class);
-		id = mock(Maybe.class);
+		MockitoAnnotations.initMocks(this);
 		testNGService = new TestNGService(new TestNGService.MemoizingSupplier<Launch>(new Supplier<Launch>() {
 			@Override
 			public Launch get() {
@@ -89,9 +91,14 @@ public class TestNGServiceTest {
 	public void preconditions() {
 		when(testResult.getTestContext()).thenReturn(testContext);
 		when(testResult.getMethod()).thenReturn(method);
+		when(testResult.getAttribute(RP_ID)).thenReturn(id);
 		when(testContext.getSuite()).thenReturn(suite);
 		when(testContext.getAttribute(RP_ID)).thenReturn(id);
-		when(testResult.getAttribute(RP_ID)).thenReturn(id);
+	}
+
+	@AfterMethod
+	public void after() {
+		reset(launch, testResult);
 	}
 
 	@Test
@@ -202,4 +209,5 @@ public class TestNGServiceTest {
 		Maybe<String> configParent = testNGService.getConfigParent(testResult, TestMethodType.STEP);
 		Assert.assertThat("Incorrect id", configParent, is(id));
 	}
+
 }

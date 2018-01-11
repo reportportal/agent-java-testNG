@@ -30,7 +30,8 @@ import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import org.junit.Assert;
 import org.junit.Ignore;
-import org.mockito.Mockito;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
 import org.testng.annotations.*;
@@ -52,21 +53,24 @@ import static org.mockito.Mockito.when;
 /**
  * @author Pavel Bortnik
  */
-public class StepRqBuildTest {
+public class BuildStepTest {
 
 	private static TestNGService testNGService;
 
+	@Mock
 	private static Launch launch;
 
+	@Mock
 	private static ITestResult testResult;
 
+	@Mock
 	private static ITestNGMethod testNGMethod;
 
+	@Mock
 	private static ConstructorOrMethod constructorOrMethod;
 
 	@BeforeClass
 	public void init() {
-		launch = Mockito.mock(Launch.class);
 		testNGService = new TestNGService(new TestNGService.MemoizingSupplier<Launch>(new Supplier<Launch>() {
 			@Override
 			public Launch get() {
@@ -77,10 +81,7 @@ public class StepRqBuildTest {
 
 	@BeforeMethod
 	public void initMocks() {
-		testResult = Mockito.mock(ITestResult.class);
-		testNGMethod = Mockito.mock(ITestNGMethod.class);
-		constructorOrMethod = Mockito.mock(ConstructorOrMethod.class);
-
+		MockitoAnnotations.initMocks(this);
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);

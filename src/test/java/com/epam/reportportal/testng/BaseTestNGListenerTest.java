@@ -48,56 +48,56 @@ public class BaseTestNGListenerTest {
 	}
 
 	@Test
-	public void onExecutionStart() {
+	public void testOnExecutionStart() {
 		listener.onExecutionStart();
 		verify(testNGService, times(1)).startLaunch();
 	}
 
 	@Test
-	public void onExecutionFinish() {
+	public void testOnExecutionFinish() {
 		listener.onExecutionFinish();
 		verify(testNGService, times(1)).finishLaunch();
 	}
 
 	@Test
-	public void onSuiteStart() {
+	public void testOnSuiteStart() {
 		listener.onStart(any(ISuite.class));
 		verify(testNGService, times(1)).startTestSuite(any(ISuite.class));
 	}
 
 	@Test
-	public void onSuiteFinish() {
+	public void testOnSuiteFinish() {
 		listener.onFinish(any(ISuite.class));
 		verify(testNGService, times(1)).finishTestSuite(any(ISuite.class));
 	}
 
 	@Test
-	public void onStart() {
+	public void testOnStart() {
 		listener.onStart(any(ITestContext.class));
 		verify(testNGService, times(1)).startTest(any(ITestContext.class));
 	}
 
 	@Test
-	public void onFinish() {
+	public void testOnFinish() {
 		listener.onFinish(any(ITestContext.class));
 		verify(testNGService, times(1)).finishTest(any(ITestContext.class));
 	}
 
 	@Test
-	public void onTestStart() {
+	public void testOnTestStart() {
 		listener.onTestStart(any(ITestResult.class));
 		verify(testNGService, times(1)).startTestMethod(any(ITestResult.class));
 	}
 
 	@Test
-	public void onTestSuccess() {
+	public void testOnTestSuccess() {
 		ITestResult testResult = mock(ITestResult.class);
 		listener.onTestSuccess(testResult);
 		verify(testNGService, times(1)).finishTestMethod(Statuses.PASSED, testResult);
 	}
 
 	@Test
-	public void onTestFailure() {
+	public void testOnTestFailure() {
 		ITestResult testResult = mock(ITestResult.class);
 		listener.onTestFailure(testResult);
 		verify(testNGService, times(1)).sendReportPortalMsg(testResult);
@@ -105,20 +105,20 @@ public class BaseTestNGListenerTest {
 	}
 
 	@Test
-	public void onTestSkipped() {
+	public void testOnTestSkipped() {
 		ITestResult testResult = mock(ITestResult.class);
 		listener.onTestSkipped(testResult);
 		verify(testNGService, times(1)).finishTestMethod(Statuses.SKIPPED, testResult);
 	}
 
 	@Test
-	public void beforeConfiguration() {
+	public void testBeforeConfiguration() {
 		listener.beforeConfiguration(any(ITestResult.class));
 		verify(testNGService, times(1)).startConfiguration(any(ITestResult.class));
 	}
 
 	@Test
-	public void onConfigurationFailure() {
+	public void testOnConfigurationFailure() {
 		ITestResult testResult = mock(ITestResult.class);
 		listener.onConfigurationFailure(testResult);
 		verify(testNGService, times(1)).sendReportPortalMsg(testResult);
@@ -126,14 +126,14 @@ public class BaseTestNGListenerTest {
 	}
 
 	@Test
-	public void onConfigurationSuccess() {
+	public void testOnConfigurationSuccess() {
 		ITestResult testResult = mock(ITestResult.class);
 		listener.onConfigurationSuccess(testResult);
 		verify(testNGService, times(1)).finishTestMethod(Statuses.PASSED, testResult);
 	}
 
 	@Test
-	public void onConfigurationSkip() {
+	public void testOnConfigurationSkip() {
 		ITestResult testResult = mock(ITestResult.class);
 		listener.onConfigurationSkip(testResult);
 		verify(testNGService, times(1)).startConfiguration(testResult);
@@ -141,7 +141,7 @@ public class BaseTestNGListenerTest {
 	}
 
 	@Test
-	public void onTestFailedButWithinSuccessPercentage() {
+	public void testOnTestFailedButWithinSuccessPercentage() {
 		ITestResult testResult = mock(ITestResult.class);
 		listener.onTestFailedButWithinSuccessPercentage(testResult);
 		verify(testNGService, times(1)).finishTestMethod(Statuses.FAILED, testResult);

@@ -27,6 +27,8 @@ import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.testng.IResultMap;
 import org.testng.ISuite;
 import org.testng.ISuiteResult;
@@ -50,21 +52,22 @@ import static org.mockito.Mockito.when;
 /**
  * @author Pavel Bortnik
  */
-public class TestRqBuildTest {
+public class BuildTestTest {
 
 	private TestNGService testNGService;
 
+	@Mock
 	private ITestContext testContext;
 
+	@Mock
 	private ISuite iSuite;
 
+	@Mock
 	private Launch launch;
 
 	@BeforeClass
 	public void init() {
-		launch = mock(Launch.class);
-		testContext = mock(ITestContext.class);
-		iSuite = mock(ISuite.class);
+		MockitoAnnotations.initMocks(this);
 		testNGService = new TestNGService(new TestNGService.MemoizingSupplier<Launch>(new Supplier<Launch>() {
 			@Override
 			public Launch get() {
