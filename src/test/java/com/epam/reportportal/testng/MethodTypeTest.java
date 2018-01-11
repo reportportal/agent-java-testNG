@@ -23,7 +23,6 @@ package com.epam.reportportal.testng;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Answers;
 import org.mockito.Mockito;
 import org.testng.ITestNGMethod;
 
@@ -111,7 +110,6 @@ public class MethodTypeTest {
 
 	@Test
 	public void testNull() {
-		when(testNGMethod).then(Answers.RETURNS_DEFAULTS);
 		assertEquals(null, getStepType(testNGMethod));
 	}
 
