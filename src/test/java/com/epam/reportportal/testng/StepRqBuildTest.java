@@ -40,6 +40,7 @@ import rp.com.google.common.base.Supplier;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Iterator;
 
 import static com.epam.reportportal.testng.Constants.*;
@@ -101,9 +102,9 @@ public class StepRqBuildTest {
 
 	@Test
 	public void testDescription() {
-		when(testNGMethod.getDescription()).thenReturn(DESCRIPTION);
+		when(testNGMethod.getDescription()).thenReturn(DEFAULT_DESCRIPTION);
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
-		assertThat("Incorrect test description", rq.getDescription(), is(DESCRIPTION));
+		assertThat("Incorrect test description", rq.getDescription(), is(DEFAULT_DESCRIPTION));
 	}
 
 	@Test
@@ -245,6 +246,26 @@ public class StepRqBuildTest {
 
 		FinishTestItemRQ rq = testNGService.buildFinishTestMethodRq(Statuses.SKIPPED, testResult);
 		assertThat("Incorrect issue type", rq.getIssue().getIssueType(), is("NOT_ISSUE"));
+	}
+
+	@Test
+	public void testStartConfigurationRq() {
+		when(testNGMethod.getMethodName()).thenReturn(DEFAULT_NAME);
+		when(testNGMethod.getDescription()).thenReturn(DEFAULT_DESCRIPTION);
+		when(testResult.getStartMillis()).thenReturn(DEFAULT_TIME);
+
+		StartTestItemRQ rq = testNGService.buildStartConfigurationRq(testResult, TestMethodType.BEFORE_TEST);
+
+		assertThat("Incorrect method name", rq.getName(), is(DEFAULT_NAME));
+		assertThat("Incorrect method description", rq.getDescription(), is(DEFAULT_DESCRIPTION));
+		assertThat("Incorrect start time", rq.getStartTime(), is(new Date(DEFAULT_TIME)));
+		assertThat("Incorrect test method type", rq.getType(), is(TestMethodType.BEFORE_TEST.name()));
+	}
+
+	@Test
+	public void testStartConfigurationNullType() {
+		StartTestItemRQ rq = testNGService.buildStartConfigurationRq(testResult, null);
+		assertThat("Incorrect method type", rq.getType(), nullValue());
 	}
 
 	private static class TestMethodsExamples {

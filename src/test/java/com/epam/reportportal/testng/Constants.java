@@ -37,7 +37,7 @@ public class Constants {
 	static final String DEFAULT_PROJECT = "default_project";
 	static final Set<String> TAGS = ImmutableSet.<String>builder().add("tag").add("tag_1").build();
 	static final Mode MODE = Mode.DEFAULT;
-	static final String DESCRIPTION = "default_description";
+	static final String DEFAULT_DESCRIPTION = "default_description";
 	static final Long DEFAULT_TIME = 1515594836210L;
 
 }

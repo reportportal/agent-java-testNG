@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Pavel Bortnik
  */
-public class TestMethodTypeTest {
+public class MethodTypeTest {
 
 	private ITestNGMethod testNGMethod;
 
