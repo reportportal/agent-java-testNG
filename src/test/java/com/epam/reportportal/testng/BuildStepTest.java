@@ -29,12 +29,15 @@ import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
-import org.testng.annotations.*;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Parameters;
 import org.testng.internal.ConstructorOrMethod;
 import rp.com.google.common.base.Supplier;
 
@@ -55,33 +58,30 @@ import static org.mockito.Mockito.when;
  */
 public class BuildStepTest {
 
-	private static TestNGService testNGService;
+	private TestNGService testNGService;
 
 	@Mock
-	private static Launch launch;
+	private Launch launch;
 
 	@Mock
-	private static ITestResult testResult;
+	private ITestResult testResult;
 
 	@Mock
-	private static ITestNGMethod testNGMethod;
+	private ITestNGMethod testNGMethod;
 
 	@Mock
-	private static ConstructorOrMethod constructorOrMethod;
+	private ConstructorOrMethod constructorOrMethod;
 
-	@BeforeClass
-	public void init() {
+	@Before
+	public void initMocks() {
+		MockitoAnnotations.initMocks(this);
 		testNGService = new TestNGService(new TestNGService.MemoizingSupplier<Launch>(new Supplier<Launch>() {
 			@Override
 			public Launch get() {
 				return launch;
 			}
 		}));
-	}
 
-	@BeforeMethod
-	public void initMocks() {
-		MockitoAnnotations.initMocks(this);
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
@@ -271,23 +271,24 @@ public class BuildStepTest {
 
 	private static class TestMethodsExamples {
 		@UniqueID("ProvidedID")
+		@org.testng.annotations.Test
 		private void uniqueIdAnnotation() {
 			//just for testing providing unique id
 		}
 
 		@Ignore
-		@Test(dataProvider = "dp")
+		@org.testng.annotations.Test(dataProvider = "dp")
 		private void dataProviderWithoutKey(String param_0, String param_1) {
 			//just for testing providing parameters
 		}
 
 		@Ignore
-		@Test(dataProvider = "dp")
+		@org.testng.annotations.Test(dataProvider = "dp")
 		private void dataProviderWithParameterKey(@ParameterKey("key_0") String param_0, String param_1) {
 			//just for testing providing parameters
 		}
 
-		@Test
+		@org.testng.annotations.Test
 		@Parameters({ "message_0", "message_1" })
 		private void parametersAnnotation(String msg_0, String msq_1) {
 			//just for testing providing parameters

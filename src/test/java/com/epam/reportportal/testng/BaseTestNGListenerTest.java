@@ -22,12 +22,12 @@
 package com.epam.reportportal.testng;
 
 import com.epam.reportportal.listeners.Statuses;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.Mockito;
 import org.testng.ISuite;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -41,7 +41,7 @@ public class BaseTestNGListenerTest {
 
 	private BaseTestNGListener listener;
 
-	@BeforeMethod
+	@Before
 	public void init() {
 		testNGService = Mockito.mock(TestNGService.class);
 		listener = new BaseTestNGListener(testNGService);

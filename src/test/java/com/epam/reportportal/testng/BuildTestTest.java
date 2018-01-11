@@ -27,14 +27,14 @@ import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.IResultMap;
 import org.testng.ISuite;
 import org.testng.ISuiteResult;
 import org.testng.ITestContext;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 import org.testng.internal.ResultMap;
 import rp.com.google.common.base.Supplier;
 
@@ -65,15 +65,15 @@ public class BuildTestTest {
 	@Mock
 	private Launch launch;
 
-	@BeforeClass
-	public void init() {
-		MockitoAnnotations.initMocks(this);
+	@Before
+	public void preconditions() {
 		testNGService = new TestNGService(new TestNGService.MemoizingSupplier<Launch>(new Supplier<Launch>() {
 			@Override
 			public Launch get() {
 				return launch;
 			}
 		}));
+		MockitoAnnotations.initMocks(this);
 	}
 
 	@Test

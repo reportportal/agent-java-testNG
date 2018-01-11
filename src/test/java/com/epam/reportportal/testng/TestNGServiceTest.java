@@ -29,6 +29,8 @@ import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -37,10 +39,6 @@ import org.testng.ISuite;
 import org.testng.ITestContext;
 import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 import org.testng.internal.ResultMap;
 import rp.com.google.common.base.Supplier;
 
@@ -59,6 +57,9 @@ public class TestNGServiceTest {
 	private TestNGService testNGService;
 
 	@Mock
+	private Launch launch;
+
+	@Mock
 	private ITestContext testContext;
 
 	@Mock
@@ -68,37 +69,27 @@ public class TestNGServiceTest {
 	private ITestNGMethod method;
 
 	@Mock
-	private Launch launch;
-
-	@Mock
 	private ISuite suite;
 
 	@Mock
 	private Maybe<String> id;
 
-	@BeforeClass
-	public void init() {
+	@Before
+	public void preconditions() {
 		MockitoAnnotations.initMocks(this);
+
 		testNGService = new TestNGService(new TestNGService.MemoizingSupplier<Launch>(new Supplier<Launch>() {
 			@Override
 			public Launch get() {
 				return launch;
 			}
 		}));
-	}
 
-	@BeforeMethod
-	public void preconditions() {
 		when(testResult.getTestContext()).thenReturn(testContext);
 		when(testResult.getMethod()).thenReturn(method);
 		when(testResult.getAttribute(RP_ID)).thenReturn(id);
 		when(testContext.getSuite()).thenReturn(suite);
 		when(testContext.getAttribute(RP_ID)).thenReturn(id);
-	}
-
-	@AfterMethod
-	public void after() {
-		reset(launch, testResult);
 	}
 
 	@Test
