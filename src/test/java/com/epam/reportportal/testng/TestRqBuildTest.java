@@ -102,7 +102,7 @@ public class TestRqBuildTest {
 	public void testStartTestRq() {
 		ITestContext testContext = mock(ITestContext.class);
 		Calendar instance = Calendar.getInstance();
-		instance.setTimeInMillis(DEFAULT_START_TIME);
+		instance.setTimeInMillis(DEFAULT_TIME);
 
 		when(testContext.getName()).thenReturn(DEFAULT_NAME);
 		when(testContext.getStartDate()).thenReturn(instance.getTime());

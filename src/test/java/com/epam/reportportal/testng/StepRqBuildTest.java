@@ -23,7 +23,10 @@ package com.epam.reportportal.testng;
 
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.UniqueID;
+import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
+import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -105,7 +108,7 @@ public class StepRqBuildTest {
 
 	@Test
 	public void testParameters() {
-		Method[] methods = TestMethods.class.getDeclaredMethods();
+		Method[] methods = TestMethodsExamples.class.getDeclaredMethods();
 		Method method = null;
 		for (Method m : methods) {
 			if (m.getName().contains("parametersAnnotation")) {
@@ -126,7 +129,7 @@ public class StepRqBuildTest {
 
 	@Test
 	public void testParametersDataProvider_DefaultKey() {
-		Method[] methods = TestMethods.class.getDeclaredMethods();
+		Method[] methods = TestMethodsExamples.class.getDeclaredMethods();
 		Method method = null;
 		for (Method m : methods) {
 			if (m.getName().contains("dataProviderWithoutKey")) {
@@ -148,7 +151,7 @@ public class StepRqBuildTest {
 
 	@Test
 	public void testParametersDataProvider_ProvidedKey() {
-		Method[] methods = TestMethods.class.getDeclaredMethods();
+		Method[] methods = TestMethodsExamples.class.getDeclaredMethods();
 		Method method = null;
 		for (Method m : methods) {
 			if (m.getName().contains("dataProviderWithParameterKey")) {
@@ -175,7 +178,7 @@ public class StepRqBuildTest {
 
 	@Test
 	public void testUniqueId() {
-		Method[] methods = TestMethods.class.getDeclaredMethods();
+		Method[] methods = TestMethodsExamples.class.getDeclaredMethods();
 		Method method = null;
 		for (Method m : methods) {
 			if (m.getName().contains("uniqueIdAnnotation")) {
@@ -198,7 +201,7 @@ public class StepRqBuildTest {
 	@Test
 	public void testStartTime() {
 		Calendar instance = Calendar.getInstance();
-		instance.setTimeInMillis(DEFAULT_START_TIME);
+		instance.setTimeInMillis(DEFAULT_TIME);
 		when(testResult.getStartMillis()).thenReturn(instance.getTimeInMillis());
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
 		assertThat("Incorrect start time", rq.getStartTime(), is(instance.getTime()));
@@ -211,13 +214,40 @@ public class StepRqBuildTest {
 	}
 
 	@Test
-	public void testRetryFlag() {
+	public void testRetryFlagPositive() {
+		when(testNGMethod.getCurrentInvocationCount()).thenReturn(2);
+		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
+		assertThat("Incorrect retry flag", rq.isRetry(), is(true));
+	}
+
+	@Test
+	public void testRetryFlagNegative() {
 		when(testNGMethod.getCurrentInvocationCount()).thenReturn(0);
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
 		assertThat("Incorrect retry flag", rq.isRetry(), is(false));
 	}
 
-	private static class TestMethods {
+	@Test
+	public void testBuildFinishRQ() {
+		when(testResult.getEndMillis()).thenReturn(DEFAULT_TIME);
+		FinishTestItemRQ rq = testNGService.buildFinishTestMethodRq(Statuses.PASSED, testResult);
+		assertThat("Incorrect end time", rq.getEndTime().getTime(), is(DEFAULT_TIME));
+		assertThat("Incorrect status", rq.getStatus(), is(Statuses.PASSED));
+		assertThat("Incorrect retry flag", rq.isRetry(), is(false));
+		assertThat("Incorrect issue", rq.getIssue(), nullValue());
+	}
+
+	@Test
+	public void testSkippedNotIssue() {
+		ListenerParameters listenerParameters = new ListenerParameters();
+		listenerParameters.setSkippedAnIssue(false);
+		when(launch.getParameters()).thenReturn(listenerParameters);
+
+		FinishTestItemRQ rq = testNGService.buildFinishTestMethodRq(Statuses.SKIPPED, testResult);
+		assertThat("Incorrect issue type", rq.getIssue().getIssueType(), is("NOT_ISSUE"));
+	}
+
+	private static class TestMethodsExamples {
 		@UniqueID("ProvidedID")
 		private void uniqueIdAnnotation() {
 			//just for testing providing unique id

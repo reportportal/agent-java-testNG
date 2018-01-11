@@ -38,6 +38,6 @@ public class Constants {
 	static final Set<String> TAGS = ImmutableSet.<String>builder().add("tag").add("tag_1").build();
 	static final Mode MODE = Mode.DEFAULT;
 	static final String DESCRIPTION = "default_description";
-	static final Long DEFAULT_START_TIME = 1515594836210L;
+	static final Long DEFAULT_TIME = 1515594836210L;
 
 }
