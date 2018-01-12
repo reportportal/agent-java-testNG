@@ -319,7 +319,6 @@ public class TestNGService implements ITestNGService {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(new Date(testResult.getEndMillis()));
 		rq.setStatus(status);
-		rq.setRetry(isRetry(testResult));
 		// Allows indicate that SKIPPED is not to investigate items for WS
 		if (status.equals(Statuses.SKIPPED) && !launch.get().getParameters().getSkippedAnIssue()) {
 			Issue issue = new Issue();
@@ -506,7 +505,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	private boolean isRetry(ITestResult result) {
-		return result.getMethod().getCurrentInvocationCount() > 1;
+		return result.getMethod().getRetryAnalyzer() != null;
 	}
 
 	@VisibleForTesting
