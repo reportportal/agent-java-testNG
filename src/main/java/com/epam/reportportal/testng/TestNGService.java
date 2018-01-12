@@ -34,8 +34,6 @@ import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testng.*;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -61,8 +59,6 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
  * TestNG service implements operations for interaction report portal
  */
 public class TestNGService implements ITestNGService {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(TestNGService.class);
 
 	public static final String NOT_ISSUE = "NOT_ISSUE";
 	public static final String RP_ID = "rp_id";
@@ -136,7 +132,6 @@ public class TestNGService implements ITestNGService {
 	public void finishTest(ITestContext testContext) {
 		FinishTestItemRQ rq = buildFinishTestRq(testContext);
 		launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
-
 	}
 
 	@Override
@@ -480,7 +475,7 @@ public class TestNGService implements ITestNGService {
 	 *
 	 * @param annotation Annotation class to find
 	 * @param testResult Where to find
-	 * @return {@link Annotation} or null if doesn't exsists
+	 * @return {@link Annotation} or null if doesn't exists
 	 */
 	private <T extends Annotation> T getMethodAnnotation(Class<T> annotation, ITestResult testResult) {
 		ITestNGMethod testNGMethod = testResult.getMethod();
@@ -499,7 +494,8 @@ public class TestNGService implements ITestNGService {
 	/**
 	 * Calculate parent id for configuration
 	 */
-	private Maybe<String> getConfigParent(ITestResult testResult, TestMethodType type) {
+	@VisibleForTesting
+	Maybe<String> getConfigParent(ITestResult testResult, TestMethodType type) {
 		Maybe<String> parentId;
 		if (TestMethodType.BEFORE_SUITE.equals(type) || TestMethodType.AFTER_SUITE.equals(type)) {
 			parentId = getAttribute(testResult.getTestContext().getSuite(), RP_ID);
