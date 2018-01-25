@@ -120,12 +120,11 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public void startTest(ITestContext testContext) {
-		StartTestItemRQ rq = buildStartTestItemRq(testContext);
-
-		final Maybe<String> testID = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
-
-		testContext.setAttribute(RP_ID, testID);
-
+		if (testContext.getAllTestMethods() != null && 0 != testContext.getAllTestMethods().length) {
+			StartTestItemRQ rq = buildStartTestItemRq(testContext);
+			final Maybe<String> testID = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
+			testContext.setAttribute(RP_ID, testID);
+		}
 	}
 
 	@Override
