@@ -128,6 +128,8 @@ public class TestNGServiceTest {
 	@Test
 	public void startTest() {
 		when(testContext.getSuite()).thenReturn(suite);
+		ITestNGMethod[] methods = new ITestNGMethod[] { method };
+		when(testContext.getAllTestMethods()).thenReturn(methods);
 		when(suite.getAttribute(RP_ID)).thenReturn(id);
 		testNGService.startTest(testContext);
 
@@ -136,8 +138,18 @@ public class TestNGServiceTest {
 	}
 
 	@Test
+	public void startTestWithoutMethods() {
+		testNGService.startTest(testContext);
+		verify(launch, never()).startTestItem(eq(id), any(StartTestItemRQ.class));
+		verify(testContext, never()).setAttribute(eq(RP_ID), Matchers.any(Maybe.class));
+	}
+
+	@Test
 	public void finishTest() {
 		ResultMap empty = new ResultMap();
+		when(testContext.getSuite()).thenReturn(suite);
+		ITestNGMethod[] methods = new ITestNGMethod[] { method };
+		when(testContext.getAllTestMethods()).thenReturn(methods);
 		when(testContext.getFailedTests()).thenReturn(empty);
 		when(testContext.getFailedConfigurations()).thenReturn(empty);
 		when(testContext.getSkippedConfigurations()).thenReturn(empty);
@@ -145,6 +157,13 @@ public class TestNGServiceTest {
 
 		testNGService.finishTest(testContext);
 		verify(launch, times(1)).finishTestItem(eq(id), any(FinishTestItemRQ.class));
+	}
+
+	@Test
+	public void finishTestWithoutMethods() {
+		testNGService.finishTest(testContext);
+		verify(launch, never()).finishTestItem(eq(id), any(FinishTestItemRQ.class));
+		;
 	}
 
 	@Test
