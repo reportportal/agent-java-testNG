@@ -129,8 +129,10 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public void finishTest(ITestContext testContext) {
-		FinishTestItemRQ rq = buildFinishTestRq(testContext);
-		launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
+		if (testContext.getAllTestMethods() != null && 0 != testContext.getAllTestMethods().length) {
+			FinishTestItemRQ rq = buildFinishTestRq(testContext);
+			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
+		}
 	}
 
 	@Override
