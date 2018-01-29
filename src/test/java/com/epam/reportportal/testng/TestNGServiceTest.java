@@ -163,7 +163,6 @@ public class TestNGServiceTest {
 	public void finishTestWithoutMethods() {
 		testNGService.finishTest(testContext);
 		verify(launch, never()).finishTestItem(eq(id), any(FinishTestItemRQ.class));
-		;
 	}
 
 	@Test
