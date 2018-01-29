@@ -34,6 +34,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.testng.IRetryAnalyzer;
 import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
 import org.testng.annotations.DataProvider;
@@ -217,7 +218,12 @@ public class BuildStepTest {
 
 	@Test
 	public void testRetryFlagPositive() {
-		when(testNGMethod.getCurrentInvocationCount()).thenReturn(2);
+		when(testNGMethod.getRetryAnalyzer()).thenReturn(new IRetryAnalyzer() {
+			@Override
+			public boolean retry(ITestResult result) {
+				return true;
+			}
+		});
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
 		assertThat("Incorrect retry flag", rq.isRetry(), is(true));
 	}
@@ -235,7 +241,7 @@ public class BuildStepTest {
 		FinishTestItemRQ rq = testNGService.buildFinishTestMethodRq(Statuses.PASSED, testResult);
 		assertThat("Incorrect end time", rq.getEndTime().getTime(), is(DEFAULT_TIME));
 		assertThat("Incorrect status", rq.getStatus(), is(Statuses.PASSED));
-		assertThat("Incorrect retry flag", rq.isRetry(), is(false));
+		assertThat("Incorrect retry flag", rq.isRetry(), nullValue());
 		assertThat("Incorrect issue", rq.getIssue(), nullValue());
 	}
 

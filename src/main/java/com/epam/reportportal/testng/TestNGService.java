@@ -120,18 +120,19 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public void startTest(ITestContext testContext) {
-		StartTestItemRQ rq = buildStartTestItemRq(testContext);
-
-		final Maybe<String> testID = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
-
-		testContext.setAttribute(RP_ID, testID);
-
+		if (hasMethodsToRun(testContext)) {
+			StartTestItemRQ rq = buildStartTestItemRq(testContext);
+			final Maybe<String> testID = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
+			testContext.setAttribute(RP_ID, testID);
+		}
 	}
 
 	@Override
 	public void finishTest(ITestContext testContext) {
-		FinishTestItemRQ rq = buildFinishTestRq(testContext);
-		launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
+		if (hasMethodsToRun(testContext)) {
+			FinishTestItemRQ rq = buildFinishTestRq(testContext);
+			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
+		}
 	}
 
 	@Override
@@ -488,6 +489,19 @@ public class TestNGService implements ITestNGService {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Checks if test suite has any methods to run.
+	 * It can be useful with writing test with "groups".
+	 * So there could be created a test suite that has some methods but doesn't fit
+	 * the condition of a group. Such suite should be ignored for rp.
+	 *
+	 * @param testContext Test context
+	 * @return True if item has any tests to run
+	 */
+	private boolean hasMethodsToRun(ITestContext testContext) {
+		return null != testContext && null != testContext.getAllTestMethods() && 0 != testContext.getAllTestMethods().length;
 	}
 
 	/**
