@@ -241,7 +241,6 @@ public class BuildStepTest {
 		FinishTestItemRQ rq = testNGService.buildFinishTestMethodRq(Statuses.PASSED, testResult);
 		assertThat("Incorrect end time", rq.getEndTime().getTime(), is(DEFAULT_TIME));
 		assertThat("Incorrect status", rq.getStatus(), is(Statuses.PASSED));
-		assertThat("Incorrect retry flag", rq.isRetry(), nullValue());
 		assertThat("Incorrect issue", rq.getIssue(), nullValue());
 	}
 
