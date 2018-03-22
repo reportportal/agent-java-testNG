@@ -52,6 +52,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static rp.com.google.common.base.Optional.fromNullable;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -321,7 +322,7 @@ public class TestNGService implements ITestNGService {
 		rq.setEndTime(new Date(testResult.getEndMillis()));
 		rq.setStatus(status);
 		// Allows indicate that SKIPPED is not to investigate items for WS
-		if (status.equals(Statuses.SKIPPED) && !launch.get().getParameters().getSkippedAnIssue()) {
+		if (status.equals(Statuses.SKIPPED) && !fromNullable(launch.get().getParameters().getSkippedAnIssue()).or(false)) {
 			Issue issue = new Issue();
 			issue.setIssueType(NOT_ISSUE);
 			rq.setIssue(issue);
