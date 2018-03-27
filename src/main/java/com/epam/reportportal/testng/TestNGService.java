@@ -322,7 +322,7 @@ public class TestNGService implements ITestNGService {
 		rq.setEndTime(new Date(testResult.getEndMillis()));
 		rq.setStatus(status);
 		// Allows indicate that SKIPPED is not to investigate items for WS
-		if (status.equals(Statuses.SKIPPED) && !fromNullable(launch.get().getParameters().getSkippedAnIssue()).or(false)) {
+		if (Statuses.SKIPPED.equals(status) && !fromNullable(launch.get().getParameters().getSkippedAnIssue()).or(false)) {
 			Issue issue = new Issue();
 			issue.setIssueType(NOT_ISSUE);
 			rq.setIssue(issue);
