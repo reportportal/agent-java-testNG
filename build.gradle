@@ -18,6 +18,7 @@ description = 'TestNG Agent'
 repositories {
     jcenter()
     mavenLocal()
+    mavenCentral()
     maven { url "http://dl.bintray.com/epam/reportportal" }
     maven { url "https://jitpack.io" }
 }
