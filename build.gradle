@@ -1,3 +1,11 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven { url "https://plugins.gradle.org/m2/" }
+    }
+}
+
 plugins {
     id 'net.researchgate.release' version '2.6.0'
     id "com.jfrog.bintray" version "1.8.4"
