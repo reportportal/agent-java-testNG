@@ -106,7 +106,7 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public synchronized void startTestSuite(ISuite suite) {
 		StartTestItemRQ rq = buildStartSuiteRq(suite);
-		final Maybe<String> item = launch.get().startTestItem(rq);
+		final Maybe<Long> item = launch.get().startTestItem(rq);
 		suite.setAttribute(RP_ID, item);
 	}
 
@@ -114,7 +114,7 @@ public class TestNGService implements ITestNGService {
 	public synchronized void finishTestSuite(ISuite suite) {
 		if (null != suite.getAttribute(RP_ID)) {
 			FinishTestItemRQ rq = buildFinishTestSuiteRq(suite);
-			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
+			launch.get().finishTestItem(this.<Maybe<Long>>getAttribute(suite, RP_ID), rq);
 			suite.removeAttribute(RP_ID);
 		}
 	}
@@ -123,7 +123,7 @@ public class TestNGService implements ITestNGService {
 	public void startTest(ITestContext testContext) {
 		if (hasMethodsToRun(testContext)) {
 			StartTestItemRQ rq = buildStartTestItemRq(testContext);
-			final Maybe<String> testID = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
+			final Maybe<Long> testID = launch.get().startTestItem(this.<Maybe<Long>>getAttribute(testContext.getSuite(), RP_ID), rq);
 			testContext.setAttribute(RP_ID, testID);
 		}
 	}
@@ -132,7 +132,7 @@ public class TestNGService implements ITestNGService {
 	public void finishTest(ITestContext testContext) {
 		if (hasMethodsToRun(testContext)) {
 			FinishTestItemRQ rq = buildFinishTestRq(testContext);
-			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
+			launch.get().finishTestItem(this.<Maybe<Long>>getAttribute(testContext, RP_ID), rq);
 		}
 	}
 
@@ -143,7 +143,7 @@ public class TestNGService implements ITestNGService {
 			return;
 		}
 
-		Maybe<String> stepMaybe = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
+		Maybe<Long> stepMaybe = launch.get().startTestItem(this.<Maybe<Long>>getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
 	}
 
@@ -154,7 +154,7 @@ public class TestNGService implements ITestNGService {
 		}
 
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
-		launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testResult, RP_ID), rq);
+		launch.get().finishTestItem(this.<Maybe<Long>>getAttribute(testResult, RP_ID), rq);
 	}
 
 	@Override
@@ -162,18 +162,18 @@ public class TestNGService implements ITestNGService {
 		TestMethodType type = TestMethodType.getStepType(testResult.getMethod());
 		StartTestItemRQ rq = buildStartConfigurationRq(testResult, type);
 
-		Maybe<String> parentId = getConfigParent(testResult, type);
-		final Maybe<String> itemID = launch.get().startTestItem(parentId, rq);
+		Maybe<Long> parentId = getConfigParent(testResult, type);
+		final Maybe<Long> itemID = launch.get().startTestItem(parentId, rq);
 		testResult.setAttribute(RP_ID, itemID);
 	}
 
 	@Override
 	public void sendReportPortalMsg(final ITestResult result) {
-		ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
+		ReportPortal.emitLog(new Function<Long, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(String itemId) {
+			public SaveLogRQ apply(Long itemId) {
 				SaveLogRQ rq = new SaveLogRQ();
-				rq.setTestItemId(Long.parseLong(itemId));
+				rq.setTestItemId(itemId);
 				rq.setLevel("ERROR");
 				rq.setLogTime(Calendar.getInstance().getTime());
 				if (result.getThrowable() != null) {
@@ -227,7 +227,7 @@ public class TestNGService implements ITestNGService {
 		StartLaunchRQ rq = new StartLaunchRQ();
 		rq.setName(parameters.getLaunchName());
 		rq.setStartTime(Calendar.getInstance().getTime());
-		rq.setTags(parameters.getTags());
+		rq.setAttributes(parameters.getAttributes());
 		rq.setMode(parameters.getLaunchRunningMode());
 		if (!isNullOrEmpty(parameters.getDescription())) {
 			rq.setDescription(parameters.getDescription());
@@ -509,8 +509,8 @@ public class TestNGService implements ITestNGService {
 	 * Calculate parent id for configuration
 	 */
 	@VisibleForTesting
-	Maybe<String> getConfigParent(ITestResult testResult, TestMethodType type) {
-		Maybe<String> parentId;
+	Maybe<Long> getConfigParent(ITestResult testResult, TestMethodType type) {
+		Maybe<Long> parentId;
 		if (TestMethodType.BEFORE_SUITE.equals(type) || TestMethodType.AFTER_SUITE.equals(type)) {
 			parentId = getAttribute(testResult.getTestContext().getSuite(), RP_ID);
 		} else {

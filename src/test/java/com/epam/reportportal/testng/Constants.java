@@ -21,6 +21,7 @@
 
 package com.epam.reportportal.testng;
 
+import com.epam.ta.reportportal.ws.model.ItemAttributeResource;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
 import rp.com.google.common.collect.ImmutableSet;
 
@@ -35,7 +36,10 @@ public class Constants {
 	static final String DEFAULT_UUID = "default_uuid";
 	static final String DEFAULT_NAME = "default_name";
 	static final String DEFAULT_PROJECT = "default_project";
-	static final Set<String> TAGS = ImmutableSet.<String>builder().add("tag").add("tag_1").build();
+	static final Set<ItemAttributeResource> ATTRIBUTES = ImmutableSet.<ItemAttributeResource>builder().add(new ItemAttributeResource(
+			"key",
+			"value"
+	)).build();
 	static final Mode MODE = Mode.DEFAULT;
 	static final String DEFAULT_DESCRIPTION = "default_description";
 	static final Long DEFAULT_TIME = 1515594836210L;
