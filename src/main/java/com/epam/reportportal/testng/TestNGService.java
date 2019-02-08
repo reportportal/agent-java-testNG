@@ -365,7 +365,7 @@ public class TestNGService implements ITestNGService {
 		for (int i = 0; i < keys.length; i++) {
 			ParameterResource parameter = new ParameterResource();
 			parameter.setKey(keys[i]);
-			parameter.setValue(parameters[i] != null ? parameters[i].toString() : null);
+			parameter.setValue(parameters[i] != null ? parameters[i].toString() : "");
 			params.add(parameter);
 		}
 		return params;
@@ -401,7 +401,7 @@ public class TestNGService implements ITestNGService {
 				}
 			}
 			parameter.setKey(key);
-			parameter.setValue(value);
+			parameter.setValue(value != null ? value : "");
 			result.add(parameter);
 		}
 		return result;
