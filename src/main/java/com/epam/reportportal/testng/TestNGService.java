@@ -26,10 +26,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
-import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
-import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
-import com.epam.ta.reportportal.ws.model.ParameterResource;
-import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
@@ -42,6 +39,7 @@ import org.testng.internal.ConstructorOrMethod;
 import rp.com.google.common.annotations.VisibleForTesting;
 import rp.com.google.common.base.Function;
 import rp.com.google.common.base.Supplier;
+import rp.com.google.common.collect.Sets;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -62,6 +60,7 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 public class TestNGService implements ITestNGService {
 
 	public static final String NOT_ISSUE = "NOT_ISSUE";
+	public static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 	public static final String RP_ID = "rp_id";
 	public static final String ARGUMENT = "arg";
 
@@ -326,6 +325,12 @@ public class TestNGService implements ITestNGService {
 			Issue issue = new Issue();
 			issue.setIssueType(NOT_ISSUE);
 			rq.setIssue(issue);
+
+			ItemAttributeResource attribute = new ItemAttributeResource();
+			attribute.setKey(SKIPPED_ISSUE_KEY);
+			attribute.setValue(String.valueOf(true));
+			attribute.setSystem(true);
+			rq.setAttributes(Sets.newHashSet(attribute));
 		}
 		return rq;
 	}
