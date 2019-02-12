@@ -25,6 +25,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import com.epam.ta.reportportal.ws.model.ItemAttributeResource;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import org.junit.Before;
@@ -37,6 +38,7 @@ import org.testng.ISuiteResult;
 import org.testng.ITestContext;
 import org.testng.internal.ResultMap;
 import rp.com.google.common.base.Supplier;
+import rp.com.google.common.collect.Sets;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -44,8 +46,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.epam.reportportal.testng.Constants.*;
+import static com.epam.reportportal.testng.TestNGService.SKIPPED_ISSUE_KEY;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -85,6 +89,21 @@ public class BuildTestTest {
 		assertThat("Incorrect launch tags", startLaunchRQ.getAttributes(), is(ATTRIBUTES));
 		assertThat("Incorrect launch mode", startLaunchRQ.getMode(), is(MODE));
 		assertThat("Incorrect description", startLaunchRQ.getDescription(), is(DEFAULT_DESCRIPTION));
+	}
+
+	@Test
+	public void testSkippedIssue() {
+
+		ItemAttributeResource itemAttributeResource = new ItemAttributeResource();
+		itemAttributeResource.setKey(SKIPPED_ISSUE_KEY);
+		itemAttributeResource.setValue(String.valueOf(true));
+		itemAttributeResource.setSystem(true);
+
+		ListenerParameters parameters = new ListenerParameters();
+		parameters.setSkippedAnIssue(true);
+		parameters.setAttributes(Sets.<ItemAttributeResource>newHashSet());
+		StartLaunchRQ startLaunchRQ = testNGService.buildStartLaunchRq(parameters);
+		assertTrue(startLaunchRQ.getAttributes().contains(itemAttributeResource));
 	}
 
 	@Test
