@@ -231,6 +231,13 @@ public class TestNGService implements ITestNGService {
 		if (!isNullOrEmpty(parameters.getDescription())) {
 			rq.setDescription(parameters.getDescription());
 		}
+		if (null != parameters.getSkippedAnIssue()) {
+			ItemAttributeResource skippedIssueAttribute = new ItemAttributeResource();
+			skippedIssueAttribute.setKey(SKIPPED_ISSUE_KEY);
+			skippedIssueAttribute.setValue(parameters.getSkippedAnIssue().toString());
+			skippedIssueAttribute.setSystem(true);
+			rq.getAttributes().add(skippedIssueAttribute);
+		}
 		return rq;
 	}
 
@@ -325,12 +332,6 @@ public class TestNGService implements ITestNGService {
 			Issue issue = new Issue();
 			issue.setIssueType(NOT_ISSUE);
 			rq.setIssue(issue);
-
-			ItemAttributeResource attribute = new ItemAttributeResource();
-			attribute.setKey(SKIPPED_ISSUE_KEY);
-			attribute.setValue(String.valueOf(true));
-			attribute.setSystem(true);
-			rq.setAttributes(Sets.newHashSet(attribute));
 		}
 		return rq;
 	}
