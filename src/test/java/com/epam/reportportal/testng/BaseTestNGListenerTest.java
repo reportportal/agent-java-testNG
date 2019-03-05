@@ -130,7 +130,7 @@ public class BaseTestNGListenerTest {
 	public void testOnConfigurationSkip() {
 		ITestResult testResult = mock(ITestResult.class);
 		listener.onConfigurationSkip(testResult);
-		verify(testNGService, times(1)).startConfiguration(testResult);
+		verify(testNGService, times(1)).sendReportPortalMsg(testResult);
 		verify(testNGService, times(1)).finishTestMethod(Statuses.SKIPPED, testResult);
 	}
 
