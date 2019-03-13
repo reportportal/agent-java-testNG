@@ -116,7 +116,7 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
 
 	@Override
 	public void onConfigurationSkip(ITestResult testResult) {
-		testNGService.startConfiguration(testResult);
+		testNGService.sendReportPortalMsg(testResult);
 		testNGService.finishTestMethod(Statuses.SKIPPED, testResult);
 	}
 
