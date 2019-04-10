@@ -20,6 +20,7 @@
  */
 package com.epam.reportportal.testng;
 
+import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.listeners.Statuses;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
