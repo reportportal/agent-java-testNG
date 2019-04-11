@@ -1,17 +1,34 @@
 package com.epam.reportportal.testng.aspect;
 
+import com.epam.reportportal.annotations.StepDemo;
+import com.epam.reportportal.annotations.StepTemplateConfig;
 import com.epam.reportportal.testng.ITestNGService;
 import com.epam.reportportal.testng.ReportPortalTestNGListener;
+import com.epam.reportportal.utils.StepTemplateUtils;
+import io.reactivex.annotations.Nullable;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
+import org.aspectj.lang.reflect.MethodSignature;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.ITestContext;
+import rp.com.google.common.collect.ImmutableMap;
+
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 @Aspect
 public class StepAspect {
+
+	public static final String STEP_GROUP = "\\{([\\w$]+(\\.[\\w$]+)*)}";
+
+	public static final Logger LOGGER = LoggerFactory.getLogger(StepAspect.class);
 
 	private static InheritableThreadLocal<ITestNGService> testNgService = new InheritableThreadLocal<ITestNGService>() {
 		@Override
@@ -20,37 +37,72 @@ public class StepAspect {
 		}
 	};
 
-	@Pointcut("@annotation(com.epam.reportportal.annotations.Step)")
-	public void withNestedStepAnnotation() {
+	private static InheritableThreadLocal<ITestContext> testContext = new InheritableThreadLocal<ITestContext>();
+
+	//	@Pointcut("@annotation(com.epam.reportportal.annotations.Step)")
+	//	public void withNestedStepAnnotation() {
+	//
+	//	}
+
+	@Pointcut("@annotation(stepDemo)")
+	public void withNestedStepAnnotation(StepDemo stepDemo) {
 
 	}
 
-	@Pointcut("execution(* *(..))")
+	@Pointcut("execution(* *.*(..))")
 	public void anyMethod() {
 
 	}
 
-	@Before("anyMethod() && withNestedStepAnnotation()")
-	public void startNestedStep(final JoinPoint joinPoint) {
+	@Before(value = "anyMethod() && withNestedStepAnnotation(stepDemo)", argNames = "joinPoint,stepDemo")
+	public void startNestedStep(JoinPoint joinPoint, StepDemo stepDemo) {
+		if (!stepDemo.isIgnored()) {
 
-		System.err.println("AOP TEST");
+			MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+			StepDemo step = signature.getMethod().getAnnotation(StepDemo.class);
+			String nameTemplate = step.value();
+			Matcher matcher = Pattern.compile(STEP_GROUP).matcher(nameTemplate);
+			Map<String, Object> parametersMap = createParamsMapping(step.templateConfig(), signature, joinPoint.getArgs());
 
-		//		MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-		//		Step step = methodSignature.getMethod().getAnnotation(Step.class);
-		//
-		//		String value = step.value();
-		//		String name = "qwe";
-		//
-		//		Object[] args = joinPoint.getArgs();
-		//		String[] parameterNames = methodSignature.getParameterNames();
-		//
-		//		for (int i = 0; i < args.length; i++) {
-		//			ParameterResource parameterResource = new ParameterResource();
-		//			parameterResource.setKey(parameterNames[i]);
-		//			parameterResource.setValue(String.valueOf(args[i]));
-		//
-		//		}
+			StringBuffer stringBuffer = new StringBuffer();
+			while (matcher.find()) {
+				String templatePart = matcher.group(1);
+				String replacement = getReplacement(templatePart, parametersMap, step.templateConfig());
+				matcher.appendReplacement(stringBuffer, replacement != null ? replacement : matcher.group());
+			}
+			matcher.appendTail(stringBuffer);
 
+			System.out.println(stringBuffer.toString());
+
+			System.out.println("ASPECT FINISHED");
+
+			testNgService.get().startStep(stringBuffer.toString(), testContext.get());
+
+		}
+
+	}
+
+	private Map<String, Object> createParamsMapping(StepTemplateConfig templateConfig, MethodSignature signature, final Object... args) {
+		int paramsCount = Math.max(signature.getParameterNames().length, args.length);
+		ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
+		builder.put(templateConfig.methodNameTemplate(), signature.getMethod().getName());
+		for (int i = 0; i < paramsCount; i++) {
+			builder.put(signature.getParameterNames()[i], args[i]);
+			builder.put(Integer.toString(i), args[i]);
+		}
+		return builder.build();
+	}
+
+	@Nullable
+	private String getReplacement(String templatePart, Map<String, Object> parametersMap, StepTemplateConfig templateConfig) {
+		String[] fields = templatePart.split("\\.");
+		String variableName = fields[0];
+		Object param = parametersMap.get(variableName);
+		if (param == null) {
+			LOGGER.error("Param - " + variableName + " was not found");
+			return null;
+		}
+		return StepTemplateUtils.retrieveValue(templateConfig, 1, fields, param);
 	}
 
 	public static ITestNGService getTestNgService() {
@@ -59,5 +111,13 @@ public class StepAspect {
 
 	public static void setTestNgService(ITestNGService service) {
 		testNgService.set(service);
+	}
+
+	public static ITestContext getTestContext() {
+		return testContext.get();
+	}
+
+	public static void setTestContext(ITestContext context) {
+		testContext.set(context);
 	}
 }

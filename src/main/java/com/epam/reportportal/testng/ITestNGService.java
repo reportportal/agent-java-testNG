@@ -30,66 +30,68 @@ import org.testng.ITestResult;
 
 public interface ITestNGService {
 
-    /**
-     * Start current launch
-     */
-    void startLaunch();
+	/**
+	 * Start current launch
+	 */
+	void startLaunch();
 
-    /**
-     * Finish current launch
-     */
-    void finishLaunch();
+	/**
+	 * Finish current launch
+	 */
+	void finishLaunch();
 
-    /**
-     * Start test suite event handler
-     *
-     * @param suite TestNG's suite
-     */
-    void startTestSuite(ISuite suite);
+	/**
+	 * Start test suite event handler
+	 *
+	 * @param suite TestNG's suite
+	 */
+	void startTestSuite(ISuite suite);
 
-    /**
-     * Finish test suite event handler
-     *
-     * @param suite TestNG's suite
-     */
-    void finishTestSuite(ISuite suite);
+	/**
+	 * Finish test suite event handler
+	 *
+	 * @param suite TestNG's suite
+	 */
+	void finishTestSuite(ISuite suite);
 
-    /**
-     * Start test event handler
-     *
-     * @param testContext TestNG's test context
-     */
-    void startTest(ITestContext testContext);
+	/**
+	 * Start test event handler
+	 *
+	 * @param testContext TestNG's test context
+	 */
+	void startTest(ITestContext testContext);
 
-    /**
-     * Finish test event handler
-     *
-     * @param testContext TestNG's test context
-     */
-    void finishTest(ITestContext testContext);
+	/**
+	 * Finish test event handler
+	 *
+	 * @param testContext TestNG's test context
+	 */
+	void finishTest(ITestContext testContext);
 
-    /**
-     * Start test method event handler
-     *
-     * @param testResult TestNG's test result
-     */
-    void startTestMethod(ITestResult testResult);
+	/**
+	 * Start test method event handler
+	 *
+	 * @param testResult TestNG's test result
+	 */
+	void startTestMethod(ITestResult testResult);
 
-    /**
-     * Finish test method event handler
-     *
-     * @param status     Status (PASSED/FAILED)
-     * @param testResult TestNG's test result
-     * @see com.epam.reportportal.listeners.Statuses
-     */
-    void finishTestMethod(String status, ITestResult testResult);
+	void startStep(String name, ITestContext testContext);
 
-    /**
-     * Start configuration method(any before of after method)
-     *
-     * @param testResult TestNG's test result
-     */
-    void startConfiguration(ITestResult testResult);
+	/**
+	 * Finish test method event handler
+	 *
+	 * @param status     Status (PASSED/FAILED)
+	 * @param testResult TestNG's test result
+	 * @see com.epam.reportportal.listeners.Statuses
+	 */
+	void finishTestMethod(String status, ITestResult testResult);
 
-    void sendReportPortalMsg(ITestResult testResult);
+	/**
+	 * Start configuration method(any before of after method)
+	 *
+	 * @param testResult TestNG's test result
+	 */
+	void startConfiguration(ITestResult testResult);
+
+	void sendReportPortalMsg(ITestResult testResult);
 }

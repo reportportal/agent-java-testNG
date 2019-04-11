@@ -39,7 +39,6 @@ import org.testng.internal.ConstructorOrMethod;
 import rp.com.google.common.annotations.VisibleForTesting;
 import rp.com.google.common.base.Function;
 import rp.com.google.common.base.Supplier;
-import rp.com.google.common.collect.Sets;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -144,6 +143,18 @@ public class TestNGService implements ITestNGService {
 
 		Maybe<Long> stepMaybe = launch.get().startTestItem(this.<Maybe<Long>>getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
+	}
+
+	@Override
+	public void startStep(String name, ITestContext testContext) {
+		StartTestItemRQ rq = new StartTestItemRQ();
+		rq.setName(name);
+
+		rq.setStartTime(new Date());
+		rq.setType("STEP");
+
+		Maybe<Long> stepMaybe = launch.get().startTestItem((Maybe<Long>) testContext.getAttribute(RP_ID), rq);
+		testContext.setAttribute(RP_ID, stepMaybe);
 	}
 
 	@Override
