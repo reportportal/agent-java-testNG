@@ -20,10 +20,14 @@
  */
 package com.epam.reportportal.testng;
 
+import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import org.testng.IAttributes;
 import org.testng.ISuite;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
+import rp.com.google.common.base.Function;
+
+import java.util.Date;
 
 /**
  * Describes all operations for com.epam.reportportal.testng RP listener handler
@@ -76,7 +80,11 @@ public interface ITestNGService {
 	 */
 	void startTestMethod(ITestResult testResult);
 
-	void startStep(String name, IAttributes attributes);
+	void startStep(String name, Date startTime, IAttributes attributes);
+
+	void finishStep(String status, Date endTime, IAttributes attributes);
+
+	void sendReportPortalMsg(Function<Long, SaveLogRQ> saveLogRQFunction);
 
 	/**
 	 * Finish test method event handler

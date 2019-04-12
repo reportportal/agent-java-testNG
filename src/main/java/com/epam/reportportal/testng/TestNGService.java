@@ -146,15 +146,26 @@ public class TestNGService implements ITestNGService {
 	}
 
 	@Override
-	public void startStep(String name, IAttributes attributes) {
+	public void startStep(String name, Date startTime, IAttributes attributes) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setName(name);
 
-		rq.setStartTime(new Date());
+		rq.setStartTime(startTime);
 		rq.setType("STEP");
 
 		Maybe<Long> stepMaybe = launch.get().startTestItem(this.<Maybe<Long>>getAttribute(attributes, RP_ID), rq);
 		attributes.setAttribute(RP_ID, stepMaybe);
+	}
+
+	@Override
+	public void finishStep(String status, Date endTime, IAttributes attributes) {
+		FinishTestItemRQ rq = buildFinishTestMethodRq(status, endTime);
+		launch.get().finishTestItem(this.<Maybe<Long>>getAttribute(attributes, RP_ID), rq);
+	}
+
+	@Override
+	public void sendReportPortalMsg(Function<Long, SaveLogRQ> saveLogRQFunction) {
+		ReportPortal.emitLog(saveLogRQFunction);
 	}
 
 	@Override
@@ -335,8 +346,12 @@ public class TestNGService implements ITestNGService {
 	 * @return Request to ReportPortal
 	 */
 	protected FinishTestItemRQ buildFinishTestMethodRq(String status, ITestResult testResult) {
+		return buildFinishTestMethodRq(status, new Date(testResult.getEndMillis()));
+	}
+
+	private FinishTestItemRQ buildFinishTestMethodRq(String status, Date endTime) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(new Date(testResult.getEndMillis()));
+		rq.setEndTime(endTime);
 		rq.setStatus(status);
 		// Allows indicate that SKIPPED is not to investigate items for WS
 		if (Statuses.SKIPPED.equals(status) && !fromNullable(launch.get().getParameters().getSkippedAnIssue()).or(false)) {

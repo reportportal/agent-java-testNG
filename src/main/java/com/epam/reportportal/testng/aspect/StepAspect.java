@@ -2,23 +2,27 @@ package com.epam.reportportal.testng.aspect;
 
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.StepTemplateConfig;
+import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.testng.ITestNGService;
 import com.epam.reportportal.testng.ReportPortalTestNGListener;
 import com.epam.reportportal.utils.StepTemplateUtils;
+import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.annotations.Nullable;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
-import org.aspectj.lang.annotation.Pointcut;
+import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.IAttributes;
+import rp.com.google.common.base.Function;
 import rp.com.google.common.collect.ImmutableMap;
 
+import java.util.Calendar;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -39,13 +43,8 @@ public class StepAspect {
 
 	private static InheritableThreadLocal<IAttributes> attributes = new InheritableThreadLocal<IAttributes>();
 
-	//	@Pointcut("@annotation(com.epam.reportportal.annotations.Step)")
-	//	public void withNestedStepAnnotation() {
-	//
-	//	}
-
 	@Pointcut("@annotation(step)")
-	public void withNestedStepAnnotation(Step step) {
+	public void withStepAnnotation(Step step) {
 
 	}
 
@@ -54,7 +53,7 @@ public class StepAspect {
 
 	}
 
-	@Before(value = "anyMethod() && withNestedStepAnnotation(step)", argNames = "joinPoint,step")
+	@Before(value = "anyMethod() && withStepAnnotation(step)", argNames = "joinPoint,step")
 	public void startNestedStep(JoinPoint joinPoint, Step step) {
 		if (!step.isIgnored()) {
 
@@ -71,9 +70,39 @@ public class StepAspect {
 			}
 			matcher.appendTail(stringBuffer);
 
-			testNgService.get().startStep(stringBuffer.toString(), attributes.get());
+			testNgService.get().startStep(stringBuffer.toString(), Calendar.getInstance().getTime(), attributes.get());
 
 		}
+
+	}
+
+	@AfterReturning(value = "anyMethod() && withStepAnnotation(step)", argNames = "step")
+	public void finishStep(Step step) {
+		testNgService.get().finishStep(Statuses.PASSED, Calendar.getInstance().getTime(), attributes.get());
+	}
+
+	@AfterThrowing(value = "anyMethod() && withStepAnnotation(step)", throwing = "throwable", argNames = "step,throwable")
+	public void failedStep(Step step, final Throwable throwable) {
+
+		testNgService.get().sendReportPortalMsg(new Function<Long, SaveLogRQ>() {
+			@Override
+			public SaveLogRQ apply(Long itemId) {
+				SaveLogRQ rq = new SaveLogRQ();
+				rq.setTestItemId(itemId);
+				rq.setLevel("ERROR");
+				rq.setLogTime(Calendar.getInstance().getTime());
+				if (throwable != null) {
+					rq.setMessage(getStackTraceAsString(throwable));
+				} else {
+					rq.setMessage("Test has failed without exception");
+				}
+				rq.setLogTime(Calendar.getInstance().getTime());
+
+				return rq;
+			}
+		});
+
+		testNgService.get().finishStep(Statuses.FAILED, Calendar.getInstance().getTime(), attributes.get());
 
 	}
 
