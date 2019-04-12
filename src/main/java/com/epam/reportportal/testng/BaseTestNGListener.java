@@ -21,6 +21,7 @@
 package com.epam.reportportal.testng;
 
 import com.epam.reportportal.listeners.Statuses;
+import com.epam.reportportal.testng.aspect.StepAspect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.*;
@@ -64,6 +65,7 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
 
 	@Override
 	public void onStart(ISuite suite) {
+		StepAspect.setAttributes(suite);
 		testNGService.startTestSuite(suite);
 	}
 
@@ -74,6 +76,7 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
 
 	@Override
 	public void onStart(ITestContext testContext) {
+		StepAspect.setAttributes(testContext);
 		testNGService.startTest(testContext);
 	}
 
@@ -84,6 +87,7 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
 
 	@Override
 	public void onTestStart(ITestResult testResult) {
+		StepAspect.setAttributes(testResult);
 		testNGService.startTestMethod(testResult);
 	}
 
@@ -105,6 +109,7 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
 
 	@Override
 	public void beforeConfiguration(ITestResult testResult) {
+		StepAspect.setAttributes(testResult);
 		testNGService.startConfiguration(testResult);
 	}
 

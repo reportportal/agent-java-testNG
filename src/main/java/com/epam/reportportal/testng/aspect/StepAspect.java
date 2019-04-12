@@ -1,6 +1,6 @@
 package com.epam.reportportal.testng.aspect;
 
-import com.epam.reportportal.annotations.StepDemo;
+import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.StepTemplateConfig;
 import com.epam.reportportal.testng.ITestNGService;
 import com.epam.reportportal.testng.ReportPortalTestNGListener;
@@ -13,7 +13,7 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.ITestContext;
+import org.testng.IAttributes;
 import rp.com.google.common.collect.ImmutableMap;
 
 import java.util.Map;
@@ -37,15 +37,15 @@ public class StepAspect {
 		}
 	};
 
-	private static InheritableThreadLocal<ITestContext> testContext = new InheritableThreadLocal<ITestContext>();
+	private static InheritableThreadLocal<IAttributes> attributes = new InheritableThreadLocal<IAttributes>();
 
 	//	@Pointcut("@annotation(com.epam.reportportal.annotations.Step)")
 	//	public void withNestedStepAnnotation() {
 	//
 	//	}
 
-	@Pointcut("@annotation(stepDemo)")
-	public void withNestedStepAnnotation(StepDemo stepDemo) {
+	@Pointcut("@annotation(step)")
+	public void withNestedStepAnnotation(Step step) {
 
 	}
 
@@ -54,12 +54,11 @@ public class StepAspect {
 
 	}
 
-	@Before(value = "anyMethod() && withNestedStepAnnotation(stepDemo)", argNames = "joinPoint,stepDemo")
-	public void startNestedStep(JoinPoint joinPoint, StepDemo stepDemo) {
-		if (!stepDemo.isIgnored()) {
+	@Before(value = "anyMethod() && withNestedStepAnnotation(step)", argNames = "joinPoint,step")
+	public void startNestedStep(JoinPoint joinPoint, Step step) {
+		if (!step.isIgnored()) {
 
 			MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-			StepDemo step = signature.getMethod().getAnnotation(StepDemo.class);
 			String nameTemplate = step.value();
 			Matcher matcher = Pattern.compile(STEP_GROUP).matcher(nameTemplate);
 			Map<String, Object> parametersMap = createParamsMapping(step.templateConfig(), signature, joinPoint.getArgs());
@@ -72,11 +71,7 @@ public class StepAspect {
 			}
 			matcher.appendTail(stringBuffer);
 
-			System.out.println(stringBuffer.toString());
-
-			System.out.println("ASPECT FINISHED");
-
-			testNgService.get().startStep(stringBuffer.toString(), testContext.get());
+			testNgService.get().startStep(stringBuffer.toString(), attributes.get());
 
 		}
 
@@ -113,11 +108,11 @@ public class StepAspect {
 		testNgService.set(service);
 	}
 
-	public static ITestContext getTestContext() {
-		return testContext.get();
+	public static IAttributes getAttributes() {
+		return attributes.get();
 	}
 
-	public static void setTestContext(ITestContext context) {
-		testContext.set(context);
+	public static void setAttributes(IAttributes iAttributes) {
+		attributes.set(iAttributes);
 	}
 }

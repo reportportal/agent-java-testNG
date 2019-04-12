@@ -20,6 +20,7 @@
  */
 package com.epam.reportportal.testng;
 
+import org.testng.IAttributes;
 import org.testng.ISuite;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
@@ -75,7 +76,7 @@ public interface ITestNGService {
 	 */
 	void startTestMethod(ITestResult testResult);
 
-	void startStep(String name, ITestContext testContext);
+	void startStep(String name, IAttributes attributes);
 
 	/**
 	 * Finish test method event handler
