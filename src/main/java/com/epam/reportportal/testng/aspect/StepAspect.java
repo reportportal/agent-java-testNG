@@ -7,6 +7,7 @@ import com.epam.reportportal.testng.ITestNGService;
 import com.epam.reportportal.testng.ReportPortalTestNGListener;
 import com.epam.reportportal.utils.StepTemplateUtils;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
+import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.*;
@@ -16,12 +17,15 @@ import org.slf4j.LoggerFactory;
 import org.testng.IAttributes;
 import rp.com.google.common.base.Function;
 import rp.com.google.common.collect.ImmutableMap;
+import rp.com.google.common.collect.Queues;
 
 import java.util.Calendar;
+import java.util.Deque;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.epam.reportportal.testng.TestNGService.RP_ID;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
 /**
@@ -38,6 +42,13 @@ public class StepAspect {
 		@Override
 		protected ITestNGService initialValue() {
 			return ReportPortalTestNGListener.SERVICE.get();
+		}
+	};
+
+	private static InheritableThreadLocal<Deque<Maybe<Long>>> stepAttributes = new InheritableThreadLocal<Deque<Maybe<Long>>>() {
+		@Override
+		protected Deque<Maybe<Long>> initialValue() {
+			return Queues.newArrayDeque();
 		}
 	};
 
@@ -70,7 +81,20 @@ public class StepAspect {
 			}
 			matcher.appendTail(stringBuffer);
 
-			testNgService.get().startStep(stringBuffer.toString(), Calendar.getInstance().getTime(), attributes.get());
+			Maybe<Long> parentId = stepAttributes.get().peek();
+			Maybe<Long> stepMaybe;
+			if (parentId != null) {
+				stepMaybe = testNgService.get().startStep(stringBuffer.toString(), Calendar.getInstance().getTime(), parentId);
+
+			} else {
+				stepMaybe = testNgService.get()
+						.startStep(stringBuffer.toString(),
+								Calendar.getInstance().getTime(),
+								(Maybe<Long>) attributes.get().getAttribute(RP_ID)
+						);
+			}
+
+			stepAttributes.get().push(stepMaybe);
 
 		}
 
@@ -78,7 +102,8 @@ public class StepAspect {
 
 	@AfterReturning(value = "anyMethod() && withStepAnnotation(step)", argNames = "step")
 	public void finishStep(Step step) {
-		testNgService.get().finishStep(Statuses.PASSED, Calendar.getInstance().getTime(), attributes.get());
+		Maybe<Long> stepId = stepAttributes.get().poll();
+		testNgService.get().finishStep(Statuses.PASSED, Calendar.getInstance().getTime(), stepId);
 	}
 
 	@AfterThrowing(value = "anyMethod() && withStepAnnotation(step)", throwing = "throwable", argNames = "step,throwable")
@@ -102,7 +127,8 @@ public class StepAspect {
 			}
 		});
 
-		testNgService.get().finishStep(Statuses.FAILED, Calendar.getInstance().getTime(), attributes.get());
+		Maybe<Long> stepId = stepAttributes.get().poll();
+		testNgService.get().finishStep(Statuses.FAILED, Calendar.getInstance().getTime(), stepId);
 
 	}
 

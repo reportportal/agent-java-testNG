@@ -146,21 +146,20 @@ public class TestNGService implements ITestNGService {
 	}
 
 	@Override
-	public void startStep(String name, Date startTime, IAttributes attributes) {
+	public Maybe<Long> startStep(String name, Date startTime, Maybe<Long> parentId) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setName(name);
 
 		rq.setStartTime(startTime);
 		rq.setType("STEP");
 
-		Maybe<Long> stepMaybe = launch.get().startTestItem(this.<Maybe<Long>>getAttribute(attributes, RP_ID), rq);
-		attributes.setAttribute(RP_ID, stepMaybe);
+		return launch.get().startTestItem(parentId, rq);
 	}
 
 	@Override
-	public void finishStep(String status, Date endTime, IAttributes attributes) {
+	public void finishStep(String status, Date endTime, Maybe<Long> stepId) {
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, endTime);
-		launch.get().finishTestItem(this.<Maybe<Long>>getAttribute(attributes, RP_ID), rq);
+		launch.get().finishTestItem(stepId, rq);
 	}
 
 	@Override

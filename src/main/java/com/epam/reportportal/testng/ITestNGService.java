@@ -21,7 +21,7 @@
 package com.epam.reportportal.testng;
 
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import org.testng.IAttributes;
+import io.reactivex.Maybe;
 import org.testng.ISuite;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
@@ -80,9 +80,9 @@ public interface ITestNGService {
 	 */
 	void startTestMethod(ITestResult testResult);
 
-	void startStep(String name, Date startTime, IAttributes attributes);
+	Maybe<Long> startStep(String name, Date startTime, Maybe<Long> parentId);
 
-	void finishStep(String status, Date endTime, IAttributes attributes);
+	void finishStep(String status, Date endTime, Maybe<Long> stepId);
 
 	void sendReportPortalMsg(Function<Long, SaveLogRQ> saveLogRQFunction);
 
