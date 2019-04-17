@@ -22,6 +22,7 @@ package com.epam.reportportal.testng;
 
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.UniqueID;
+import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
@@ -89,6 +90,7 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public void startLaunch() {
 		this.launch.get().start();
+		StepAspect.addLaunch("default", this.launch.get());
 	}
 
 	@Override
@@ -107,6 +109,7 @@ public class TestNGService implements ITestNGService {
 		StartTestItemRQ rq = buildStartSuiteRq(suite);
 		final Maybe<Long> item = launch.get().startTestItem(rq);
 		suite.setAttribute(RP_ID, item);
+		StepAspect.setParentId(item);
 	}
 
 	@Override
@@ -124,6 +127,7 @@ public class TestNGService implements ITestNGService {
 			StartTestItemRQ rq = buildStartTestItemRq(testContext);
 			final Maybe<Long> testID = launch.get().startTestItem(this.<Maybe<Long>>getAttribute(testContext.getSuite(), RP_ID), rq);
 			testContext.setAttribute(RP_ID, testID);
+			StepAspect.setParentId(testID);
 		}
 	}
 
@@ -144,6 +148,7 @@ public class TestNGService implements ITestNGService {
 
 		Maybe<Long> stepMaybe = launch.get().startTestItem(this.<Maybe<Long>>getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
+		StepAspect.setParentId(stepMaybe);
 	}
 
 	@Override
@@ -192,6 +197,7 @@ public class TestNGService implements ITestNGService {
 		Maybe<Long> parentId = getConfigParent(testResult, type);
 		final Maybe<Long> itemID = launch.get().startTestItem(parentId, rq);
 		testResult.setAttribute(RP_ID, itemID);
+		StepAspect.setParentId(itemID);
 	}
 
 	@Override

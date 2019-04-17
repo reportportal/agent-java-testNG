@@ -1,5 +1,5 @@
 <aspectj>
     <aspects>
-        <aspect name="com.epam.reportportal.testng.aspect.StepAspect"/>
+        <aspect name="com.epam.reportportal.aspect.StepAspect"/>
     </aspects>
 </aspectj>
