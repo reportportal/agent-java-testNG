@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class BaseTestNGListener implements IExecutionListener, ISuiteListener, IResultListener2 {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(BaseTestNGListener.class);
+	private final Logger LOGGER = LoggerFactory.getLogger(BaseTestNGListener.class);
 
 	private static final AtomicInteger INSTANCES = new AtomicInteger(0);
 
