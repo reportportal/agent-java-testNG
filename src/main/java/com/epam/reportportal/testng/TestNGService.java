@@ -232,7 +232,7 @@ public class TestNGService implements ITestNGService {
 			rq.setDescription(parameters.getDescription());
 		}
 		if (null != parameters.getSkippedAnIssue()) {
-			ItemAttributeResource skippedIssueAttribute = new ItemAttributeResource();
+			ItemAttributesRQ skippedIssueAttribute = new ItemAttributesRQ();
 			skippedIssueAttribute.setKey(SKIPPED_ISSUE_KEY);
 			skippedIssueAttribute.setValue(parameters.getSkippedAnIssue().toString());
 			skippedIssueAttribute.setSystem(true);
