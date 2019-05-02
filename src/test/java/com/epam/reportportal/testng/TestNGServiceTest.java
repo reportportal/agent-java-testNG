@@ -72,7 +72,7 @@ public class TestNGServiceTest {
 	private ISuite suite;
 
 	@Mock
-	private Maybe<Long> id;
+	private Maybe<String> id;
 
 	@Before
 	public void preconditions() {
@@ -209,13 +209,13 @@ public class TestNGServiceTest {
 	@Test
 	public void testParentConfigSuite() {
 		when(suite.getAttribute(RP_ID)).thenReturn(id);
-		Maybe<Long> configParent = testNGService.getConfigParent(testResult, TestMethodType.BEFORE_SUITE);
+		Maybe<String> configParent = testNGService.getConfigParent(testResult, TestMethodType.BEFORE_SUITE);
 		Assert.assertThat("Incorrect id", configParent, is(id));
 	}
 
 	@Test
 	public void testParentConfig() {
-		Maybe<Long> configParent = testNGService.getConfigParent(testResult, TestMethodType.STEP);
+		Maybe<String> configParent = testNGService.getConfigParent(testResult, TestMethodType.STEP);
 		Assert.assertThat("Incorrect id", configParent, is(id));
 	}
 
