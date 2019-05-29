@@ -25,8 +25,8 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
-import com.epam.ta.reportportal.ws.model.ItemAttributeResource;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import org.junit.Before;
 import org.junit.Test;
@@ -94,14 +94,14 @@ public class BuildTestTest {
 	@Test
 	public void testSkippedIssue() {
 
-		ItemAttributeResource itemAttributeResource = new ItemAttributeResource();
+		ItemAttributesRQ itemAttributeResource = new ItemAttributesRQ();
 		itemAttributeResource.setKey(SKIPPED_ISSUE_KEY);
 		itemAttributeResource.setValue(String.valueOf(true));
 		itemAttributeResource.setSystem(true);
 
 		ListenerParameters parameters = new ListenerParameters();
 		parameters.setSkippedAnIssue(true);
-		parameters.setAttributes(Sets.<ItemAttributeResource>newHashSet());
+		parameters.setAttributes(Sets.<ItemAttributesRQ>newHashSet());
 		StartLaunchRQ startLaunchRQ = testNGService.buildStartLaunchRq(parameters);
 		assertTrue(startLaunchRQ.getAttributes().contains(itemAttributeResource));
 	}

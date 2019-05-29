@@ -27,7 +27,11 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
-import com.epam.ta.reportportal.ws.model.*;
+import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
+import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import com.epam.ta.reportportal.ws.model.ParameterResource;
+import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
@@ -107,7 +111,7 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public synchronized void startTestSuite(ISuite suite) {
 		StartTestItemRQ rq = buildStartSuiteRq(suite);
-		final Maybe<Long> item = launch.get().startTestItem(rq);
+		final Maybe<String> item = launch.get().startTestItem(rq);
 		suite.setAttribute(RP_ID, item);
 		StepAspect.setParentId(item);
 	}
@@ -116,7 +120,7 @@ public class TestNGService implements ITestNGService {
 	public synchronized void finishTestSuite(ISuite suite) {
 		if (null != suite.getAttribute(RP_ID)) {
 			FinishTestItemRQ rq = buildFinishTestSuiteRq(suite);
-			launch.get().finishTestItem(this.<Maybe<Long>>getAttribute(suite, RP_ID), rq);
+			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
 			suite.removeAttribute(RP_ID);
 		}
 	}
@@ -125,7 +129,7 @@ public class TestNGService implements ITestNGService {
 	public void startTest(ITestContext testContext) {
 		if (hasMethodsToRun(testContext)) {
 			StartTestItemRQ rq = buildStartTestItemRq(testContext);
-			final Maybe<Long> testID = launch.get().startTestItem(this.<Maybe<Long>>getAttribute(testContext.getSuite(), RP_ID), rq);
+			final Maybe<String> testID = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
 			testContext.setAttribute(RP_ID, testID);
 			StepAspect.setParentId(testID);
 		}
@@ -135,7 +139,7 @@ public class TestNGService implements ITestNGService {
 	public void finishTest(ITestContext testContext) {
 		if (hasMethodsToRun(testContext)) {
 			FinishTestItemRQ rq = buildFinishTestRq(testContext);
-			launch.get().finishTestItem(this.<Maybe<Long>>getAttribute(testContext, RP_ID), rq);
+			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
 		}
 	}
 
@@ -146,7 +150,7 @@ public class TestNGService implements ITestNGService {
 			return;
 		}
 
-		Maybe<Long> stepMaybe = launch.get().startTestItem(this.<Maybe<Long>>getAttribute(testResult.getTestContext(), RP_ID), rq);
+		Maybe<String> stepMaybe = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
 		StepAspect.setParentId(stepMaybe);
 	}
@@ -186,7 +190,7 @@ public class TestNGService implements ITestNGService {
 		}
 
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
-		launch.get().finishTestItem(this.<Maybe<Long>>getAttribute(testResult, RP_ID), rq);
+		launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testResult, RP_ID), rq);
 	}
 
 	@Override
@@ -194,17 +198,17 @@ public class TestNGService implements ITestNGService {
 		TestMethodType type = TestMethodType.getStepType(testResult.getMethod());
 		StartTestItemRQ rq = buildStartConfigurationRq(testResult, type);
 
-		Maybe<Long> parentId = getConfigParent(testResult, type);
-		final Maybe<Long> itemID = launch.get().startTestItem(parentId, rq);
+		Maybe<String> parentId = getConfigParent(testResult, type);
+		final Maybe<String> itemID = launch.get().startTestItem(parentId, rq);
 		testResult.setAttribute(RP_ID, itemID);
 		StepAspect.setParentId(itemID);
 	}
 
 	@Override
 	public void sendReportPortalMsg(final ITestResult result) {
-		ReportPortal.emitLog(new Function<Long, SaveLogRQ>() {
+		ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(Long itemId) {
+			public SaveLogRQ apply(String itemId) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setTestItemId(itemId);
 				rq.setLevel("ERROR");
@@ -266,7 +270,7 @@ public class TestNGService implements ITestNGService {
 			rq.setDescription(parameters.getDescription());
 		}
 		if (null != parameters.getSkippedAnIssue()) {
-			ItemAttributeResource skippedIssueAttribute = new ItemAttributeResource();
+			ItemAttributesRQ skippedIssueAttribute = new ItemAttributesRQ();
 			skippedIssueAttribute.setKey(SKIPPED_ISSUE_KEY);
 			skippedIssueAttribute.setValue(parameters.getSkippedAnIssue().toString());
 			skippedIssueAttribute.setSystem(true);
@@ -553,8 +557,8 @@ public class TestNGService implements ITestNGService {
 	 * Calculate parent id for configuration
 	 */
 	@VisibleForTesting
-	Maybe<Long> getConfigParent(ITestResult testResult, TestMethodType type) {
-		Maybe<Long> parentId;
+	Maybe<String> getConfigParent(ITestResult testResult, TestMethodType type) {
+		Maybe<String> parentId;
 		if (TestMethodType.BEFORE_SUITE.equals(type) || TestMethodType.AFTER_SUITE.equals(type)) {
 			parentId = getAttribute(testResult.getTestContext().getSuite(), RP_ID);
 		} else {
