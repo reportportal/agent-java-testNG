@@ -23,7 +23,7 @@ package com.epam.reportportal.testng;
 
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
-import rp.com.google.common.collect.Sets;
+import com.google.common.collect.Sets;
 
 import java.util.Set;
 

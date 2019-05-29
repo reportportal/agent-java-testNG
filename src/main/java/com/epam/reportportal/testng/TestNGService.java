@@ -156,7 +156,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	@Override
-	public Maybe<Long> startNestedStep(@Nullable String uniqueId, String name, String description, Date startTime, Maybe<Long> parentId) {
+	public Maybe<String> startNestedStep(@Nullable String uniqueId, String name, String description, Date startTime, Maybe<String> parentId) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		if (uniqueId != null && !uniqueId.trim().isEmpty()) {
 			rq.setUniqueId(uniqueId);
@@ -173,13 +173,13 @@ public class TestNGService implements ITestNGService {
 	}
 
 	@Override
-	public void finishNestedStep(String status, Date endTime, Maybe<Long> stepId) {
+	public void finishNestedStep(String status, Date endTime, Maybe<String> stepId) {
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, endTime);
 		launch.get().finishTestItem(stepId, rq);
 	}
 
 	@Override
-	public void sendReportPortalMsg(Function<Long, SaveLogRQ> saveLogRQFunction) {
+	public void sendReportPortalMsg(Function<String, SaveLogRQ> saveLogRQFunction) {
 		ReportPortal.emitLog(saveLogRQFunction);
 	}
 

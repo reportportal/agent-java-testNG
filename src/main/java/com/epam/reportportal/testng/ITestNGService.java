@@ -89,16 +89,16 @@ public interface ITestNGService {
 	 * @param parentId    Nested step's parent ID
 	 * @return {@link Maybe} with created step ID
 	 */
-	Maybe<Long> startNestedStep(@Nullable String uniqueId, String name, String description, Date startTime, Maybe<Long> parentId);
+	Maybe<String> startNestedStep(@Nullable String uniqueId, String name, String description, Date startTime, Maybe<String> parentId);
 
 	/**
 	 * @param status  {@link com.epam.ta.reportportal.ws.model.FinishTestItemRQ#status}
 	 * @param endTime {@link com.epam.ta.reportportal.ws.model.FinishTestItemRQ#endTime}
 	 * @param stepId  ID of the nested step to be finished
 	 */
-	void finishNestedStep(String status, Date endTime, Maybe<Long> stepId);
+	void finishNestedStep(String status, Date endTime, Maybe<String> stepId);
 
-	void sendReportPortalMsg(Function<Long, SaveLogRQ> saveLogRQFunction);
+	void sendReportPortalMsg(Function<String, SaveLogRQ> saveLogRQFunction);
 
 	/**
 	 * Finish test method event handler
