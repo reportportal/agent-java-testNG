@@ -140,6 +140,8 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public void startTestMethod(ITestResult testResult) {
+		System.err.println(testResult.getMethod().getQualifiedName());
+		System.err.println(testResult.getMethod().getMethodName());
 		StartTestItemRQ rq = buildStartStepRq(testResult);
 		if (rq == null) {
 			return;
