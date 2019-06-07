@@ -41,6 +41,7 @@ import org.testng.annotations.Test;
 import org.testng.collections.Lists;
 import org.testng.internal.ConstructorOrMethod;
 import org.testng.xml.XmlClass;
+import org.testng.xml.XmlTest;
 import rp.com.google.common.annotations.VisibleForTesting;
 import rp.com.google.common.base.Function;
 import rp.com.google.common.base.Supplier;
@@ -216,11 +217,14 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected StartTestItemRQ buildStartTestItemRq(ITestContext testContext) {
 		StartTestItemRQ rq = new StartTestItemRQ();
-		List<XmlClass> xmlClasses = testContext.getCurrentXmlTest().getXmlClasses();
-		if(xmlClasses != null) {
-			XmlClass xmlClass = xmlClasses.get(0);
-			if(xmlClass != null) {
-				rq.setLocation(CLASS_PREFIX + xmlClass.getName());
+		XmlTest currentXmlTest = testContext.getCurrentXmlTest();
+		if(currentXmlTest != null) {
+			List<XmlClass> xmlClasses = currentXmlTest.getXmlClasses();
+			if(xmlClasses != null) {
+				XmlClass xmlClass = xmlClasses.get(0);
+				if(xmlClass != null) {
+					rq.setLocation(CLASS_PREFIX + xmlClass.getName());
+				}
 			}
 		}
 		rq.setName(testContext.getName());
