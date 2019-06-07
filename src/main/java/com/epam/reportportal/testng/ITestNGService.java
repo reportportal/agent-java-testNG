@@ -20,15 +20,9 @@
  */
 package com.epam.reportportal.testng;
 
-import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import io.reactivex.Maybe;
-import io.reactivex.annotations.Nullable;
 import org.testng.ISuite;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
-import rp.com.google.common.base.Function;
-
-import java.util.Date;
 
 /**
  * Describes all operations for com.epam.reportportal.testng RP listener handler
@@ -80,25 +74,6 @@ public interface ITestNGService {
 	 * @param testResult TestNG's test result
 	 */
 	void startTestMethod(ITestResult testResult);
-
-	/**
-	 * @param uniqueId    {@link com.epam.ta.reportportal.ws.model.StartTestItemRQ#uniqueId}
-	 * @param name        {@link com.epam.ta.reportportal.ws.model.StartTestItemRQ#name}
-	 * @param description {@link com.epam.ta.reportportal.ws.model.StartTestItemRQ#description}
-	 * @param startTime   {@link com.epam.ta.reportportal.ws.model.StartTestItemRQ#startTime}
-	 * @param parentId    Nested step's parent ID
-	 * @return {@link Maybe} with created step ID
-	 */
-	Maybe<String> startNestedStep(@Nullable String uniqueId, String name, String description, Date startTime, Maybe<String> parentId);
-
-	/**
-	 * @param status  {@link com.epam.ta.reportportal.ws.model.FinishTestItemRQ#status}
-	 * @param endTime {@link com.epam.ta.reportportal.ws.model.FinishTestItemRQ#endTime}
-	 * @param stepId  ID of the nested step to be finished
-	 */
-	void finishNestedStep(String status, Date endTime, Maybe<String> stepId);
-
-	void sendReportPortalMsg(Function<String, SaveLogRQ> saveLogRQFunction);
 
 	/**
 	 * Finish test method event handler

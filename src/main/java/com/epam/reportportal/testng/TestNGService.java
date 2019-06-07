@@ -36,7 +36,6 @@ import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
-import io.reactivex.annotations.Nullable;
 import org.testng.*;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -153,34 +152,6 @@ public class TestNGService implements ITestNGService {
 		Maybe<String> stepMaybe = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
 		StepAspect.setParentId(stepMaybe);
-	}
-
-	@Override
-	public Maybe<String> startNestedStep(@Nullable String uniqueId, String name, String description, Date startTime, Maybe<String> parentId) {
-		StartTestItemRQ rq = new StartTestItemRQ();
-		if (uniqueId != null && !uniqueId.trim().isEmpty()) {
-			rq.setUniqueId(uniqueId);
-		}
-		if (!description.isEmpty()) {
-			rq.setDescription(description);
-		}
-		rq.setName(name);
-		rq.setStartTime(startTime);
-		rq.setType("STEP");
-		rq.setHasStats(false);
-
-		return launch.get().startTestItem(parentId, rq);
-	}
-
-	@Override
-	public void finishNestedStep(String status, Date endTime, Maybe<String> stepId) {
-		FinishTestItemRQ rq = buildFinishTestMethodRq(status, endTime);
-		launch.get().finishTestItem(stepId, rq);
-	}
-
-	@Override
-	public void sendReportPortalMsg(Function<String, SaveLogRQ> saveLogRQFunction) {
-		ReportPortal.emitLog(saveLogRQFunction);
 	}
 
 	@Override
