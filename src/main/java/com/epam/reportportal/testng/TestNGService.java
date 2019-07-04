@@ -27,6 +27,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.testng.step.StepReporter;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
@@ -72,6 +73,8 @@ public class TestNGService implements ITestNGService {
 
 	private MemoizingSupplier<Launch> launch;
 
+	private final StepReporter stepReporter;
+
 	public TestNGService() {
 		this.launch = new MemoizingSupplier<Launch>(new Supplier<Launch>() {
 			@Override
@@ -84,16 +87,19 @@ public class TestNGService implements ITestNGService {
 				return reportPortal.newLaunch(rq);
 			}
 		});
+		this.stepReporter = StepReporter.getInstance();
 	}
 
 	public TestNGService(Supplier<Launch> launch) {
 		this.launch = new MemoizingSupplier<Launch>(launch);
+		this.stepReporter = StepReporter.getInstance();
 	}
 
 	@Override
 	public void startLaunch() {
 		this.launch.get().start();
 		StepAspect.addLaunch("default", this.launch.get());
+		stepReporter.setLaunch(this.launch.get());
 	}
 
 	@Override
@@ -113,6 +119,7 @@ public class TestNGService implements ITestNGService {
 		final Maybe<String> item = launch.get().startTestItem(rq);
 		suite.setAttribute(RP_ID, item);
 		StepAspect.setParentId(item);
+		stepReporter.addParent(item);
 	}
 
 	@Override
@@ -121,6 +128,7 @@ public class TestNGService implements ITestNGService {
 			FinishTestItemRQ rq = buildFinishTestSuiteRq(suite);
 			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
 			suite.removeAttribute(RP_ID);
+			stepReporter.removeParent();
 		}
 	}
 
@@ -131,6 +139,7 @@ public class TestNGService implements ITestNGService {
 			final Maybe<String> testID = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
 			testContext.setAttribute(RP_ID, testID);
 			StepAspect.setParentId(testID);
+			stepReporter.addParent(testID);
 		}
 	}
 
@@ -139,6 +148,7 @@ public class TestNGService implements ITestNGService {
 		if (hasMethodsToRun(testContext)) {
 			FinishTestItemRQ rq = buildFinishTestRq(testContext);
 			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
+			stepReporter.removeParent();
 		}
 	}
 
@@ -152,6 +162,7 @@ public class TestNGService implements ITestNGService {
 		Maybe<String> stepMaybe = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
 		StepAspect.setParentId(stepMaybe);
+		stepReporter.addParent(stepMaybe);
 	}
 
 	@Override
@@ -162,6 +173,7 @@ public class TestNGService implements ITestNGService {
 
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
 		launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testResult, RP_ID), rq);
+		stepReporter.removeParent();
 	}
 
 	@Override
@@ -173,6 +185,7 @@ public class TestNGService implements ITestNGService {
 		final Maybe<String> itemID = launch.get().startTestItem(parentId, rq);
 		testResult.setAttribute(RP_ID, itemID);
 		StepAspect.setParentId(itemID);
+		stepReporter.addParent(itemID);
 	}
 
 	@Override
