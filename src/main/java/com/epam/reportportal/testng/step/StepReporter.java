@@ -1,11 +1,13 @@
 package com.epam.reportportal.testng.step;
 
+import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.utils.MimeTypeDetector;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import rp.com.google.common.base.Function;
@@ -19,7 +21,9 @@ import java.util.Date;
 import java.util.Deque;
 import java.util.UUID;
 
+import static com.epam.reportportal.service.LaunchImpl.NOT_ISSUE;
 import static com.sun.org.apache.xml.internal.utils.LocaleUtility.EMPTY_STRING;
+import static rp.com.google.common.base.Optional.fromNullable;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
 /**
@@ -129,11 +133,6 @@ public class StepReporter {
 		return launch.get().startTestItem(parents.get().peek(), startTestItemRQ);
 	}
 
-	private void finishStepRequest(Maybe<String> stepId, String status) {
-		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status, Calendar.getInstance().getTime());
-		launch.get().finishTestItem(stepId, finishTestItemRQ);
-	}
-
 	private StartTestItemRQ buildStartStepRequest(String name) {
 		StartTestItemRQ startTestItemRQ = new StartTestItemRQ();
 		startTestItemRQ.setName(name);
@@ -141,6 +140,28 @@ public class StepReporter {
 		startTestItemRQ.setHasStats(false);
 		startTestItemRQ.setStartTime(Calendar.getInstance().getTime());
 		return startTestItemRQ;
+	}
+
+	private void finishStepRequest(Maybe<String> stepId, String status) {
+		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status, Calendar.getInstance().getTime());
+		launch.get().finishTestItem(stepId, finishTestItemRQ);
+		if ("FAILED".equalsIgnoreCase(status)) {
+			Maybe<String> parentId = parents.get().peek();
+			launch.get().finishTestItem(parentId, buildFinishParentRequest("FAILED"));
+		}
+	}
+
+	private FinishTestItemRQ buildFinishParentRequest(String status) {
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		rq.setEndTime(Calendar.getInstance().getTime());
+		rq.setStatus(status);
+		// Allows indicate that SKIPPED is not to investigate items for WS
+		if (Statuses.SKIPPED.equals(status) && !fromNullable(launch.get().getParameters().getSkippedAnIssue()).or(false)) {
+			Issue issue = new Issue();
+			issue.setIssueType(NOT_ISSUE);
+			rq.setIssue(issue);
+		}
+		return rq;
 	}
 
 	private FinishTestItemRQ buildFinishTestItemRequest(String status, Date endTime) {
