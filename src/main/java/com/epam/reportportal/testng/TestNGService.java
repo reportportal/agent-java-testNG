@@ -55,6 +55,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.testng.ITestResult.FAILURE;
 import static rp.com.google.common.base.Optional.fromNullable;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
@@ -174,6 +175,7 @@ public class TestNGService implements ITestNGService {
 		Maybe<String> itemId = this.getAttribute(testResult, RP_ID);
 		if (stepReporter.isParentFailed(itemId)) {
 			status = Statuses.FAILED;
+			testResult.setStatus(FAILURE);
 		}
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
 		launch.get().finishTestItem(itemId, rq);
