@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import static com.sun.org.apache.xml.internal.utils.LocaleUtility.EMPTY_STRING;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
 /**
@@ -108,7 +107,7 @@ public class StepReporter {
 		ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
 			@Override
 			public SaveLogRQ apply(String itemId) {
-				return buildSaveLogRequest(itemId, EMPTY_STRING, "INFO", file);
+				return buildSaveLogRequest(itemId, file.getName(), "INFO", file);
 			}
 		});
 		finishStepRequest(stepId, "PASSED");
@@ -119,7 +118,7 @@ public class StepReporter {
 		ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
 			@Override
 			public SaveLogRQ apply(String itemId) {
-				return buildSaveLogRequest(itemId, EMPTY_STRING, "INFO", file);
+				return buildSaveLogRequest(itemId, file.getName(), "INFO", file);
 			}
 		});
 		finishStepRequest(stepId, status);
