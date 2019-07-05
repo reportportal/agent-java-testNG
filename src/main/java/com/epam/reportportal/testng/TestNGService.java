@@ -171,8 +171,12 @@ public class TestNGService implements ITestNGService {
 			startTestMethod(testResult);
 		}
 
+		Maybe<String> itemId = this.getAttribute(testResult, RP_ID);
+		if (stepReporter.isParentFailed(itemId)) {
+			status = Statuses.FAILED;
+		}
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
-		launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testResult, RP_ID), rq);
+		launch.get().finishTestItem(itemId, rq);
 		stepReporter.removeParent();
 	}
 

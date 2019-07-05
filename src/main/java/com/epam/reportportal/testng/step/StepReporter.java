@@ -1,29 +1,23 @@
 package com.epam.reportportal.testng.step;
 
-import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.utils.MimeTypeDetector;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
-import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import rp.com.google.common.base.Function;
 import rp.com.google.common.collect.Queues;
+import rp.com.google.common.collect.Sets;
 import rp.com.google.common.io.Files;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Deque;
-import java.util.UUID;
+import java.util.*;
 
-import static com.epam.reportportal.service.LaunchImpl.NOT_ISSUE;
 import static com.sun.org.apache.xml.internal.utils.LocaleUtility.EMPTY_STRING;
-import static rp.com.google.common.base.Optional.fromNullable;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
 /**
@@ -37,12 +31,20 @@ public class StepReporter {
 
 	private final ThreadLocal<Deque<Maybe<String>>> parents;
 
+	private final ThreadLocal<Set<Maybe<String>>> parentFailures;
+
 	private StepReporter() {
 		launch = new InheritableThreadLocal<Launch>();
 		parents = new InheritableThreadLocal<Deque<Maybe<String>>>() {
 			@Override
 			protected Deque<Maybe<String>> initialValue() {
 				return Queues.newArrayDeque();
+			}
+		};
+		parentFailures = new ThreadLocal<Set<Maybe<String>>>() {
+			@Override
+			protected Set<Maybe<String>> initialValue() {
+				return Sets.newHashSet();
 			}
 		};
 	}
@@ -68,6 +70,14 @@ public class StepReporter {
 
 	public Maybe<String> removeParent() {
 		return this.parents.get().poll();
+	}
+
+	public boolean isParentFailed(Maybe<String> parentId) {
+		if (parentFailures.get().contains(parentId)) {
+			parentFailures.get().remove(parentId);
+			return true;
+		}
+		return false;
 	}
 
 	public void sendStep(String name) {
@@ -147,21 +157,8 @@ public class StepReporter {
 		launch.get().finishTestItem(stepId, finishTestItemRQ);
 		if ("FAILED".equalsIgnoreCase(status)) {
 			Maybe<String> parentId = parents.get().peek();
-			launch.get().finishTestItem(parentId, buildFinishParentRequest("FAILED"));
+			parentFailures.get().add(parentId);
 		}
-	}
-
-	private FinishTestItemRQ buildFinishParentRequest(String status) {
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(Calendar.getInstance().getTime());
-		rq.setStatus(status);
-		// Allows indicate that SKIPPED is not to investigate items for WS
-		if (Statuses.SKIPPED.equals(status) && !fromNullable(launch.get().getParameters().getSkippedAnIssue()).or(false)) {
-			Issue issue = new Issue();
-			issue.setIssueType(NOT_ISSUE);
-			rq.setIssue(issue);
-		}
-		return rq;
 	}
 
 	private FinishTestItemRQ buildFinishTestItemRequest(String status, Date endTime) {
