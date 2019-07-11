@@ -27,6 +27,10 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.annotations.attribute.Attribute;
+import com.epam.reportportal.annotations.attribute.Attributes;
+import com.epam.reportportal.annotations.attribute.MultiKeyAttribute;
+import com.epam.reportportal.annotations.attribute.MultiValueAttribute;
 import com.epam.reportportal.testng.step.StepReporter;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
@@ -41,6 +45,7 @@ import org.testng.*;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 import org.testng.collections.Lists;
+import org.testng.collections.Sets;
 import org.testng.internal.ConstructorOrMethod;
 import rp.com.google.common.annotations.VisibleForTesting;
 import rp.com.google.common.base.Function;
@@ -49,10 +54,7 @@ import rp.com.google.common.base.Supplier;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.testng.ITestResult.FAILURE;
@@ -308,6 +310,7 @@ public class TestNGService implements ITestNGService {
 
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
+		rq.setAttributes(createStepAttributes(testResult));
 		rq.setUniqueId(extractUniqueID(testResult));
 		rq.setStartTime(new Date(testResult.getStartMillis()));
 		rq.setType(TestMethodType.getStepType(testResult.getMethod()).toString());
@@ -384,6 +387,77 @@ public class TestNGService implements ITestNGService {
 			parameters = createAnnotationParameters(testResult, parametersAnnotation);
 		}
 		return parameters.isEmpty() ? null : parameters;
+	}
+
+	protected Set<ItemAttributesRQ> createStepAttributes(ITestResult testResult) {
+		Attributes attributesAnnotation = getMethodAnnotation(Attributes.class, testResult);
+		Set<ItemAttributesRQ> itemAttributes = Sets.newLinkedHashSet();
+		if (attributesAnnotation != null) {
+			itemAttributes.addAll(createItemAttributes("component", attributesAnnotation.component(), false, false));
+			itemAttributes.addAll(createItemAttributes("e2e", attributesAnnotation.e2e(), false, false));
+			itemAttributes.addAll(createItemAttributes("personal", attributesAnnotation.persona(), false, false));
+			itemAttributes.addAll(createItemAttributes("product", attributesAnnotation.product(), false, false));
+			itemAttributes.addAll(createItemAttributes("vertical", attributesAnnotation.vertical(), false, false));
+			for (Attribute attribute : attributesAnnotation.attributes()) {
+				if (!attribute.value().trim().isEmpty()) {
+					itemAttributes.add(createItemAttribute(attribute.key(),
+							attribute.value(),
+							attribute.isSystem(),
+							attribute.isNullKey()
+					));
+				}
+			}
+			for (MultiKeyAttribute attribute : attributesAnnotation.multiKeyAttributes()) {
+				itemAttributes.addAll(createItemAttributes(attribute.keys(),
+						attribute.value(),
+						attribute.isSystem(),
+						attribute.isNullKey()
+				));
+			}
+			for (MultiValueAttribute attribute : attributesAnnotation.multiValueAttributes()) {
+				itemAttributes.addAll(createItemAttributes(attribute.key(),
+						attribute.values(),
+						attribute.isSystem(),
+						attribute.isNullKey()
+				));
+			}
+		}
+
+		return itemAttributes.isEmpty() ? null : itemAttributes;
+	}
+
+	private List<ItemAttributesRQ> createItemAttributes(String[] keys, String value, boolean isSystem, boolean isNullKey) {
+		if (value == null || value.trim().isEmpty()) {
+			return Collections.emptyList();
+		}
+		if (keys == null || keys.length < 1) {
+			return Collections.singletonList(createItemAttribute(null, value, isSystem, isNullKey));
+		}
+
+		List<ItemAttributesRQ> itemAttributes = Lists.newArrayList(keys.length);
+		for (String key : keys) {
+			itemAttributes.add(createItemAttribute(key, value, isSystem, isNullKey));
+		}
+		return itemAttributes;
+	}
+
+	private List<ItemAttributesRQ> createItemAttributes(String key, String[] values, boolean isSystem, boolean isNullKey) {
+		if (values != null && values.length > 0) {
+			List<ItemAttributesRQ> attributes = Lists.newArrayList(values.length);
+			for (String value : values) {
+				if (value != null && !value.trim().isEmpty()) {
+					attributes.add(createItemAttribute(key, value, isSystem, isNullKey));
+				}
+			}
+
+			return attributes;
+		}
+
+		return Collections.emptyList();
+	}
+
+	private ItemAttributesRQ createItemAttribute(String key, String value, boolean isSystem, boolean isNullKey) {
+		return new ItemAttributesRQ(isNullKey ? null : key, value, isSystem);
 	}
 
 	/**
