@@ -47,6 +47,8 @@ import org.testng.annotations.Test;
 import org.testng.collections.Lists;
 import org.testng.collections.Sets;
 import org.testng.internal.ConstructorOrMethod;
+import org.testng.xml.XmlClass;
+import org.testng.xml.XmlTest;
 import rp.com.google.common.annotations.VisibleForTesting;
 import rp.com.google.common.base.Function;
 import rp.com.google.common.base.Supplier;
@@ -71,6 +73,8 @@ public class TestNGService implements ITestNGService {
 	public static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 	public static final String RP_ID = "rp_id";
 	public static final String ARGUMENT = "arg";
+	public static final String CLASS_PREFIX = "class ";
+	public static final String METHOD_PREFIX = "method ";
 
 	private final AtomicBoolean isLaunchFailed = new AtomicBoolean();
 
@@ -240,6 +244,16 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected StartTestItemRQ buildStartTestItemRq(ITestContext testContext) {
 		StartTestItemRQ rq = new StartTestItemRQ();
+		XmlTest currentXmlTest = testContext.getCurrentXmlTest();
+		if(currentXmlTest != null) {
+			List<XmlClass> xmlClasses = currentXmlTest.getXmlClasses();
+			if(xmlClasses != null) {
+				XmlClass xmlClass = xmlClasses.get(0);
+				if(xmlClass != null) {
+					rq.setLocation(CLASS_PREFIX + xmlClass.getName());
+				}
+			}
+		}
 		rq.setName(testContext.getName());
 		rq.setStartTime(testContext.getStartDate());
 		rq.setType("TEST");
@@ -307,6 +321,7 @@ public class TestNGService implements ITestNGService {
 			testStepName = testResult.getMethod().getMethodName();
 		}
 		rq.setName(testStepName);
+		rq.setLocation(METHOD_PREFIX + testResult.getMethod().getQualifiedName());
 
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
