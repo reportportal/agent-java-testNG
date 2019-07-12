@@ -91,49 +91,51 @@ public class StepReporter {
 
 	public void sendStep(String status, String name, final Throwable throwable) {
 		Maybe<String> stepId = startStepRequest(name);
-
 		ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
 			@Override
 			public SaveLogRQ apply(String itemId) {
 				return buildSaveLogRequest(itemId, "ERROR", throwable);
 			}
 		});
-
 		finishStepRequest(stepId, status);
 	}
 
-	public void sendStep(String name, final File file) {
+	public void sendStep(String name, final File... files) {
 		Maybe<String> stepId = startStepRequest(name);
-		ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String itemId) {
-				return buildSaveLogRequest(itemId, file.getName(), "INFO", file);
-			}
-		});
+		for (final File file : files) {
+			ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
+				@Override
+				public SaveLogRQ apply(String itemId) {
+					return buildSaveLogRequest(itemId, file.getName(), "INFO", file);
+				}
+			});
+		}
 		finishStepRequest(stepId, "PASSED");
 	}
 
-	public void sendStep(String status, String name, final File file) {
+	public void sendStep(String status, String name, final File... files) {
 		Maybe<String> stepId = startStepRequest(name);
-		ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String itemId) {
-				return buildSaveLogRequest(itemId, file.getName(), "INFO", file);
-			}
-		});
+		for (final File file : files) {
+			ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
+				@Override
+				public SaveLogRQ apply(String itemId) {
+					return buildSaveLogRequest(itemId, file.getName(), "INFO", file);
+				}
+			});
+		}
 		finishStepRequest(stepId, status);
 	}
 
-	public void sendStep(String status, String name, final File file, final Throwable throwable) {
+	public void sendStep(String status, String name, final Throwable throwable, final File... files) {
 		Maybe<String> stepId = startStepRequest(name);
-
-		ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String itemId) {
-				return buildSaveLogRequest(itemId, "ERROR", file, throwable);
-			}
-		});
-
+		for (final File file : files) {
+			ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
+				@Override
+				public SaveLogRQ apply(String itemId) {
+					return buildSaveLogRequest(itemId, "ERROR", throwable, file);
+				}
+			});
+		}
 		finishStepRequest(stepId, status);
 	}
 
@@ -193,7 +195,7 @@ public class StepReporter {
 		return buildSaveLogRequest(itemId, message, level);
 	}
 
-	private SaveLogRQ buildSaveLogRequest(String itemId, String level, File file, Throwable throwable) {
+	private SaveLogRQ buildSaveLogRequest(String itemId, String level, Throwable throwable, File file) {
 		String message = throwable != null ? getStackTraceAsString(throwable) : "Test has failed without exception";
 		SaveLogRQ rq = buildSaveLogRequest(itemId, message, level);
 
