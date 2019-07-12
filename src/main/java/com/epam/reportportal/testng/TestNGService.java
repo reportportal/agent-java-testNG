@@ -59,6 +59,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.epam.reportportal.annotations.attribute.AttributeConstants.*;
 import static org.testng.ITestResult.FAILURE;
 import static rp.com.google.common.base.Optional.fromNullable;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
@@ -408,11 +409,11 @@ public class TestNGService implements ITestNGService {
 		Attributes attributesAnnotation = getMethodAnnotation(Attributes.class, testResult);
 		Set<ItemAttributesRQ> itemAttributes = Sets.newLinkedHashSet();
 		if (attributesAnnotation != null) {
-			itemAttributes.addAll(createItemAttributes("component", attributesAnnotation.component(), false, false));
-			itemAttributes.addAll(createItemAttributes("e2e", attributesAnnotation.e2e(), false, false));
-			itemAttributes.addAll(createItemAttributes("personal", attributesAnnotation.persona(), false, false));
-			itemAttributes.addAll(createItemAttributes("product", attributesAnnotation.product(), false, false));
-			itemAttributes.addAll(createItemAttributes("vertical", attributesAnnotation.vertical(), false, false));
+			itemAttributes.addAll(createItemAttributes(COMPONENT_KEY, attributesAnnotation.component(), false, false));
+			itemAttributes.addAll(createItemAttributes(E2E_KEY, attributesAnnotation.e2e(), false, false));
+			itemAttributes.addAll(createItemAttributes(PERSONA_KEY, attributesAnnotation.persona(), false, false));
+			itemAttributes.addAll(createItemAttributes(PRODUCT_KEY, attributesAnnotation.product(), false, false));
+			itemAttributes.addAll(createItemAttributes(VERTICAL_KEY, attributesAnnotation.vertical(), false, false));
 			for (Attribute attribute : attributesAnnotation.attributes()) {
 				if (!attribute.value().trim().isEmpty()) {
 					itemAttributes.add(createItemAttribute(attribute.key(),
