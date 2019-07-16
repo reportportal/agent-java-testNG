@@ -51,7 +51,7 @@ bintray {
         githubReleaseNotesFile = 'CHANGELOG.md'
 
         userOrg = 'epam'
-        licenses = ['GPL-3.0']
+        licenses = ['Apache-2.0']
     }
 }
 afterReleaseBuild.dependsOn bintrayUpload
