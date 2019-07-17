@@ -64,7 +64,9 @@ public class StepReporter {
 	}
 
 	public void addParent(Maybe<String> parent) {
-		this.parents.get().push(parent);
+		if (parent != null) {
+			this.parents.get().push(parent);
+		}
 	}
 
 	public Maybe<String> removeParent() {
