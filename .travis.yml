@@ -4,7 +4,6 @@ language: java
 script: ./gradlew build
 
 jdk:
-    - oraclejdk8
     - openjdk8
 # Gradle requires JDK7 to build the project
 #    - openjdk6
