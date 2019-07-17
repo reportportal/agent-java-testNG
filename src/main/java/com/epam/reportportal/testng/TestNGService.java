@@ -226,6 +226,10 @@ public class TestNGService implements ITestNGService {
 		rq.setStartTime(Calendar.getInstance().getTime());
 		rq.setAttributes(parameters.getAttributes());
 		rq.setMode(parameters.getLaunchRunningMode());
+		rq.setRerun(parameters.isRerun());
+		if (!isNullOrEmpty(parameters.getRerunOf())) {
+			rq.setRerunOf(parameters.getRerunOf());
+		}
 		if (!isNullOrEmpty(parameters.getDescription())) {
 			rq.setDescription(parameters.getDescription());
 		}
