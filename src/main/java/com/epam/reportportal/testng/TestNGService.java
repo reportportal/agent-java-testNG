@@ -63,8 +63,6 @@ public class TestNGService implements ITestNGService {
 	public static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 	public static final String RP_ID = "rp_id";
 	public static final String ARGUMENT = "arg";
-	public static final String CLASS_PREFIX = "class ";
-	public static final String METHOD_PREFIX = "method ";
 
 	private final AtomicBoolean isLaunchFailed = new AtomicBoolean();
 
@@ -218,7 +216,7 @@ public class TestNGService implements ITestNGService {
 			if(xmlClasses != null) {
 				XmlClass xmlClass = xmlClasses.get(0);
 				if(xmlClass != null) {
-					rq.setLocation(CLASS_PREFIX + xmlClass.getName());
+					rq.setCodeRef(xmlClass.getName());
 				}
 			}
 		}
@@ -289,7 +287,7 @@ public class TestNGService implements ITestNGService {
 			testStepName = testResult.getMethod().getMethodName();
 		}
 		rq.setName(testStepName);
-		rq.setLocation(METHOD_PREFIX + testResult.getMethod().getQualifiedName());
+		rq.setCodeRef(testResult.getMethod().getQualifiedName());
 
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
