@@ -35,6 +35,8 @@ import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 import org.testng.collections.Lists;
 import org.testng.internal.ConstructorOrMethod;
+import org.testng.xml.XmlClass;
+import org.testng.xml.XmlTest;
 import rp.com.google.common.annotations.VisibleForTesting;
 import rp.com.google.common.base.Function;
 import rp.com.google.common.base.Supplier;
@@ -208,6 +210,16 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected StartTestItemRQ buildStartTestItemRq(ITestContext testContext) {
 		StartTestItemRQ rq = new StartTestItemRQ();
+		XmlTest currentXmlTest = testContext.getCurrentXmlTest();
+		if(currentXmlTest != null) {
+			List<XmlClass> xmlClasses = currentXmlTest.getXmlClasses();
+			if(xmlClasses != null) {
+				XmlClass xmlClass = xmlClasses.get(0);
+				if(xmlClass != null) {
+					rq.setCodeRef(xmlClass.getName());
+				}
+			}
+		}
 		rq.setName(testContext.getName());
 		rq.setStartTime(testContext.getStartDate());
 		rq.setType("TEST");
@@ -275,6 +287,7 @@ public class TestNGService implements ITestNGService {
 			testStepName = testResult.getMethod().getMethodName();
 		}
 		rq.setName(testStepName);
+		rq.setCodeRef(testResult.getMethod().getQualifiedName());
 
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
