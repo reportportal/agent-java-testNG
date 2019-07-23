@@ -17,6 +17,7 @@ package com.epam.reportportal.testng;
 
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.UniqueID;
+import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
@@ -35,6 +36,8 @@ import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 import org.testng.collections.Lists;
 import org.testng.internal.ConstructorOrMethod;
+import org.testng.xml.XmlClass;
+import org.testng.xml.XmlTest;
 import rp.com.google.common.annotations.VisibleForTesting;
 import rp.com.google.common.base.Function;
 import rp.com.google.common.base.Supplier;
@@ -87,6 +90,7 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public void startLaunch() {
 		this.launch.get().start();
+		StepAspect.addLaunch("default", this.launch.get());
 	}
 
 	@Override
@@ -105,6 +109,7 @@ public class TestNGService implements ITestNGService {
 		StartTestItemRQ rq = buildStartSuiteRq(suite);
 		final Maybe<String> item = launch.get().startTestItem(rq);
 		suite.setAttribute(RP_ID, item);
+		StepAspect.setParentId(item);
 	}
 
 	@Override
@@ -122,6 +127,7 @@ public class TestNGService implements ITestNGService {
 			StartTestItemRQ rq = buildStartTestItemRq(testContext);
 			final Maybe<String> testID = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
 			testContext.setAttribute(RP_ID, testID);
+			StepAspect.setParentId(testID);
 		}
 	}
 
@@ -142,6 +148,7 @@ public class TestNGService implements ITestNGService {
 
 		Maybe<String> stepMaybe = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
+		StepAspect.setParentId(stepMaybe);
 	}
 
 	@Override
@@ -162,6 +169,7 @@ public class TestNGService implements ITestNGService {
 		Maybe<String> parentId = getConfigParent(testResult, type);
 		final Maybe<String> itemID = launch.get().startTestItem(parentId, rq);
 		testResult.setAttribute(RP_ID, itemID);
+		StepAspect.setParentId(itemID);
 	}
 
 	@Override
@@ -208,6 +216,16 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected StartTestItemRQ buildStartTestItemRq(ITestContext testContext) {
 		StartTestItemRQ rq = new StartTestItemRQ();
+		XmlTest currentXmlTest = testContext.getCurrentXmlTest();
+		if(currentXmlTest != null) {
+			List<XmlClass> xmlClasses = currentXmlTest.getXmlClasses();
+			if(xmlClasses != null) {
+				XmlClass xmlClass = xmlClasses.get(0);
+				if(xmlClass != null) {
+					rq.setCodeRef(xmlClass.getName());
+				}
+			}
+		}
 		rq.setName(testContext.getName());
 		rq.setStartTime(testContext.getStartDate());
 		rq.setType("TEST");
@@ -279,6 +297,7 @@ public class TestNGService implements ITestNGService {
 			testStepName = testResult.getMethod().getMethodName();
 		}
 		rq.setName(testStepName);
+		rq.setCodeRef(testResult.getMethod().getQualifiedName());
 
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
@@ -326,8 +345,12 @@ public class TestNGService implements ITestNGService {
 	 * @return Request to ReportPortal
 	 */
 	protected FinishTestItemRQ buildFinishTestMethodRq(String status, ITestResult testResult) {
+		return buildFinishTestMethodRq(status, new Date(testResult.getEndMillis()));
+	}
+
+	private FinishTestItemRQ buildFinishTestMethodRq(String status, Date endTime) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(new Date(testResult.getEndMillis()));
+		rq.setEndTime(endTime);
 		rq.setStatus(status);
 		// Allows indicate that SKIPPED is not to investigate items for WS
 		if (Statuses.SKIPPED.equals(status) && !fromNullable(launch.get().getParameters().getSkippedAnIssue()).or(false)) {
