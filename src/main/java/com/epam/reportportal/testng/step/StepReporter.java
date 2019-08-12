@@ -173,7 +173,7 @@ public class StepReporter {
 
 	private SaveLogRQ buildSaveLogRequest(String itemId, String message, String level) {
 		SaveLogRQ rq = new SaveLogRQ();
-		rq.setItemId(itemId);
+		rq.setItemUuid(itemId);
 		rq.setMessage(message);
 		rq.setLevel(level);
 		rq.setLogTime(Calendar.getInstance().getTime());
