@@ -178,7 +178,7 @@ public class TestNGService implements ITestNGService {
 			@Override
 			public SaveLogRQ apply(String itemId) {
 				SaveLogRQ rq = new SaveLogRQ();
-				rq.setItemId(itemId);
+				rq.setItemUuid(itemId);
 				rq.setLevel("ERROR");
 				rq.setLogTime(Calendar.getInstance().getTime());
 				if (result.getThrowable() != null) {
