@@ -23,10 +23,10 @@ repositories {
 
 dependencies {
     if (releaseMode) {
-        compile 'com.epam.reportportal:client-java:4.0.16'
-        compile 'com.epam.reportportal:commons-model:5.0.0-BETA-6'
+        compile 'com.epam.reportportal:client-java:5.0.0-BETA-2'
+        compile 'com.epam.reportportal:commons-model:5.0.0-BETA-11'
     } else {
-        compile 'com.github.reportportal:client-java:5221fce'
+        compile 'com.github.reportportal:client-java:d92dc24'
         compile 'com.github.reportportal:commons-model:09eeaef'
     }
 
