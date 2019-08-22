@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2019 EPAM Systems
+ * Copyright 2019 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.epam.reportportal.testng;
 
 import com.epam.reportportal.listeners.ListenerParameters;
@@ -20,6 +21,7 @@ import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,6 +33,7 @@ import org.testng.ISuiteResult;
 import org.testng.ITestContext;
 import org.testng.internal.ResultMap;
 import rp.com.google.common.base.Supplier;
+import rp.com.google.common.collect.Sets;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -38,8 +41,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.epam.reportportal.testng.Constants.*;
+import static com.epam.reportportal.testng.TestNGService.SKIPPED_ISSUE_KEY;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -76,9 +81,24 @@ public class BuildTestTest {
 		StartLaunchRQ startLaunchRQ = testNGService.buildStartLaunchRq(listenerParameters);
 		assertThat("Incorrect launch name", startLaunchRQ.getName(), is(DEFAULT_NAME));
 		assertThat("Incorrect start time", startLaunchRQ.getStartTime(), notNullValue());
-		assertThat("Incorrect launch tags", startLaunchRQ.getTags(), is(TAGS));
+		assertThat("Incorrect launch tags", startLaunchRQ.getAttributes(), is(ATTRIBUTES));
 		assertThat("Incorrect launch mode", startLaunchRQ.getMode(), is(MODE));
 		assertThat("Incorrect description", startLaunchRQ.getDescription(), is(DEFAULT_DESCRIPTION));
+	}
+
+	@Test
+	public void testSkippedIssue() {
+
+		ItemAttributesRQ itemAttributeResource = new ItemAttributesRQ();
+		itemAttributeResource.setKey(SKIPPED_ISSUE_KEY);
+		itemAttributeResource.setValue(String.valueOf(true));
+		itemAttributeResource.setSystem(true);
+
+		ListenerParameters parameters = new ListenerParameters();
+		parameters.setSkippedAnIssue(true);
+		parameters.setAttributes(Sets.<ItemAttributesRQ>newHashSet());
+		StartLaunchRQ startLaunchRQ = testNGService.buildStartLaunchRq(parameters);
+		assertTrue(startLaunchRQ.getAttributes().contains(itemAttributeResource));
 	}
 
 	@Test
@@ -232,10 +252,10 @@ public class BuildTestTest {
 	private ListenerParameters defaultListenerParameters() {
 		ListenerParameters listenerParameters = new ListenerParameters();
 		listenerParameters.setBaseUrl(BASIC_URL);
-		listenerParameters.setUuid(DEFAULT_UUID);
+		listenerParameters.setApiKey(DEFAULT_UUID);
 		listenerParameters.setLaunchName(DEFAULT_NAME);
 		listenerParameters.setProjectName(DEFAULT_PROJECT);
-		listenerParameters.setTags(TAGS);
+		listenerParameters.setAttributes(ATTRIBUTES);
 		listenerParameters.setLaunchRunningMode(MODE);
 		listenerParameters.setDescription(DEFAULT_DESCRIPTION);
 		return listenerParameters;

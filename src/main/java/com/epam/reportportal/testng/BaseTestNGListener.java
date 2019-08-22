@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2019 EPAM Systems
+ * Copyright 2019 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class BaseTestNGListener implements IExecutionListener, ISuiteListener, IResultListener2 {
 
-	private final Logger LOGGER = LoggerFactory.getLogger(BaseTestNGListener.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(BaseTestNGListener.class);
 
 	private static final AtomicInteger INSTANCES = new AtomicInteger(0);
 
@@ -116,7 +116,7 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
 
 	@Override
 	public void onConfigurationSkip(ITestResult testResult) {
-		testNGService.sendReportPortalMsg(testResult);
+		testNGService.startConfiguration(testResult);
 		testNGService.finishTestMethod(Statuses.SKIPPED, testResult);
 	}
 
