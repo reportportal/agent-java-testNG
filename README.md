@@ -18,7 +18,7 @@
   - [Using \@Listeners annotation](https://github.com/reportportal/agent-java-testNG#using-listeners-annotation)
   - [Using ServiceLoader](https://github.com/reportportal/agent-java-testNG#using-serviceloader)
 - [Code example How to overload params in run-time](https://github.com/reportportal/agent-java-testNG#code-example-how-to-overload-params-in-run-time)
-- [Integration code example repository](https://github.com/reportportal/example-java-TestNG)
+- [🤓 Example and step-by-step instruction](https://github.com/reportportal/example-java-TestNG)
 ---
 
 
