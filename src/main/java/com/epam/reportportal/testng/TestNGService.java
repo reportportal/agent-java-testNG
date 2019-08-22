@@ -176,9 +176,9 @@ public class TestNGService implements ITestNGService {
 	public void sendReportPortalMsg(final ITestResult result) {
 		ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(String itemId) {
+			public SaveLogRQ apply(String itemUuid) {
 				SaveLogRQ rq = new SaveLogRQ();
-				rq.setItemId(itemId);
+				rq.setItemUuid(itemUuid);
 				rq.setLevel("ERROR");
 				rq.setLogTime(Calendar.getInstance().getTime());
 				if (result.getThrowable() != null) {
