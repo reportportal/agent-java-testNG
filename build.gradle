@@ -26,8 +26,8 @@ dependencies {
         compile 'com.epam.reportportal:client-java:4.0.16'
         compile 'com.epam.reportportal:commons-model:5.0.0-BETA-6'
     } else {
-        compile 'com.github.reportportal:client-java:024235c'
-        compile 'com.github.reportportal:commons-model:80d27d4'
+        compile 'com.github.reportportal:client-java:f4ed7695'
+        compile 'com.github.reportportal:commons-model:f96fe84'
     }
 
     compile 'org.testng:testng:6.14.3'
