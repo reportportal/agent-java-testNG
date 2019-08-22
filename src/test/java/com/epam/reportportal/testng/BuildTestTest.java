@@ -252,7 +252,7 @@ public class BuildTestTest {
 	private ListenerParameters defaultListenerParameters() {
 		ListenerParameters listenerParameters = new ListenerParameters();
 		listenerParameters.setBaseUrl(BASIC_URL);
-		listenerParameters.setUuid(DEFAULT_UUID);
+		listenerParameters.setApiKey(DEFAULT_UUID);
 		listenerParameters.setLaunchName(DEFAULT_NAME);
 		listenerParameters.setProjectName(DEFAULT_PROJECT);
 		listenerParameters.setAttributes(ATTRIBUTES);
