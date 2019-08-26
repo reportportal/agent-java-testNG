@@ -3,7 +3,7 @@ plugins {
     id "com.jfrog.bintray" version "1.8.4"
 }
 apply plugin: 'java'
-apply from: 'https://raw.githubusercontent.com/reportportal/gradle-scripts/master/build-commons.gradle'
+apply from: 'https://raw.githubusercontent.com/reportportal/gradle-scripts/master/release-commons.gradle'
 
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
