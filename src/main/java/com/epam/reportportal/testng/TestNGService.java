@@ -92,7 +92,7 @@ public class TestNGService implements ITestNGService {
 		this.launch = new MemoizingSupplier<Launch>(launch);
 	}
 
-	private static class TestItemTree {
+	public static class TestItemTree {
 
 		private final Maybe<String> itemId;
 		private final Map<String, TestItemTree> childrenMapping = Maps.newConcurrentMap();
