@@ -41,14 +41,12 @@ import org.testng.xml.XmlTest;
 import rp.com.google.common.annotations.VisibleForTesting;
 import rp.com.google.common.base.Function;
 import rp.com.google.common.base.Supplier;
+import rp.com.google.common.collect.Maps;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static rp.com.google.common.base.Optional.fromNullable;
@@ -69,6 +67,13 @@ public class TestNGService implements ITestNGService {
 
 	private MemoizingSupplier<Launch> launch;
 
+	public static ThreadLocal<Map<String, TestItemTree>> ITEM_TREE_MAPPING = new InheritableThreadLocal<Map<String, TestItemTree>>() {
+		@Override
+		protected Map<String, TestItemTree> initialValue() {
+			return Maps.newHashMap();
+		}
+	};
+
 	public TestNGService() {
 		this.launch = new MemoizingSupplier<Launch>(new Supplier<Launch>() {
 			@Override
@@ -85,6 +90,24 @@ public class TestNGService implements ITestNGService {
 
 	public TestNGService(Supplier<Launch> launch) {
 		this.launch = new MemoizingSupplier<Launch>(launch);
+	}
+
+	private static class TestItemTree {
+
+		private final Maybe<String> itemId;
+		private final Map<String, TestItemTree> childrenMapping = Maps.newConcurrentMap();
+
+		private TestItemTree(Maybe<String> itemId) {
+			this.itemId = itemId;
+		}
+
+		public Maybe<String> getItemId() {
+			return itemId;
+		}
+
+		public Map<String, TestItemTree> getChildrenMapping() {
+			return childrenMapping;
+		}
 	}
 
 	@Override
@@ -108,6 +131,7 @@ public class TestNGService implements ITestNGService {
 	public synchronized void startTestSuite(ISuite suite) {
 		StartTestItemRQ rq = buildStartSuiteRq(suite);
 		final Maybe<String> item = launch.get().startTestItem(rq);
+		ITEM_TREE_MAPPING.get().put(suite.getName(), new TestItemTree(item));
 		suite.setAttribute(RP_ID, item);
 		StepAspect.setParentId(item);
 	}
@@ -119,6 +143,7 @@ public class TestNGService implements ITestNGService {
 			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
 			suite.removeAttribute(RP_ID);
 		}
+		ITEM_TREE_MAPPING.get().remove(suite.getName());
 	}
 
 	@Override
@@ -126,6 +151,10 @@ public class TestNGService implements ITestNGService {
 		if (hasMethodsToRun(testContext)) {
 			StartTestItemRQ rq = buildStartTestItemRq(testContext);
 			final Maybe<String> testID = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
+			TestItemTree suiteTree = ITEM_TREE_MAPPING.get().get(testContext.getSuite().getName());
+			if (suiteTree != null) {
+				suiteTree.getChildrenMapping().put(testContext.getName(), new TestItemTree(testID));
+			}
 			testContext.setAttribute(RP_ID, testID);
 			StepAspect.setParentId(testID);
 		}
@@ -136,6 +165,10 @@ public class TestNGService implements ITestNGService {
 		if (hasMethodsToRun(testContext)) {
 			FinishTestItemRQ rq = buildFinishTestRq(testContext);
 			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
+			TestItemTree suiteTree = ITEM_TREE_MAPPING.get().get(testContext.getSuite().getName());
+			if (suiteTree != null) {
+				suiteTree.getChildrenMapping().remove(testContext.getName());
+			}
 		}
 	}
 
@@ -146,9 +179,18 @@ public class TestNGService implements ITestNGService {
 			return;
 		}
 
-		Maybe<String> stepMaybe = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
+		ITestContext testContext = testResult.getTestContext();
+		Maybe<String> stepMaybe = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
 		StepAspect.setParentId(stepMaybe);
+		String suiteName = testContext.getSuite().getName();
+		TestItemTree suiteTree = ITEM_TREE_MAPPING.get().get(suiteName);
+		if (suiteTree != null) {
+			TestItemTree testClassTree = suiteTree.getChildrenMapping().get(testContext.getName());
+			if (testClassTree != null) {
+				testClassTree.getChildrenMapping().put(testResult.getName(), new TestItemTree(stepMaybe));
+			}
+		}
 	}
 
 	@Override
@@ -217,11 +259,11 @@ public class TestNGService implements ITestNGService {
 	protected StartTestItemRQ buildStartTestItemRq(ITestContext testContext) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		XmlTest currentXmlTest = testContext.getCurrentXmlTest();
-		if(currentXmlTest != null) {
+		if (currentXmlTest != null) {
 			List<XmlClass> xmlClasses = currentXmlTest.getXmlClasses();
-			if(xmlClasses != null) {
+			if (xmlClasses != null) {
 				XmlClass xmlClass = xmlClasses.get(0);
-				if(xmlClass != null) {
+				if (xmlClass != null) {
 					rq.setCodeRef(xmlClass.getName());
 				}
 			}
