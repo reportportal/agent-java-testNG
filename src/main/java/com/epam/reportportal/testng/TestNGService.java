@@ -95,7 +95,7 @@ public class TestNGService implements ITestNGService {
 	public static class TestItemTree {
 
 		private final Maybe<String> itemId;
-		private final Map<String, TestItemTree> childrenMapping = Maps.newConcurrentMap();
+		private final Map<String, TestItemTree> childrenMapping = Maps.newHashMap();
 
 		private TestItemTree(Maybe<String> itemId) {
 			this.itemId = itemId;
