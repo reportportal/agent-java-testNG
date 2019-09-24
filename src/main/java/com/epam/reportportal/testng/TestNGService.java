@@ -63,6 +63,8 @@ public class TestNGService implements ITestNGService {
 	public static final String RP_ID = "rp_id";
 	public static final String ARGUMENT = "arg";
 
+	public static final ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
+
 	private final AtomicBoolean isLaunchFailed = new AtomicBoolean();
 
 	private MemoizingSupplier<Launch> launch;
@@ -80,10 +82,10 @@ public class TestNGService implements ITestNGService {
 			public Launch get() {
 				//this reads property, so we want to
 				//init ReportPortal object each time Launch object is going to be created
-				final ReportPortal reportPortal = ReportPortal.builder().build();
-				StartLaunchRQ rq = buildStartLaunchRq(reportPortal.getParameters());
+
+				StartLaunchRQ rq = buildStartLaunchRq(REPORT_PORTAL.getParameters());
 				rq.setStartTime(Calendar.getInstance().getTime());
-				return reportPortal.newLaunch(rq);
+				return REPORT_PORTAL.newLaunch(rq);
 			}
 		});
 	}
