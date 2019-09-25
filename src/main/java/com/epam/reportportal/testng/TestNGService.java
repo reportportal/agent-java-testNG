@@ -224,12 +224,17 @@ public class TestNGService implements ITestNGService {
 										Maps.<String, TestItemTree.TestItemLeaf>newHashMapWithExpectedSize(0)
 								)
 						);
-				System.err.println("TEST NOT EMPTY=" + StringUtils.join(testLeaf.getChildItems().keySet(), ","));
+				System.err.println(
+						"THREAD: " + Thread.currentThread().getName() + " TEST NOT EMPTY=" + StringUtils.join(testLeaf.getChildItems()
+								.keySet(), ","));
 			} else {
-				System.err.println("TEST IS EMPTY=" + StringUtils.join(anotherSuiteLeaf.getChildItems().keySet(), ","));
+				System.err.println("THREAD: " + Thread.currentThread().getName() + " TEST IS EMPTY="
+						+ StringUtils.join(anotherSuiteLeaf.getChildItems().keySet(), ","));
 			}
 		} else {
-			System.err.println("SUITE IS EMPTY=" + StringUtils.join(ITEM_TREE_MAPPING.getDefaultMap().keySet(), ","));
+			System.err.println(
+					"THREAD: " + Thread.currentThread().getName() + " SUITE IS EMPTY=" + StringUtils.join(ITEM_TREE_MAPPING.getDefaultMap()
+							.keySet(), ","));
 		}
 	}
 
