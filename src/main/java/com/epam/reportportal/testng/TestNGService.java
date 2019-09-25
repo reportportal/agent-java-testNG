@@ -22,6 +22,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
@@ -46,7 +47,10 @@ import rp.com.google.common.collect.Maps;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static rp.com.google.common.base.Optional.fromNullable;
@@ -69,12 +73,7 @@ public class TestNGService implements ITestNGService {
 
 	private MemoizingSupplier<Launch> launch;
 
-	public static ThreadLocal<Map<String, TestItemTree>> ITEM_TREE_MAPPING = new InheritableThreadLocal<Map<String, TestItemTree>>() {
-		@Override
-		protected Map<String, TestItemTree> initialValue() {
-			return Maps.newHashMap();
-		}
-	};
+	public static TestItemTree ITEM_TREE_MAPPING = new TestItemTree();
 
 	public TestNGService() {
 		this.launch = new MemoizingSupplier<Launch>(new Supplier<Launch>() {
@@ -92,24 +91,6 @@ public class TestNGService implements ITestNGService {
 
 	public TestNGService(Supplier<Launch> launch) {
 		this.launch = new MemoizingSupplier<Launch>(launch);
-	}
-
-	public static class TestItemTree {
-
-		private final Maybe<String> itemId;
-		private final Map<String, TestItemTree> childrenMapping = Maps.newHashMap();
-
-		private TestItemTree(Maybe<String> itemId) {
-			this.itemId = itemId;
-		}
-
-		public Maybe<String> getItemId() {
-			return itemId;
-		}
-
-		public Map<String, TestItemTree> getChildrenMapping() {
-			return childrenMapping;
-		}
 	}
 
 	@Override
@@ -131,9 +112,21 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public synchronized void startTestSuite(ISuite suite) {
+		System.err.println("SUITE" + suite.getName() + Thread.currentThread().getName());
 		StartTestItemRQ rq = buildStartSuiteRq(suite);
 		final Maybe<String> item = launch.get().startTestItem(rq);
-		ITEM_TREE_MAPPING.get().put(suite.getName(), new TestItemTree(item));
+		ITEM_TREE_MAPPING.getTestItems()
+				.put(suite.getName(),
+						new TestItemTree.TestItemLeaf(item,
+								Maps.<String, TestItemTree.TestItemLeaf>newHashMapWithExpectedSize(suite.getXmlSuite().getTests().size())
+						)
+				);
+		ITEM_TREE_MAPPING.getDefaultMap()
+				.put(suite.getName(),
+						new TestItemTree.TestItemLeaf(item,
+								Maps.<String, TestItemTree.TestItemLeaf>newHashMapWithExpectedSize(suite.getXmlSuite().getTests().size())
+						)
+				);
 		suite.setAttribute(RP_ID, item);
 		StepAspect.setParentId(item);
 	}
@@ -145,17 +138,33 @@ public class TestNGService implements ITestNGService {
 			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
 			suite.removeAttribute(RP_ID);
 		}
-		ITEM_TREE_MAPPING.get().remove(suite.getName());
+		ITEM_TREE_MAPPING.getTestItems().remove(suite.getName());
+		ITEM_TREE_MAPPING.getDefaultMap().remove(suite.getName());
 	}
 
 	@Override
 	public void startTest(ITestContext testContext) {
+		System.err.println("TEST" + testContext.getName() + Thread.currentThread().getName());
 		if (hasMethodsToRun(testContext)) {
 			StartTestItemRQ rq = buildStartTestItemRq(testContext);
 			final Maybe<String> testID = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
-			TestItemTree suiteTree = ITEM_TREE_MAPPING.get().get(testContext.getSuite().getName());
-			if (suiteTree != null) {
-				suiteTree.getChildrenMapping().put(testContext.getName(), new TestItemTree(testID));
+			TestItemTree.TestItemLeaf testItemLeaf = ITEM_TREE_MAPPING.getTestItems().get(testContext.getSuite().getName());
+			if (testItemLeaf != null) {
+				testItemLeaf.getChildItems()
+						.put(testContext.getName(),
+								new TestItemTree.TestItemLeaf(testID,
+										Maps.<String, TestItemTree.TestItemLeaf>newHashMapWithExpectedSize(testContext.getAllTestMethods().length)
+								)
+						);
+			}
+			TestItemTree.TestItemLeaf anotherLeaf = ITEM_TREE_MAPPING.getDefaultMap().get(testContext.getSuite().getName());
+			if (anotherLeaf != null) {
+				anotherLeaf.getChildItems()
+						.put(testContext.getName(),
+								new TestItemTree.TestItemLeaf(testID,
+										Maps.<String, TestItemTree.TestItemLeaf>newHashMapWithExpectedSize(testContext.getAllTestMethods().length)
+								)
+						);
 			}
 			testContext.setAttribute(RP_ID, testID);
 			StepAspect.setParentId(testID);
@@ -167,15 +176,20 @@ public class TestNGService implements ITestNGService {
 		if (hasMethodsToRun(testContext)) {
 			FinishTestItemRQ rq = buildFinishTestRq(testContext);
 			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
-			TestItemTree suiteTree = ITEM_TREE_MAPPING.get().get(testContext.getSuite().getName());
-			if (suiteTree != null) {
-				suiteTree.getChildrenMapping().remove(testContext.getName());
+			TestItemTree.TestItemLeaf testItemLeaf = ITEM_TREE_MAPPING.getTestItems().get(testContext.getSuite().getName());
+			if (testItemLeaf != null) {
+				testItemLeaf.getChildItems().remove(testContext.getName());
+			}
+			TestItemTree.TestItemLeaf anotherLeaf = ITEM_TREE_MAPPING.getDefaultMap().get(testContext.getSuite().getName());
+			if (anotherLeaf != null) {
+				anotherLeaf.getChildItems().remove(testContext.getName());
 			}
 		}
 	}
 
 	@Override
 	public void startTestMethod(ITestResult testResult) {
+		System.err.println("METHOD" + testResult.getName() + Thread.currentThread().getName());
 		StartTestItemRQ rq = buildStartStepRq(testResult);
 		if (rq == null) {
 			return;
@@ -186,11 +200,29 @@ public class TestNGService implements ITestNGService {
 		testResult.setAttribute(RP_ID, stepMaybe);
 		StepAspect.setParentId(stepMaybe);
 		String suiteName = testContext.getSuite().getName();
-		TestItemTree suiteTree = ITEM_TREE_MAPPING.get().get(suiteName);
-		if (suiteTree != null) {
-			TestItemTree testClassTree = suiteTree.getChildrenMapping().get(testContext.getName());
-			if (testClassTree != null) {
-				testClassTree.getChildrenMapping().put(testResult.getName(), new TestItemTree(stepMaybe));
+		TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE_MAPPING.getTestItems().get(suiteName);
+		if (suiteLeaf != null) {
+			TestItemTree.TestItemLeaf testLeaf = suiteLeaf.getChildItems().get(testContext.getName());
+			if (testLeaf != null) {
+				testLeaf.getChildItems()
+						.put(testResult.getName(),
+								new TestItemTree.TestItemLeaf(stepMaybe,
+										Maps.<String, TestItemTree.TestItemLeaf>newHashMapWithExpectedSize(0)
+								)
+						);
+			}
+		}
+
+		TestItemTree.TestItemLeaf anotherSuiteLeaf = ITEM_TREE_MAPPING.getDefaultMap().get(suiteName);
+		if (anotherSuiteLeaf != null) {
+			TestItemTree.TestItemLeaf testLeaf = anotherSuiteLeaf.getChildItems().get(testContext.getName());
+			if (testLeaf != null) {
+				testLeaf.getChildItems()
+						.put(testResult.getName(),
+								new TestItemTree.TestItemLeaf(stepMaybe,
+										Maps.<String, TestItemTree.TestItemLeaf>newHashMapWithExpectedSize(0)
+								)
+						);
 			}
 		}
 	}
