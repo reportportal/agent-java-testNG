@@ -224,6 +224,7 @@ public class TestNGService implements ITestNGService {
 										Maps.<String, TestItemTree.TestItemLeaf>newHashMapWithExpectedSize(0)
 								)
 						);
+				System.err.println("TEST NOT EMPTY=" + StringUtils.join(testLeaf.getChildItems().keySet(), ","));
 			} else {
 				System.err.println("TEST IS EMPTY=" + StringUtils.join(anotherSuiteLeaf.getChildItems().keySet(), ","));
 			}
