@@ -32,6 +32,7 @@ import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.*;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -223,7 +224,11 @@ public class TestNGService implements ITestNGService {
 										Maps.<String, TestItemTree.TestItemLeaf>newHashMapWithExpectedSize(0)
 								)
 						);
+			} else {
+				System.err.println("TEST IS EMPTY=" + StringUtils.join(anotherSuiteLeaf.getChildItems().keySet(), ","));
 			}
+		} else {
+			System.err.println("SUITE IS EMPTY=" + StringUtils.join(ITEM_TREE_MAPPING.getDefaultMap().keySet(), ","));
 		}
 	}
 
