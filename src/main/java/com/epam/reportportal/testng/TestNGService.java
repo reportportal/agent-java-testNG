@@ -23,10 +23,7 @@ import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.tree.TestItemTree;
-import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
-import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
-import com.epam.ta.reportportal.ws.model.ParameterResource;
-import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -183,7 +180,9 @@ public class TestNGService implements ITestNGService {
 		}
 
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
-		launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testResult, RP_ID), rq);
+		Maybe<OperationCompletionRS> finishItemResponse = launch.get()
+				.finishTestItem(this.<Maybe<String>>getAttribute(testResult, RP_ID), rq);
+		updateTestItemTree(finishItemResponse, testResult);
 	}
 
 	@Override
@@ -384,6 +383,20 @@ public class TestNGService implements ITestNGService {
 			rq.setIssue(issue);
 		}
 		return rq;
+	}
+
+	private void updateTestItemTree(Maybe<OperationCompletionRS> finishItemResponse, ITestResult testResult) {
+		ITestContext testContext = testResult.getTestContext();
+		TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE_MAPPING.getTestItems().get(testContext.getSuite().getName());
+		if (suiteLeaf != null) {
+			TestItemTree.TestItemLeaf testLeaf = suiteLeaf.getChildItems().get(testContext.getName());
+			if (testLeaf != null) {
+				TestItemTree.TestItemLeaf testItemLeaf = testLeaf.getChildItems().get(testResult.getName());
+				if (testItemLeaf != null) {
+					testItemLeaf.setFinishResponse(finishItemResponse);
+				}
+			}
+		}
 	}
 
 	/**
