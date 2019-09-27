@@ -43,10 +43,7 @@ import rp.com.google.common.base.Supplier;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static rp.com.google.common.base.Optional.fromNullable;
@@ -176,7 +173,8 @@ public class TestNGService implements ITestNGService {
 			TestItemTree.TestItemLeaf testLeaf = suiteLeaf.getChildItems().get(testContext.getName());
 			if (testLeaf != null) {
 				testLeaf.getChildItems()
-						.put(testResult.getName() + testResult.getParameters().length, new TestItemTree.TestItemLeaf(stepMaybe, 0));
+						.put(testResult.getName() + "[L=" + testResult.getParameters().length + "]" + "[H="
+								+ Arrays.hashCode(testResult.getParameters()) + "]", new TestItemTree.TestItemLeaf(stepMaybe, 0));
 			}
 		}
 	}

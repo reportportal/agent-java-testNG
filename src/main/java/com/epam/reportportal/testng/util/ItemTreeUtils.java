@@ -6,6 +6,8 @@ import org.testng.ISuite;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
 
+import java.util.Arrays;
+
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
@@ -29,7 +31,11 @@ public class ItemTreeUtils {
 	@Nullable
 	public static TestItemTree.TestItemLeaf retrieveLeaf(ITestResult testResult, TestItemTree testItemTree) {
 		TestItemTree.TestItemLeaf testLeaf = retrieveLeaf(testResult.getTestContext(), testItemTree);
-		return testLeaf != null ? testLeaf.getChildItems().get(testResult.getName()) : null;
+		return testLeaf != null ?
+				testLeaf.getChildItems()
+						.get(testResult.getName() + "[L=" + testResult.getParameters().length + "]" + "[H="
+								+ Arrays.hashCode(testResult.getParameters()) + "]") :
+				null;
 
 	}
 }
