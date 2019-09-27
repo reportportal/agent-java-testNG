@@ -44,6 +44,7 @@ import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static rp.com.google.common.base.Optional.fromNullable;
@@ -130,8 +131,16 @@ public class TestNGService implements ITestNGService {
 			final Maybe<String> testID = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
 			TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE.getTestItems().get(testContext.getSuite().getName());
 			if (suiteLeaf != null) {
-				suiteLeaf.getChildItems()
-						.put(testContext.getName(), new TestItemTree.TestItemLeaf(testID, testContext.getAllTestMethods().length));
+				List<XmlClass> testClasses = testContext.getCurrentXmlTest().getClasses();
+				ConcurrentHashMap<String, TestItemTree.TestItemLeaf> testClassesMapping = new ConcurrentHashMap<String, TestItemTree.TestItemLeaf>(
+						testClasses.size());
+				for (XmlClass testClass : testClasses) {
+					TestItemTree.TestItemLeaf testClassLeaf = new TestItemTree.TestItemLeaf(testID,
+							new ConcurrentHashMap<String, TestItemTree.TestItemLeaf>()
+					);
+					testClassesMapping.put(testClass.getName(), testClassLeaf);
+				}
+				suiteLeaf.getChildItems().put(testContext.getName(), new TestItemTree.TestItemLeaf(testID, testClassesMapping));
 			}
 			testContext.setAttribute(RP_ID, testID);
 			StepAspect.setParentId(testID);
@@ -166,13 +175,11 @@ public class TestNGService implements ITestNGService {
 			TestItemTree.TestItemLeaf testLeaf = suiteLeaf.getChildItems().get(testContext.getName());
 			if (testLeaf != null) {
 				TestItemTree.TestItemLeaf testClassLeaf = testLeaf.getChildItems().get(testResult.getTestClass().getName());
-				if (testClassLeaf == null) {
-					testClassLeaf = new TestItemTree.TestItemLeaf(testLeaf.getItemId(), 1);
+				if (testClassLeaf != null) {
 					testClassLeaf.getChildItems()
 							.put(testResult.getName() + "[L=" + testResult.getParameters().length + "]" + "[H=" + Arrays.hashCode(testResult
 									.getParameters()) + "]", new TestItemTree.TestItemLeaf(stepMaybe, 0));
 				}
-				testLeaf.getChildItems().put(testResult.getTestClass().getName(), testClassLeaf);
 			}
 		}
 	}
