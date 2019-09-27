@@ -66,12 +66,7 @@ public class TestNGService implements ITestNGService {
 
 	private MemoizingSupplier<Launch> launch;
 
-	public static ThreadLocal<TestItemTree> ITEM_TREE_MAPPING = new InheritableThreadLocal<TestItemTree>() {
-		@Override
-		protected TestItemTree initialValue() {
-			return new TestItemTree();
-		}
-	};
+	public static TestItemTree ITEM_TREE = new TestItemTree();
 
 	public TestNGService() {
 		this.launch = new MemoizingSupplier<Launch>(new Supplier<Launch>() {
@@ -95,7 +90,7 @@ public class TestNGService implements ITestNGService {
 	public void startLaunch() {
 		Maybe<String> launchId = this.launch.get().start();
 		StepAspect.addLaunch("default", this.launch.get());
-		ITEM_TREE_MAPPING.get().setLaunchId(launchId);
+		ITEM_TREE.setLaunchId(launchId);
 	}
 
 	@Override
@@ -113,9 +108,7 @@ public class TestNGService implements ITestNGService {
 	public synchronized void startTestSuite(ISuite suite) {
 		StartTestItemRQ rq = buildStartSuiteRq(suite);
 		final Maybe<String> item = launch.get().startTestItem(rq);
-		ITEM_TREE_MAPPING.get()
-				.getTestItems()
-				.put(suite.getName(), new TestItemTree.TestItemLeaf(item, suite.getXmlSuite().getTests().size()));
+		ITEM_TREE.getTestItems().put(suite.getName(), new TestItemTree.TestItemLeaf(item, suite.getXmlSuite().getTests().size()));
 		suite.setAttribute(RP_ID, item);
 		StepAspect.setParentId(item);
 	}
@@ -127,7 +120,7 @@ public class TestNGService implements ITestNGService {
 			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
 			suite.removeAttribute(RP_ID);
 		}
-		ITEM_TREE_MAPPING.get().getTestItems().remove(suite.getName());
+		ITEM_TREE.getTestItems().remove(suite.getName());
 	}
 
 	@Override
@@ -135,7 +128,7 @@ public class TestNGService implements ITestNGService {
 		if (hasMethodsToRun(testContext)) {
 			StartTestItemRQ rq = buildStartTestItemRq(testContext);
 			final Maybe<String> testID = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
-			TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE_MAPPING.get().getTestItems().get(testContext.getSuite().getName());
+			TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE.getTestItems().get(testContext.getSuite().getName());
 			if (suiteLeaf != null) {
 				suiteLeaf.getChildItems()
 						.put(testContext.getName(), new TestItemTree.TestItemLeaf(testID, testContext.getAllTestMethods().length));
@@ -150,7 +143,7 @@ public class TestNGService implements ITestNGService {
 		if (hasMethodsToRun(testContext)) {
 			FinishTestItemRQ rq = buildFinishTestRq(testContext);
 			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
-			TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE_MAPPING.get().getTestItems().get(testContext.getSuite().getName());
+			TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE.getTestItems().get(testContext.getSuite().getName());
 			if (suiteLeaf != null) {
 				suiteLeaf.getChildItems().remove(testContext.getName());
 			}
@@ -168,7 +161,7 @@ public class TestNGService implements ITestNGService {
 		Maybe<String> stepMaybe = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
 		StepAspect.setParentId(stepMaybe);
-		TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE_MAPPING.get().getTestItems().get(testContext.getSuite().getName());
+		TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE.getTestItems().get(testContext.getSuite().getName());
 		if (suiteLeaf != null) {
 			TestItemTree.TestItemLeaf testLeaf = suiteLeaf.getChildItems().get(testContext.getName());
 			if (testLeaf != null) {
@@ -398,7 +391,7 @@ public class TestNGService implements ITestNGService {
 
 	private void updateTestItemTree(Maybe<OperationCompletionRS> finishItemResponse, ITestResult testResult) {
 		ITestContext testContext = testResult.getTestContext();
-		TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE_MAPPING.get().getTestItems().get(testContext.getSuite().getName());
+		TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE.getTestItems().get(testContext.getSuite().getName());
 		if (suiteLeaf != null) {
 			TestItemTree.TestItemLeaf testLeaf = suiteLeaf.getChildItems().get(testContext.getName());
 			if (testLeaf != null) {
