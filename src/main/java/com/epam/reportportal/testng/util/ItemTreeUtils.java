@@ -2,6 +2,7 @@ package com.epam.reportportal.testng.util;
 
 import com.epam.reportportal.service.tree.TestItemTree;
 import io.reactivex.annotations.Nullable;
+import org.testng.IClass;
 import org.testng.ISuite;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
@@ -30,12 +31,18 @@ public class ItemTreeUtils {
 
 	@Nullable
 	public static TestItemTree.TestItemLeaf retrieveLeaf(ITestResult testResult, TestItemTree testItemTree) {
-		TestItemTree.TestItemLeaf testLeaf = retrieveLeaf(testResult.getTestContext(), testItemTree);
-		return testLeaf != null ?
-				testLeaf.getChildItems()
+
+		TestItemTree.TestItemLeaf testClassLeaf = retrieveLeaf(testResult.getTestContext(), testResult.getTestClass(), testItemTree);
+		return testClassLeaf != null ?
+				testClassLeaf.getChildItems()
 						.get(testResult.getName() + "[L=" + testResult.getParameters().length + "]" + "[H="
 								+ Arrays.hashCode(testResult.getParameters()) + "]") :
 				null;
+	}
 
+	@Nullable
+	private static TestItemTree.TestItemLeaf retrieveLeaf(ITestContext testContext, IClass testClass, TestItemTree testItemTree) {
+		TestItemTree.TestItemLeaf testLeaf = retrieveLeaf(testContext, testItemTree);
+		return testLeaf != null ? testLeaf.getChildItems().get(testClass.getName()) : null;
 	}
 }

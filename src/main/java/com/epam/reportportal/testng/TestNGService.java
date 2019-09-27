@@ -172,9 +172,14 @@ public class TestNGService implements ITestNGService {
 		if (suiteLeaf != null) {
 			TestItemTree.TestItemLeaf testLeaf = suiteLeaf.getChildItems().get(testContext.getName());
 			if (testLeaf != null) {
-				testLeaf.getChildItems()
-						.put(testResult.getName() + "[L=" + testResult.getParameters().length + "]" + "[H="
-								+ Arrays.hashCode(testResult.getParameters()) + "]", new TestItemTree.TestItemLeaf(stepMaybe, 0));
+				TestItemTree.TestItemLeaf testClassLeaf = testLeaf.getChildItems().get(testResult.getTestClass().getName());
+				if (testClassLeaf == null) {
+					testClassLeaf = new TestItemTree.TestItemLeaf(testLeaf.getItemId(), 1);
+					testClassLeaf.getChildItems()
+							.put(testResult.getName() + "[L=" + testResult.getParameters().length + "]" + "[H=" + Arrays.hashCode(testResult
+									.getParameters()) + "]", new TestItemTree.TestItemLeaf(stepMaybe, 0));
+				}
+				testLeaf.getChildItems().put(testResult.getTestClass().getName(), testClassLeaf);
 			}
 		}
 	}
