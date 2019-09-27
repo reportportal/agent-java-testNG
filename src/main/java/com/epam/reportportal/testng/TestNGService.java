@@ -402,9 +402,14 @@ public class TestNGService implements ITestNGService {
 		if (suiteLeaf != null) {
 			TestItemTree.TestItemLeaf testLeaf = suiteLeaf.getChildItems().get(testContext.getName());
 			if (testLeaf != null) {
-				TestItemTree.TestItemLeaf testItemLeaf = testLeaf.getChildItems().get(testResult.getName());
-				if (testItemLeaf != null) {
-					testItemLeaf.setFinishResponse(finishItemResponse);
+				TestItemTree.TestItemLeaf testClassLeaf = testLeaf.getChildItems().get(testResult.getName());
+				if (testClassLeaf != null) {
+					TestItemTree.TestItemLeaf testItemLeaf = testClassLeaf.getChildItems()
+							.get(testResult.getName() + "[L=" + testResult.getParameters().length + "]" + "[H=" + Arrays.hashCode(testResult
+									.getParameters()) + "]");
+					if (testItemLeaf != null) {
+						testItemLeaf.setFinishResponse(finishItemResponse);
+					}
 				}
 			}
 		}
