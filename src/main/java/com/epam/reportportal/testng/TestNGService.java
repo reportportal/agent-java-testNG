@@ -47,6 +47,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
 import static rp.com.google.common.base.Optional.fromNullable;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
@@ -109,7 +110,7 @@ public class TestNGService implements ITestNGService {
 	public synchronized void startTestSuite(ISuite suite) {
 		StartTestItemRQ rq = buildStartSuiteRq(suite);
 		final Maybe<String> item = launch.get().startTestItem(rq);
-		ITEM_TREE.getTestItems().put(suite.getName(), new TestItemTree.TestItemLeaf(item, suite.getXmlSuite().getTests().size()));
+		ITEM_TREE.getTestItems().put(createKey(suite), new TestItemTree.TestItemLeaf(item, suite.getXmlSuite().getTests().size()));
 		suite.setAttribute(RP_ID, item);
 		StepAspect.setParentId(item);
 	}
@@ -121,7 +122,7 @@ public class TestNGService implements ITestNGService {
 			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
 			suite.removeAttribute(RP_ID);
 		}
-		ITEM_TREE.getTestItems().remove(suite.getName());
+		ITEM_TREE.getTestItems().remove(createKey(suite));
 	}
 
 	@Override
@@ -129,18 +130,18 @@ public class TestNGService implements ITestNGService {
 		if (hasMethodsToRun(testContext)) {
 			StartTestItemRQ rq = buildStartTestItemRq(testContext);
 			final Maybe<String> testID = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
-			TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE.getTestItems().get(testContext.getSuite().getName());
+			TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE.getTestItems().get(createKey(testContext.getSuite()));
 			if (suiteLeaf != null) {
 				List<XmlClass> testClasses = testContext.getCurrentXmlTest().getClasses();
-				ConcurrentHashMap<String, TestItemTree.TestItemLeaf> testClassesMapping = new ConcurrentHashMap<String, TestItemTree.TestItemLeaf>(
+				ConcurrentHashMap<TestItemTree.ItemTreeKey, TestItemTree.TestItemLeaf> testClassesMapping = new ConcurrentHashMap<TestItemTree.ItemTreeKey, TestItemTree.TestItemLeaf>(
 						testClasses.size());
 				for (XmlClass testClass : testClasses) {
 					TestItemTree.TestItemLeaf testClassLeaf = new TestItemTree.TestItemLeaf(testID,
-							new ConcurrentHashMap<String, TestItemTree.TestItemLeaf>()
+							new ConcurrentHashMap<TestItemTree.ItemTreeKey, TestItemTree.TestItemLeaf>()
 					);
-					testClassesMapping.put(testClass.getName(), testClassLeaf);
+					testClassesMapping.put(createKey(testClass), testClassLeaf);
 				}
-				suiteLeaf.getChildItems().put(testContext.getName(), new TestItemTree.TestItemLeaf(testID, testClassesMapping));
+				suiteLeaf.getChildItems().put(createKey(testContext), new TestItemTree.TestItemLeaf(testID, testClassesMapping));
 			}
 			testContext.setAttribute(RP_ID, testID);
 			StepAspect.setParentId(testID);
@@ -152,9 +153,9 @@ public class TestNGService implements ITestNGService {
 		if (hasMethodsToRun(testContext)) {
 			FinishTestItemRQ rq = buildFinishTestRq(testContext);
 			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
-			TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE.getTestItems().get(testContext.getSuite().getName());
+			TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE.getTestItems().get(createKey(testContext.getSuite()));
 			if (suiteLeaf != null) {
-				suiteLeaf.getChildItems().remove(testContext.getName());
+				suiteLeaf.getChildItems().remove(createKey(testContext));
 			}
 		}
 	}
@@ -170,15 +171,13 @@ public class TestNGService implements ITestNGService {
 		Maybe<String> stepMaybe = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
 		StepAspect.setParentId(stepMaybe);
-		TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE.getTestItems().get(testContext.getSuite().getName());
+		TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE.getTestItems().get(createKey(testContext.getSuite()));
 		if (suiteLeaf != null) {
-			TestItemTree.TestItemLeaf testLeaf = suiteLeaf.getChildItems().get(testContext.getName());
+			TestItemTree.TestItemLeaf testLeaf = suiteLeaf.getChildItems().get(createKey(testContext));
 			if (testLeaf != null) {
-				TestItemTree.TestItemLeaf testClassLeaf = testLeaf.getChildItems().get(testResult.getTestClass().getName());
+				TestItemTree.TestItemLeaf testClassLeaf = testLeaf.getChildItems().get(createKey(testResult.getTestClass()));
 				if (testClassLeaf != null) {
-					testClassLeaf.getChildItems()
-							.put(testResult.getName() + "[L=" + testResult.getParameters().length + "]" + "[H=" + Arrays.hashCode(testResult
-									.getParameters()) + "]", new TestItemTree.TestItemLeaf(stepMaybe, 0));
+					testClassLeaf.getChildItems().put(createKey(testResult), new TestItemTree.TestItemLeaf(stepMaybe, 0));
 				}
 			}
 		}
