@@ -43,7 +43,10 @@ import rp.com.google.common.base.Supplier;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -397,15 +400,13 @@ public class TestNGService implements ITestNGService {
 
 	private void updateTestItemTree(Maybe<OperationCompletionRS> finishItemResponse, ITestResult testResult) {
 		ITestContext testContext = testResult.getTestContext();
-		TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE.getTestItems().get(testContext.getSuite().getName());
+		TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE.getTestItems().get(createKey(testContext.getSuite()));
 		if (suiteLeaf != null) {
-			TestItemTree.TestItemLeaf testLeaf = suiteLeaf.getChildItems().get(testContext.getName());
+			TestItemTree.TestItemLeaf testLeaf = suiteLeaf.getChildItems().get(createKey(testContext));
 			if (testLeaf != null) {
-				TestItemTree.TestItemLeaf testClassLeaf = testLeaf.getChildItems().get(testResult.getName());
+				TestItemTree.TestItemLeaf testClassLeaf = testLeaf.getChildItems().get(createKey(testResult.getTestClass()));
 				if (testClassLeaf != null) {
-					TestItemTree.TestItemLeaf testItemLeaf = testClassLeaf.getChildItems()
-							.get(testResult.getName() + "[L=" + testResult.getParameters().length + "]" + "[H=" + Arrays.hashCode(testResult
-									.getParameters()) + "]");
+					TestItemTree.TestItemLeaf testItemLeaf = testClassLeaf.getChildItems().get(createKey(testResult));
 					if (testItemLeaf != null) {
 						testItemLeaf.setFinishResponse(finishItemResponse);
 					}
