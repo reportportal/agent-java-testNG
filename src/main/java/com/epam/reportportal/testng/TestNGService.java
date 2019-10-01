@@ -49,6 +49,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
 import static rp.com.google.common.base.Optional.fromNullable;
@@ -66,12 +67,12 @@ public class TestNGService implements ITestNGService {
 	public static final String ARGUMENT = "arg";
 
 	public static final ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
+	public static final TestItemTree ITEM_TREE = new TestItemTree();
+	public static final ReentrantLock FINISH_LAUNCH_LOCK = new ReentrantLock();
 
 	private final AtomicBoolean isLaunchFailed = new AtomicBoolean();
 
 	private MemoizingSupplier<Launch> launch;
-
-	public static TestItemTree ITEM_TREE = new TestItemTree();
 
 	public TestNGService() {
 		this.launch = new MemoizingSupplier<Launch>(new Supplier<Launch>() {
@@ -103,7 +104,13 @@ public class TestNGService implements ITestNGService {
 		FinishExecutionRQ rq = new FinishExecutionRQ();
 		rq.setEndTime(Calendar.getInstance().getTime());
 		rq.setStatus(isLaunchFailed.get() ? Statuses.FAILED : Statuses.PASSED);
-		launch.get().finish(rq);
+
+		FINISH_LAUNCH_LOCK.lock();
+		try {
+			launch.get().finish(rq);
+		} finally {
+			FINISH_LAUNCH_LOCK.unlock();
+		}
 
 		this.launch.reset();
 
