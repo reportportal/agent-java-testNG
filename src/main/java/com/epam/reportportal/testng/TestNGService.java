@@ -33,6 +33,7 @@ import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import io.reactivex.annotations.Nullable;
 import org.testng.*;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -500,6 +501,7 @@ public class TestNGService implements ITestNGService {
 		return itemUniqueID != null ? itemUniqueID.value() : null;
 	}
 
+	@Nullable
 	private Integer getTestCaseId(String codeRef, ITestResult testResult) {
 		TestCaseId testCaseId = getMethodAnnotation(TestCaseId.class, testResult);
 		return testCaseId != null ?
@@ -507,15 +509,12 @@ public class TestNGService implements ITestNGService {
 				Arrays.deepHashCode(new Object[] { codeRef, testResult.getParameters() });
 	}
 
+	@Nullable
 	private Integer getTestCaseId(TestCaseId testCaseId, ITestResult testResult) {
 		if (testCaseId.isParameterized()) {
-			Integer id = TestCaseIdUtils.getTestCaseId(testCaseId,
-					testResult.getMethod().getConstructorOrMethod().getMethod(),
+			return TestCaseIdUtils.getParameterizedTestCaseId(testResult.getMethod().getConstructorOrMethod().getMethod(),
 					testResult.getParameters()
 			);
-			if (id != null) {
-				return id;
-			}
 		}
 		return testCaseId.value();
 	}
