@@ -17,11 +17,13 @@ package com.epam.reportportal.testng;
 
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.UniqueID;
+import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.utils.AttributeParser;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
@@ -45,10 +47,7 @@ import rp.com.google.common.base.Supplier;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static rp.com.google.common.base.Optional.fromNullable;
@@ -217,11 +216,11 @@ public class TestNGService implements ITestNGService {
 	protected StartTestItemRQ buildStartTestItemRq(ITestContext testContext) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		XmlTest currentXmlTest = testContext.getCurrentXmlTest();
-		if(currentXmlTest != null) {
+		if (currentXmlTest != null) {
 			List<XmlClass> xmlClasses = currentXmlTest.getXmlClasses();
-			if(xmlClasses != null) {
+			if (xmlClasses != null) {
 				XmlClass xmlClass = xmlClasses.get(0);
-				if(xmlClass != null) {
+				if (xmlClass != null) {
 					rq.setCodeRef(xmlClass.getName());
 				}
 			}
@@ -298,7 +297,7 @@ public class TestNGService implements ITestNGService {
 		}
 		rq.setName(testStepName);
 		rq.setCodeRef(testResult.getMethod().getQualifiedName());
-
+		rq.setAttributes(createStepAttributes(testResult));
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
 		rq.setUniqueId(extractUniqueID(testResult));
@@ -498,6 +497,14 @@ public class TestNGService implements ITestNGService {
 	private String extractUniqueID(ITestResult testResult) {
 		UniqueID itemUniqueID = getMethodAnnotation(UniqueID.class, testResult);
 		return itemUniqueID != null ? itemUniqueID.value() : null;
+	}
+
+	protected Set<ItemAttributesRQ> createStepAttributes(ITestResult testResult) {
+		Attributes attributesAnnotation = getMethodAnnotation(Attributes.class, testResult);
+		if (attributesAnnotation != null) {
+			return AttributeParser.retrieveAttributes(attributesAnnotation);
+		}
+		return null;
 	}
 
 	/**
