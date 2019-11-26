@@ -80,6 +80,7 @@ public class TestNGServiceTest {
 			}
 		}));
 
+		when(launch.getParameters()).thenReturn(new ListenerParameters());
 		when(testResult.getTestContext()).thenReturn(testContext);
 		when(testResult.getMethod()).thenReturn(method);
 		when(testResult.getAttribute(RP_ID)).thenReturn(id);
@@ -117,7 +118,7 @@ public class TestNGServiceTest {
 	@Test
 	public void finishTestSuitNull() {
 		testNGService.finishTestSuite(suite);
-		verifyZeroInteractions(launch);
+		verify(launch, times(1)).getParameters();
 	}
 
 	@Test
