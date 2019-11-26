@@ -16,12 +16,18 @@
 package com.epam.reportportal.testng;
 
 import com.epam.reportportal.annotations.ParameterKey;
+import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.UniqueID;
 import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.utils.TestCaseIdUtils;
+import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
+import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import com.epam.ta.reportportal.ws.model.ParameterResource;
+import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
@@ -29,6 +35,7 @@ import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import io.reactivex.annotations.Nullable;
 import org.testng.*;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -48,6 +55,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -341,8 +349,9 @@ public class TestNGService implements ITestNGService {
 			testStepName = testResult.getMethod().getMethodName();
 		}
 		rq.setName(testStepName);
-		rq.setCodeRef(testResult.getMethod().getQualifiedName());
-
+		String codeRef = testResult.getMethod().getQualifiedName();
+		rq.setCodeRef(codeRef);
+		rq.setTestCaseId(getTestCaseId(codeRef, testResult));
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
 		rq.setUniqueId(extractUniqueID(testResult));
@@ -559,6 +568,24 @@ public class TestNGService implements ITestNGService {
 	private String extractUniqueID(ITestResult testResult) {
 		UniqueID itemUniqueID = getMethodAnnotation(UniqueID.class, testResult);
 		return itemUniqueID != null ? itemUniqueID.value() : null;
+	}
+
+	@Nullable
+	private Integer getTestCaseId(String codeRef, ITestResult testResult) {
+		TestCaseId testCaseId = getMethodAnnotation(TestCaseId.class, testResult);
+		return testCaseId != null ?
+				getTestCaseId(testCaseId, testResult) :
+				Arrays.deepHashCode(new Object[] { codeRef, testResult.getParameters() });
+	}
+
+	@Nullable
+	private Integer getTestCaseId(TestCaseId testCaseId, ITestResult testResult) {
+		if (testCaseId.isParameterized()) {
+			return TestCaseIdUtils.getParameterizedTestCaseId(testResult.getMethod().getConstructorOrMethod().getMethod(),
+					testResult.getParameters()
+			);
+		}
+		return testCaseId.value();
 	}
 
 	/**
