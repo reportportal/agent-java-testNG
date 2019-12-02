@@ -512,7 +512,7 @@ public class TestNGService implements ITestNGService {
 		TestCaseId testCaseId = getMethodAnnotation(TestCaseId.class, testResult);
 		return testCaseId != null ?
 				getTestCaseId(testCaseId, testResult) :
-				new TestCaseIdEntry(StringUtils.join(codeRef, testResult.getParameters()),
+				new TestCaseIdEntry(StringUtils.join(codeRef, Arrays.toString(testResult.getParameters())),
 						Arrays.deepHashCode(new Object[] { codeRef, testResult.getParameters() })
 				);
 	}
