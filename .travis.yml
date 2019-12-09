@@ -4,11 +4,7 @@ language: java
 script: ./gradlew build
 
 jdk:
-    - oraclejdk8
-    - openjdk7
-# Gradle requires JDK7 to build the project
-#    - openjdk6
-
+    - openjdk8
 before_install:
   - JAVA_HOME=$(jdk_switcher home openjdk8) ./gradlew
 
