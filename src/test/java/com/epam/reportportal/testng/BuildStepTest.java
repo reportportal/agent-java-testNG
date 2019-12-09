@@ -53,6 +53,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.any;
 
 /**
  * @author Pavel Bortnik
@@ -218,7 +219,7 @@ public class BuildStepTest {
 
 	@Test
 	public void testRetryFlagPositive() {
-		when(testNGMethod.getRetryAnalyzer()).thenReturn(new IRetryAnalyzer() {
+		when(testNGMethod.getRetryAnalyzer(any(ITestResult.class))).thenReturn(new IRetryAnalyzer() {
 			@Override
 			public boolean retry(ITestResult result) {
 				return true;
