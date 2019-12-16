@@ -24,6 +24,7 @@ import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.tree.TestItemTree;
+import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
@@ -32,6 +33,7 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.*;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -391,7 +393,11 @@ public class TestNGService implements ITestNGService {
 		rq.setName(testStepName);
 		String codeRef = testResult.getMethod().getQualifiedName();
 		rq.setCodeRef(codeRef);
-		rq.setTestCaseId(getTestCaseId(codeRef, testResult));
+		TestCaseIdEntry testCaseIdEntry = getTestCaseId(codeRef, testResult);
+		if (testCaseIdEntry != null) {
+			rq.setTestCaseId(testCaseIdEntry.getId());
+			rq.setTestCaseHash(testCaseIdEntry.getHash());
+		}
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
 		rq.setUniqueId(extractUniqueID(testResult));
@@ -594,21 +600,23 @@ public class TestNGService implements ITestNGService {
 	}
 
 	@Nullable
-	private Integer getTestCaseId(String codeRef, ITestResult testResult) {
+	private TestCaseIdEntry getTestCaseId(String codeRef, ITestResult testResult) {
 		TestCaseId testCaseId = getMethodAnnotation(TestCaseId.class, testResult);
 		return testCaseId != null ?
 				getTestCaseId(testCaseId, testResult) :
-				Arrays.deepHashCode(new Object[] { codeRef, testResult.getParameters() });
+				new TestCaseIdEntry(StringUtils.join(codeRef, Arrays.toString(testResult.getParameters())),
+						Arrays.deepHashCode(new Object[] { codeRef, testResult.getParameters() })
+				);
 	}
 
 	@Nullable
-	private Integer getTestCaseId(TestCaseId testCaseId, ITestResult testResult) {
+	private TestCaseIdEntry getTestCaseId(TestCaseId testCaseId, ITestResult testResult) {
 		if (testCaseId.parametrized()) {
 			return TestCaseIdUtils.getParameterizedTestCaseId(testResult.getMethod().getConstructorOrMethod().getMethod(),
 					testResult.getParameters()
 			);
 		}
-		return testCaseId.value();
+		return new TestCaseIdEntry(testCaseId.value(), testCaseId.value().hashCode());
 	}
 
 	/**
