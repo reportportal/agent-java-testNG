@@ -18,6 +18,7 @@ package com.epam.reportportal.testng;
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.UniqueID;
+import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
@@ -25,6 +26,7 @@ import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.utils.TestCaseIdUtils;
+import com.epam.reportportal.utils.AttributeParser;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
@@ -306,6 +308,7 @@ public class TestNGService implements ITestNGService {
 			rq.setTestCaseId(testCaseIdEntry.getId());
 			rq.setTestCaseHash(testCaseIdEntry.getHash());
 		}
+		rq.setAttributes(createStepAttributes(testResult));
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
 		rq.setUniqueId(extractUniqueID(testResult));
@@ -525,6 +528,14 @@ public class TestNGService implements ITestNGService {
 			);
 		}
 		return new TestCaseIdEntry(testCaseId.value(), testCaseId.value().hashCode());
+	}
+
+	protected Set<ItemAttributesRQ> createStepAttributes(ITestResult testResult) {
+		Attributes attributesAnnotation = getMethodAnnotation(Attributes.class, testResult);
+		if (attributesAnnotation != null) {
+			return AttributeParser.retrieveAttributes(attributesAnnotation);
+		}
+		return null;
 	}
 
 	/**
