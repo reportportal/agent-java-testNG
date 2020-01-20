@@ -18,8 +18,8 @@
   - [Using \@Listeners annotation](https://github.com/reportportal/agent-java-testNG#using-listeners-annotation)
   - [Using ServiceLoader](https://github.com/reportportal/agent-java-testNG#using-serviceloader)
 - [Code example How to overload params in run-time](https://github.com/reportportal/agent-java-testNG#code-example-how-to-overload-params-in-run-time)
-- [Example and step-by-step instruction with logback](https://github.com/reportportal/examples-java/tree/master/example-testng-logback)
-- [Example and step-by-step instruction with Log4j](https://github.com/reportportal/examples-java/tree/master/example-testng-log4j)
+- [Example and step-by-step instruction with logback](https://github.com/reportportal/examples-java/tree/rp-4-examples/example-testng-logback)
+- [Example and step-by-step instruction with Log4j](https://github.com/reportportal/examples-java/tree/rp-4-examples/example-testng-log4j)
 ---
 
 
@@ -275,5 +275,5 @@ As a sample you can use code for **Override UUID** in run-time
 ## Example repository
 
 There are two modules under Example project which represent agent usage with Lo4j and Logback loggers:
-* https://github.com/reportportal/examples-java/tree/master/example-testng-log4j
-* https://github.com/reportportal/examples-java/tree/master/example-testng-logback
+* https://github.com/reportportal/examples-java/tree/rp-4-examples/example-testng-log4j
+* https://github.com/reportportal/examples-java/tree/rp-4-examples/example-testng-logback
