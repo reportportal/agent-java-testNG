@@ -18,7 +18,8 @@
   - [Using \@Listeners annotation](https://github.com/reportportal/agent-java-testNG#using-listeners-annotation)
   - [Using ServiceLoader](https://github.com/reportportal/agent-java-testNG#using-serviceloader)
 - [Code example How to overload params in run-time](https://github.com/reportportal/agent-java-testNG#code-example-how-to-overload-params-in-run-time)
-- [Integration code example repository](https://github.com/reportportal/example-java-TestNG)
+- [Example and step-by-step instruction with logback](https://github.com/reportportal/examples-java/tree/master/example-testng-logback)
+- [Example and step-by-step instruction with Log4j](https://github.com/reportportal/examples-java/tree/master/example-testng-log4j)
 ---
 
 
@@ -232,28 +233,47 @@ Specifying listeners with ServiceLoader.
 
 As a sample you can use code for **Override UUID** in run-time
 ```java
-public class MyListener extends BaseTestNGListener {
+  public static class MyListener extends BaseTestNGListener {
     public MyListener() {
-        super(Injector.create(Modules.combine(Modules.override(new ConfigurationModule())
-                        .with(new Module() {
-                            @Override
-                            public void configure(Binder binder) {
-                                Properties overrides = new Properties();
-                                overrides.setProperty(ListenerProperty.UUID.getPropertyName(), "my crazy uuid");
-                                PropertiesLoader propertiesLoader = PropertiesLoader.load();
-                                propertiesLoader.overrideWith(overrides);
-                                binder.bind(PropertiesLoader.class).toInstance(propertiesLoader);
-                            }
-                        }),
-                new ReportPortalClientModule(),
-                new TestNGAgentModule()
-        )));
+      super(new ParamOverrideTestNgService());
     }
-}
+  }
+
+  public static class ParamOverrideTestNgService extends TestNGService {
+    public ParamOverrideTestNgService() {
+      super(getLaunchOverriddenProperties());
+    }
+
+    private static Supplier<Launch> getLaunchOverriddenProperties() {
+      ListenerParameters parameters = new ListenerParameters(PropertiesLoader.load());
+      parameters.setUuid("my crazy uuid");
+      ReportPortal reportPortal = ReportPortal.builder().withParameters(parameters).build();
+      StartLaunchRQ rq = buildStartLaunch(reportPortal.getParameters());
+      return new Supplier<Launch>() {
+        @Override
+        public Launch get() {
+          return reportPortal.newLaunch(rq);
+        }
+      };
+    }
+
+    private static StartLaunchRQ buildStartLaunch(ListenerParameters parameters) {
+      StartLaunchRQ rq = new StartLaunchRQ();
+      rq.setName(parameters.getLaunchName());
+      rq.setStartTime(Calendar.getInstance().getTime());
+      rq.setTags(parameters.getTags());
+      rq.setMode(parameters.getLaunchRunningMode());
+      if (!Strings.isNullOrEmpty(parameters.getDescription())) {
+        rq.setDescription(parameters.getDescription());
+      }
+
+      return rq;
+    }
+  }
 ```
 
 ## Example repository
 
-There is an code example, based on TestNG test:
-
-https://github.com/reportportal/example-java-TestNG
+There are two modules under Example project which represent agent usage with Lo4j and Logback loggers:
+* https://github.com/reportportal/examples-java/tree/master/example-testng-log4j
+* https://github.com/reportportal/examples-java/tree/master/example-testng-logback
