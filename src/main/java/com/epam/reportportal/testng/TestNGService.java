@@ -46,7 +46,6 @@ import org.testng.internal.ConstructorOrMethod;
 import org.testng.xml.XmlClass;
 import org.testng.xml.XmlTest;
 import rp.com.google.common.annotations.VisibleForTesting;
-import rp.com.google.common.base.Function;
 import rp.com.google.common.base.Supplier;
 
 import java.io.Serializable;
@@ -54,6 +53,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 import static rp.com.google.common.base.Optional.fromNullable;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
@@ -589,7 +589,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	private boolean isRetry(ITestResult result) {
-		return result.getMethod().getRetryAnalyzer() != null;
+		return result.getMethod().getRetryAnalyzer(result) != null;
 	}
 
 	@VisibleForTesting
