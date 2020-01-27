@@ -18,6 +18,7 @@ package com.epam.reportportal.testng;
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.UniqueID;
+import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
@@ -25,6 +26,7 @@ import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.utils.TestCaseIdUtils;
+import com.epam.reportportal.utils.AttributeParser;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
@@ -44,7 +46,6 @@ import org.testng.internal.ConstructorOrMethod;
 import org.testng.xml.XmlClass;
 import org.testng.xml.XmlTest;
 import rp.com.google.common.annotations.VisibleForTesting;
-import rp.com.google.common.base.Function;
 import rp.com.google.common.base.Supplier;
 
 import java.io.Serializable;
@@ -52,6 +53,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 import static rp.com.google.common.base.Optional.fromNullable;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
@@ -306,6 +308,7 @@ public class TestNGService implements ITestNGService {
 			rq.setTestCaseId(testCaseIdEntry.getId());
 			rq.setTestCaseHash(testCaseIdEntry.getHash());
 		}
+		rq.setAttributes(createStepAttributes(testResult));
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
 		rq.setUniqueId(extractUniqueID(testResult));
@@ -527,6 +530,14 @@ public class TestNGService implements ITestNGService {
 		return new TestCaseIdEntry(testCaseId.value(), testCaseId.value().hashCode());
 	}
 
+	protected Set<ItemAttributesRQ> createStepAttributes(ITestResult testResult) {
+		Attributes attributesAnnotation = getMethodAnnotation(Attributes.class, testResult);
+		if (attributesAnnotation != null) {
+			return AttributeParser.retrieveAttributes(attributesAnnotation);
+		}
+		return null;
+	}
+
 	/**
 	 * Returns method annotation by specified annotation class from
 	 * from TestNG Method or null if the method does not contain
@@ -578,7 +589,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	private boolean isRetry(ITestResult result) {
-		return result.getMethod().getRetryAnalyzer() != null;
+		return result.getMethod().getRetryAnalyzer(result) != null;
 	}
 
 	@VisibleForTesting
