@@ -40,6 +40,6 @@ afterReleaseBuild.dependsOn bintrayUpload
 
 release {
     git {
-        requireBranch = 'v4-hotfix'
+        requireBranch = 'v5-testng6'
     }
 }
