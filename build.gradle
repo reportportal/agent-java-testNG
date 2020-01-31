@@ -24,7 +24,7 @@ dependencies {
         compile 'com.github.reportportal:commons-model:e608d19'
     }
 
-    compile 'org.testng:testng:7.1.0'
+    compile 'org.testng:testng:6.14.3'
 
     testCompile 'org.hamcrest:hamcrest-all:1.3'
     testCompile 'junit:junit:4.12'
@@ -37,3 +37,9 @@ wrapper {
 }
 
 afterReleaseBuild.dependsOn bintrayUpload
+
+release {
+    git {
+        requireBranch = 'v4-hotfix'
+    }
+}
