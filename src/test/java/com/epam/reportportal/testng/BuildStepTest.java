@@ -47,7 +47,6 @@ import static com.epam.reportportal.testng.Constants.*;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
 /**
@@ -214,7 +213,7 @@ public class BuildStepTest {
 
 	@Test
 	public void testRetryFlagPositive() {
-		when(testNGMethod.getRetryAnalyzer(any(ITestResult.class))).thenReturn(new IRetryAnalyzer() {
+		when(testNGMethod.getRetryAnalyzer()).thenReturn(new IRetryAnalyzer() {
 			@Override
 			public boolean retry(ITestResult result) {
 				return true;
