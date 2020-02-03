@@ -25,8 +25,8 @@ import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
-import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.reportportal.utils.AttributeParser;
+import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
@@ -589,7 +589,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	private boolean isRetry(ITestResult result) {
-		return result.getMethod().getRetryAnalyzer(result) != null;
+		return result.getMethod().getRetryAnalyzer(result).retry(result);
 	}
 
 	@VisibleForTesting
