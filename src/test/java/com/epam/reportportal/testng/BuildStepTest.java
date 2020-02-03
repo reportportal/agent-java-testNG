@@ -232,6 +232,13 @@ public class BuildStepTest {
 	}
 
 	@Test
+	public void testRetryAnalyzerNull() {
+		when(testNGMethod.getRetryAnalyzer(any(ITestResult.class))).thenReturn(null);
+		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
+		assertThat("Incorrect retry flag", rq.isRetry(), is(false));
+	}
+
+	@Test
 	public void testBuildFinishRQ() {
 		when(testResult.getEndMillis()).thenReturn(DEFAULT_TIME);
 		FinishTestItemRQ rq = testNGService.buildFinishTestMethodRq(Statuses.PASSED, testResult);
