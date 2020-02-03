@@ -589,7 +589,8 @@ public class TestNGService implements ITestNGService {
 	}
 
 	private boolean isRetry(ITestResult result) {
-		return result.getMethod().getRetryAnalyzer(result).retry(result);
+		IRetryAnalyzer retryAnalyzer = result.getMethod().getRetryAnalyzer(result);
+		return Objects.nonNull(retryAnalyzer) && retryAnalyzer.retry(result);
 	}
 
 	@VisibleForTesting
