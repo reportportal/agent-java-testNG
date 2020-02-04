@@ -35,6 +35,7 @@ import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.testng.IRetryAnalyzer;
 import org.testng.ISuite;
 import org.testng.ITestContext;
 import org.testng.ITestNGMethod;
@@ -88,7 +89,14 @@ public class TestNGServiceTest {
 		when(testResult.getTestContext()).thenReturn(testContext);
 		when(testResult.getMethod()).thenReturn(method);
 		when(testResult.getAttribute(RP_ID)).thenReturn(id);
-		when(method.getRetryAnalyzer(testResult)).thenReturn(result -> false);
+		when(method.getRetryAnalyzer(testResult)).thenReturn(new IRetryAnalyzer()
+		{
+			@Override
+			public boolean retry(ITestResult result)
+			{
+				return false;
+			}
+		});
 		when(testContext.getSuite()).thenReturn(suite);
 		when(testContext.getAttribute(RP_ID)).thenReturn(id);
 	}
