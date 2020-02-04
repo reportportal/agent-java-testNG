@@ -232,7 +232,7 @@ public class BuildStepTest {
 			@Override
 			public boolean retry(ITestResult result)
 			{
-				return false;
+				return true;
 			}
 		});
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
