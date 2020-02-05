@@ -20,8 +20,8 @@ dependencies {
         compile 'com.epam.reportportal:client-java:5.0.0-BETA-8'
         compile 'com.epam.reportportal:commons-model:5.0.0'
     } else {
-        compile 'com.github.reportportal:client-java:8934ff9'
-        compile 'com.github.reportportal:commons-model:e608d19'
+        compile 'com.github.reportportal:client-java:da4341a'
+        compile 'com.github.reportportal:commons-model:5.0.0'
     }
 
     compile 'org.testng:testng:7.1.0'
@@ -35,5 +35,13 @@ dependencies {
 wrapper {
     gradleVersion = '5.4.1'
 }
+
+task writeAgentProperties(type: WriteProperties) {
+    outputFile = file("${project.projectDir}/src/main/resources/agent.properties")
+    property('agent.name', project.name)
+    property('agent.version', project.version)
+}
+
+compileJava.dependsOn writeAgentProperties
 
 afterReleaseBuild.dependsOn bintrayUpload
