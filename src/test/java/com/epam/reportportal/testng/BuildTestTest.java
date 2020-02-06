@@ -91,7 +91,7 @@ public class BuildTestTest {
 	}
 
 	@Test
-	public void testSkippedIssue() {
+	public void testPredifinedProperties() {
 
 		ItemAttributesRQ itemAttributeResource = new ItemAttributesRQ();
 		itemAttributeResource.setKey(SKIPPED_ISSUE_KEY);
