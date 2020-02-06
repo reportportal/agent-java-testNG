@@ -20,7 +20,7 @@ dependencies {
         compile 'com.epam.reportportal:client-java:5.0.0-BETA-8'
         compile 'com.epam.reportportal:commons-model:5.0.0'
     } else {
-        compile 'com.github.reportportal:client-java:da4341a'
+        compile 'com.github.reportportal:client-java:a560df1'
         compile 'com.github.reportportal:commons-model:5.0.0'
     }
 

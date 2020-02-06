@@ -102,7 +102,7 @@ public class BuildTestTest {
 		parameters.setSkippedAnIssue(true);
 		parameters.setAttributes(Sets.<ItemAttributesRQ>newHashSet());
 		StartLaunchRQ startLaunchRQ = testNGService.buildStartLaunchRq(parameters);
-		assertThat(startLaunchRQ.getAttributes().size(), Matchers.is(3));
+		assertThat(startLaunchRQ.getAttributes().size(), Matchers.is(4));
 		assertTrue(startLaunchRQ.getAttributes().contains(itemAttributeResource));
 		final Set<String> keys = startLaunchRQ.getAttributes().stream().map(ItemAttributeResource::getKey).collect(toSet());
 		predefinedProperties.forEach((key, value) -> {
