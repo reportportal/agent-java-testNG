@@ -59,6 +59,7 @@ public class BuildTestTest {
 	@BeforeClass
 	public static void initKeys() {
 		predefinedProperties.put("os", Pattern.compile("^.+\\|.+\\|.+$"));
+		predefinedProperties.put("jvm", Pattern.compile("^.+\\|.+\\|.+$"));
 		predefinedProperties.put("agent", Pattern.compile("^agent-java-testng\\|.+$"));
 	}
 
@@ -91,7 +92,7 @@ public class BuildTestTest {
 	}
 
 	@Test
-	public void testPredifinedProperties() {
+	public void testSkippedIssue() {
 
 		ItemAttributesRQ itemAttributeResource = new ItemAttributesRQ();
 		itemAttributeResource.setKey(SKIPPED_ISSUE_KEY);
@@ -100,17 +101,22 @@ public class BuildTestTest {
 
 		ListenerParameters parameters = new ListenerParameters();
 		parameters.setSkippedAnIssue(true);
-		parameters.setAttributes(Sets.<ItemAttributesRQ>newHashSet());
+		parameters.setAttributes(Sets.newHashSet());
 		StartLaunchRQ startLaunchRQ = testNGService.buildStartLaunchRq(parameters);
-		assertThat(startLaunchRQ.getAttributes().size(), Matchers.is(4));
 		assertTrue(startLaunchRQ.getAttributes().contains(itemAttributeResource));
-		final Set<String> keys = startLaunchRQ.getAttributes().stream().map(ItemAttributeResource::getKey).collect(toSet());
-		predefinedProperties.forEach((key, value) -> {
-			assertTrue(keys.contains(key));
-			startLaunchRQ.getAttributes().stream().filter(attr -> attr.getKey().equalsIgnoreCase(key)).forEach(it -> {
-				assertTrue(predefinedProperties.get(key).matcher(it.getValue()).matches());
-				assertTrue(it.isSystem());
-			});
+	}
+
+	@Test
+	public void testPredefinedAttributes() {
+		final ListenerParameters parameters = new ListenerParameters();
+		parameters.setSkippedAnIssue(null);
+		StartLaunchRQ startLaunchRQ = testNGService.buildStartLaunchRq(parameters);
+		assertThat(startLaunchRQ.getAttributes().size(), Matchers.is(3));
+		Set<String> keys = startLaunchRQ.getAttributes().stream().map(ItemAttributeResource::getKey).collect(toSet());
+		predefinedProperties.forEach((predefinedKey, predefinedValue) -> assertTrue(keys.contains(predefinedKey)));
+		startLaunchRQ.getAttributes().forEach(attribute -> {
+			assertTrue(predefinedProperties.get(attribute.getKey()).matcher(attribute.getValue()).matches());
+			assertTrue(attribute.isSystem());
 		});
 	}
 
