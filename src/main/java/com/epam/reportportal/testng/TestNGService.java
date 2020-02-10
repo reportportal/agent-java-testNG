@@ -18,6 +18,7 @@ package com.epam.reportportal.testng;
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.UniqueID;
+import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
@@ -25,8 +26,13 @@ import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
+import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.TestCaseIdUtils;
-import com.epam.ta.reportportal.ws.model.*;
+import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
+import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
+import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import com.epam.ta.reportportal.ws.model.ParameterResource;
+import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -42,7 +48,6 @@ import org.testng.internal.ConstructorOrMethod;
 import org.testng.xml.XmlClass;
 import org.testng.xml.XmlTest;
 import rp.com.google.common.annotations.VisibleForTesting;
-import rp.com.google.common.base.Function;
 import rp.com.google.common.base.Supplier;
 
 import java.io.Serializable;
@@ -51,6 +56,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
@@ -63,6 +69,7 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
  */
 public class TestNGService implements ITestNGService {
 
+	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
 	public static final String NOT_ISSUE = "NOT_ISSUE";
 	public static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 	public static final String RP_ID = "rp_id";
@@ -352,6 +359,7 @@ public class TestNGService implements ITestNGService {
 			skippedIssueAttribute.setSystem(true);
 			rq.getAttributes().add(skippedIssueAttribute);
 		}
+		rq.getAttributes().addAll(SystemAttributesExtractor.extract(AGENT_PROPERTIES_FILE));
 		return rq;
 	}
 
@@ -398,6 +406,7 @@ public class TestNGService implements ITestNGService {
 			rq.setTestCaseId(testCaseIdEntry.getId());
 			rq.setTestCaseHash(testCaseIdEntry.getHash());
 		}
+		rq.setAttributes(createStepAttributes(testResult));
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
 		rq.setUniqueId(extractUniqueID(testResult));
@@ -619,6 +628,14 @@ public class TestNGService implements ITestNGService {
 		return new TestCaseIdEntry(testCaseId.value(), testCaseId.value().hashCode());
 	}
 
+	protected Set<ItemAttributesRQ> createStepAttributes(ITestResult testResult) {
+		Attributes attributesAnnotation = getMethodAnnotation(Attributes.class, testResult);
+		if (attributesAnnotation != null) {
+			return AttributeParser.retrieveAttributes(attributesAnnotation);
+		}
+		return null;
+	}
+
 	/**
 	 * Returns method annotation by specified annotation class from
 	 * from TestNG Method or null if the method does not contain
@@ -670,7 +687,8 @@ public class TestNGService implements ITestNGService {
 	}
 
 	private boolean isRetry(ITestResult result) {
-		return result.getMethod().getRetryAnalyzer() != null;
+		IRetryAnalyzer retryAnalyzer = result.getMethod().getRetryAnalyzer(result);
+		return Objects.nonNull(retryAnalyzer) && retryAnalyzer.retry(result);
 	}
 
 	@VisibleForTesting
