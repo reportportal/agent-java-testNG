@@ -27,6 +27,7 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.TestCaseIdUtils;
+import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
@@ -64,6 +65,7 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
  */
 public class TestNGService implements ITestNGService {
 
+	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
 	public static final String NOT_ISSUE = "NOT_ISSUE";
 	public static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 	public static final String RP_ID = "rp_id";
@@ -262,6 +264,7 @@ public class TestNGService implements ITestNGService {
 			skippedIssueAttribute.setSystem(true);
 			rq.getAttributes().add(skippedIssueAttribute);
 		}
+		rq.getAttributes().addAll(SystemAttributesExtractor.extract(AGENT_PROPERTIES_FILE));
 		return rq;
 	}
 

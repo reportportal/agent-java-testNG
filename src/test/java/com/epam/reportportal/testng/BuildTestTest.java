@@ -21,9 +21,12 @@ import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributeResource;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import org.hamcrest.Matchers;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -32,16 +35,14 @@ import org.testng.ISuite;
 import org.testng.ISuiteResult;
 import org.testng.ITestContext;
 import org.testng.internal.ResultMap;
-import rp.com.google.common.base.Supplier;
 import rp.com.google.common.collect.Sets;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.regex.Pattern;
 
 import static com.epam.reportportal.testng.Constants.*;
 import static com.epam.reportportal.testng.TestNGService.SKIPPED_ISSUE_KEY;
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -52,6 +53,15 @@ import static org.mockito.Mockito.when;
  * @author Pavel Bortnik
  */
 public class BuildTestTest {
+
+	private static final Map<String, Pattern> predefinedProperties = new HashMap<>();
+
+	@BeforeClass
+	public static void initKeys() {
+		predefinedProperties.put("os", Pattern.compile("^.+\\|.+\\|.+$"));
+		predefinedProperties.put("jvm", Pattern.compile("^.+\\|.+\\|.+$"));
+		predefinedProperties.put("agent", Pattern.compile("^agent-java-testng\\|.+$"));
+	}
 
 	private TestNGService testNGService;
 
@@ -66,12 +76,7 @@ public class BuildTestTest {
 
 	@Before
 	public void preconditions() {
-		testNGService = new TestNGService(new TestNGService.MemoizingSupplier<Launch>(new Supplier<Launch>() {
-			@Override
-			public Launch get() {
-				return launch;
-			}
-		}));
+		testNGService = new TestNGService(new TestNGService.MemoizingSupplier<>(() -> launch));
 		MockitoAnnotations.initMocks(this);
 	}
 
@@ -96,9 +101,23 @@ public class BuildTestTest {
 
 		ListenerParameters parameters = new ListenerParameters();
 		parameters.setSkippedAnIssue(true);
-		parameters.setAttributes(Sets.<ItemAttributesRQ>newHashSet());
+		parameters.setAttributes(Sets.newHashSet());
 		StartLaunchRQ startLaunchRQ = testNGService.buildStartLaunchRq(parameters);
 		assertTrue(startLaunchRQ.getAttributes().contains(itemAttributeResource));
+	}
+
+	@Test
+	public void testPredefinedAttributes() {
+		final ListenerParameters parameters = new ListenerParameters();
+		parameters.setSkippedAnIssue(null);
+		StartLaunchRQ startLaunchRQ = testNGService.buildStartLaunchRq(parameters);
+		assertThat(startLaunchRQ.getAttributes().size(), Matchers.is(3));
+		Set<String> keys = startLaunchRQ.getAttributes().stream().map(ItemAttributeResource::getKey).collect(toSet());
+		predefinedProperties.forEach((predefinedKey, predefinedValue) -> assertTrue(keys.contains(predefinedKey)));
+		startLaunchRQ.getAttributes().forEach(attribute -> {
+			assertTrue(predefinedProperties.get(attribute.getKey()).matcher(attribute.getValue()).matches());
+			assertTrue(attribute.isSystem());
+		});
 	}
 
 	@Test
