@@ -264,7 +264,7 @@ public class TestNGService implements ITestNGService {
 			skippedIssueAttribute.setSystem(true);
 			rq.getAttributes().add(skippedIssueAttribute);
 		}
-		rq.getAttributes().addAll(SystemAttributesExtractor.extract(AGENT_PROPERTIES_FILE));
+		rq.getAttributes().addAll(SystemAttributesExtractor.extract(AGENT_PROPERTIES_FILE, TestNGService.class.getClassLoader()));
 		return rq;
 	}
 
