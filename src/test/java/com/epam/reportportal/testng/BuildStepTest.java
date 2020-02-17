@@ -29,7 +29,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.testng.IRetryAnalyzer;
 import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
 import org.testng.annotations.DataProvider;
@@ -82,6 +81,7 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
+		when(testNGMethod.getRetryAnalyzer(testResult)).thenReturn(result -> false);
 	}
 
 	@Test
@@ -214,12 +214,7 @@ public class BuildStepTest {
 
 	@Test
 	public void testRetryFlagPositive() {
-		when(testNGMethod.getRetryAnalyzer(any(ITestResult.class))).thenReturn(new IRetryAnalyzer() {
-			@Override
-			public boolean retry(ITestResult result) {
-				return true;
-			}
-		});
+		when(testNGMethod.getRetryAnalyzer(any(ITestResult.class))).thenReturn(result -> true);
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
 		assertThat("Incorrect retry flag", rq.isRetry(), is(true));
 	}
@@ -227,6 +222,13 @@ public class BuildStepTest {
 	@Test
 	public void testRetryFlagNegative() {
 		when(testNGMethod.getCurrentInvocationCount()).thenReturn(0);
+		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
+		assertThat("Incorrect retry flag", rq.isRetry(), is(false));
+	}
+
+	@Test
+	public void testRetryAnalyzerNull() {
+		when(testNGMethod.getRetryAnalyzer(any(ITestResult.class))).thenReturn(null);
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
 		assertThat("Incorrect retry flag", rq.isRetry(), is(false));
 	}
