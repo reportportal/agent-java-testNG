@@ -306,11 +306,7 @@ public class TestNGService implements ITestNGService {
 		rq.setName(testStepName);
 		String codeRef = testResult.getMethod().getQualifiedName();
 		rq.setCodeRef(codeRef);
-		TestCaseIdEntry testCaseIdEntry = getTestCaseId(codeRef, testResult);
-		if (testCaseIdEntry != null) {
-			rq.setTestCaseId(testCaseIdEntry.getId());
-			rq.setTestCaseHash(testCaseIdEntry.getHash());
-		}
+		rq.setTestCaseId(getTestCaseId(codeRef, testResult).getId());
 		rq.setAttributes(createStepAttributes(testResult));
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
@@ -518,9 +514,7 @@ public class TestNGService implements ITestNGService {
 		TestCaseId testCaseId = getMethodAnnotation(TestCaseId.class, testResult);
 		return testCaseId != null ?
 				getTestCaseId(testCaseId, testResult) :
-				new TestCaseIdEntry(StringUtils.join(codeRef, Arrays.toString(testResult.getParameters())),
-						Arrays.deepHashCode(new Object[] { codeRef, testResult.getParameters() })
-				);
+				new TestCaseIdEntry(StringUtils.join(codeRef, Arrays.toString(testResult.getParameters())));
 	}
 
 	@Nullable
@@ -530,7 +524,7 @@ public class TestNGService implements ITestNGService {
 					testResult.getParameters()
 			);
 		}
-		return new TestCaseIdEntry(testCaseId.value(), testCaseId.value().hashCode());
+		return new TestCaseIdEntry(testCaseId.value());
 	}
 
 	protected Set<ItemAttributesRQ> createStepAttributes(ITestResult testResult) {
