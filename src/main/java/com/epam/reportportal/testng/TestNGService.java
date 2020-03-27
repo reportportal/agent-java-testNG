@@ -38,7 +38,6 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
-import org.apache.commons.lang3.StringUtils;
 import org.testng.*;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -55,6 +54,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static rp.com.google.common.base.Optional.fromNullable;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
@@ -519,8 +519,12 @@ public class TestNGService implements ITestNGService {
 
 	private String testCaseIdFromCodeRefAndParams(String codeRef, Object[] parameters) {
 		boolean isParametersPresent = Objects.nonNull(parameters) && parameters.length > 0;
-		return isParametersPresent ? StringUtils.join(codeRef, Arrays.toString(parameters)) : codeRef;
+		return isParametersPresent ? codeRef + TRANSFORM_PARAMETERS.apply(parameters) : codeRef;
 	}
+
+	private static final Function<Object[], String> TRANSFORM_PARAMETERS = it -> "[" + Arrays.stream(it)
+			.map(param -> (String) param)
+			.collect(Collectors.joining(",")) + "]";
 
 	@Nullable
 	private TestCaseIdEntry getTestCaseId(TestCaseId testCaseId, ITestResult testResult) {
