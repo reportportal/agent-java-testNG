@@ -17,6 +17,8 @@
 package com.epam.reportportal.testng;
 
 import com.epam.reportportal.annotations.ParameterKey;
+import com.epam.reportportal.annotations.TestCaseId;
+import com.epam.reportportal.annotations.TestCaseIdKey;
 import com.epam.reportportal.annotations.UniqueID;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
@@ -29,7 +31,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.testng.IRetryAnalyzer;
 import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
 import org.testng.annotations.DataProvider;
@@ -38,15 +39,13 @@ import org.testng.internal.ConstructorOrMethod;
 import rp.com.google.common.base.Supplier;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Iterator;
+import java.util.*;
 
 import static com.epam.reportportal.testng.Constants.*;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
 /**
@@ -81,6 +80,7 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
+		when(testNGMethod.getRetryAnalyzer(testResult)).thenReturn(result -> false);
 	}
 
 	@Test
@@ -213,12 +213,7 @@ public class BuildStepTest {
 
 	@Test
 	public void testRetryFlagPositive() {
-		when(testNGMethod.getRetryAnalyzer()).thenReturn(new IRetryAnalyzer() {
-			@Override
-			public boolean retry(ITestResult result) {
-				return true;
-			}
-		});
+		when(testNGMethod.getRetryAnalyzer(any(ITestResult.class))).thenReturn(result -> true);
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
 		assertThat("Incorrect retry flag", rq.isRetry(), is(true));
 	}
@@ -226,6 +221,13 @@ public class BuildStepTest {
 	@Test
 	public void testRetryFlagNegative() {
 		when(testNGMethod.getCurrentInvocationCount()).thenReturn(0);
+		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
+		assertThat("Incorrect retry flag", rq.isRetry(), is(false));
+	}
+
+	@Test
+	public void testRetryAnalyzerNull() {
+		when(testNGMethod.getRetryAnalyzer(any(ITestResult.class))).thenReturn(null);
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
 		assertThat("Incorrect retry flag", rq.isRetry(), is(false));
 	}
@@ -269,6 +271,78 @@ public class BuildStepTest {
 		assertThat("Incorrect method type", rq.getType(), nullValue());
 	}
 
+	@Test
+	public void codeRefTest() {
+		String expected = "com.test.BuildStepTest.codeRefTest";
+		when(testResult.getMethod().getQualifiedName()).thenReturn(expected);
+
+		StartTestItemRQ request = testNGService.buildStartStepRq(testResult);
+
+		assertEquals(expected, request.getCodeRef());
+	}
+
+	@Test
+	public void testCaseId_fromCodeRef() {
+		String expected = "com.test.BuildStepTest.codeRefTest";
+		when(testResult.getMethod().getQualifiedName()).thenReturn(expected);
+
+		StartTestItemRQ request = testNGService.buildStartStepRq(testResult);
+
+		assertEquals(expected, request.getCodeRef());
+		assertEquals(expected, request.getTestCaseId());
+	}
+
+	@Test
+	public void testCaseId_fromCodeRefAndParams() {
+		String expectedCodeRef = "com.test.BuildStepTest.codeRefTest";
+		String expectedParam1 = "param_0";
+		String expectedParam2 = "param_1";
+
+		when(testResult.getMethod().getQualifiedName()).thenReturn(expectedCodeRef);
+		when(testResult.getParameters()).thenReturn(new Object[] { expectedParam1, expectedParam2 });
+
+		StartTestItemRQ request = testNGService.buildStartStepRq(testResult);
+
+		assertEquals(expectedCodeRef, request.getCodeRef());
+		assertEquals(expectedCodeRef + "[" + expectedParam1 + "," + expectedParam2 + "]", request.getTestCaseId());
+	}
+
+	@Test
+	public void testCaseId_fromAnnotation() {
+		Optional<Method> methodOptional = Arrays.stream(TestMethodsExamples.class.getDeclaredMethods())
+				.filter(it -> it.getName().equals("testCaseId"))
+				.findFirst();
+		assertTrue(methodOptional.isPresent());
+		String expectedCodeRef = "com.test.BuildStepTest.codeRefTest";
+
+		when(constructorOrMethod.getMethod()).thenReturn(methodOptional.get());
+		when(testResult.getMethod().getQualifiedName()).thenReturn(expectedCodeRef);
+
+		StartTestItemRQ request = testNGService.buildStartStepRq(testResult);
+
+		assertEquals(expectedCodeRef, request.getCodeRef());
+		assertEquals("test-case-id", request.getTestCaseId());
+	}
+
+	@Test
+	public void testCaseId_fromAnnotationParametrized() {
+		Optional<Method> methodOptional = Arrays.stream(TestMethodsExamples.class.getDeclaredMethods())
+				.filter(it -> it.getName().equals("testCaseIdParameterized"))
+				.findFirst();
+		assertTrue(methodOptional.isPresent());
+		String expectedCodeRef = "com.test.BuildStepTest.codeRefTest";
+		String expectedParam = "test-case-id-key";
+
+		when(constructorOrMethod.getMethod()).thenReturn(methodOptional.get());
+		when(testResult.getMethod().getQualifiedName()).thenReturn(expectedCodeRef);
+		when(testResult.getParameters()).thenReturn(new Object[] { expectedParam });
+
+		StartTestItemRQ request = testNGService.buildStartStepRq(testResult);
+
+		assertEquals(expectedCodeRef, request.getCodeRef());
+		assertEquals(expectedParam, request.getTestCaseId());
+	}
+
 	private static class TestMethodsExamples {
 		@UniqueID("ProvidedID")
 		@org.testng.annotations.Test
@@ -297,6 +371,16 @@ public class BuildStepTest {
 		@DataProvider(name = "dp")
 		private Iterator<Object[]> params() {
 			return Arrays.asList(new Object[] { "one", "two" }, new Object[] { "two", "one" }).iterator();
+		}
+
+		@TestCaseId("test-case-id")
+		private void testCaseId() {
+			//just for testing providing annotation
+		}
+
+		@TestCaseId(parametrized = true)
+		private void testCaseIdParameterized(@TestCaseIdKey String param) {
+			//just for testing providing annotation
 		}
 	}
 
