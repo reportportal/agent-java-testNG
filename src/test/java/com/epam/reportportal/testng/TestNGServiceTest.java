@@ -83,7 +83,7 @@ public class TestNGServiceTest {
 		when(testResult.getTestContext()).thenReturn(testContext);
 		when(testResult.getMethod()).thenReturn(method);
 		when(testResult.getAttribute(RP_ID)).thenReturn(id);
-		when(method.getRetryAnalyzer(testResult)).thenReturn(result -> false);
+		when(method.getRetryAnalyzer()).thenReturn(result -> false);
 		when(testContext.getSuite()).thenReturn(suite);
 		when(testContext.getAttribute(RP_ID)).thenReturn(id);
 	}
