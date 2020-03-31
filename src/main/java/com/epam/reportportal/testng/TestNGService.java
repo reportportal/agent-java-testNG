@@ -523,7 +523,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	private static final Function<Object[], String> TRANSFORM_PARAMETERS = it -> "[" + Arrays.stream(it)
-			.map(param -> (String) param)
+			.map(String::valueOf)
 			.collect(Collectors.joining(",")) + "]";
 
 	@Nullable
