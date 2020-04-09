@@ -1,33 +1,27 @@
-plugins {
-    id 'net.researchgate.release' version '2.8.0'
-    id "com.jfrog.bintray" version "1.8.4"
-}
 apply plugin: 'java'
-apply from: 'https://raw.githubusercontent.com/reportportal/gradle-scripts/master/release-commons.gradle'
 
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
+project.ext.releaseMode = project.hasProperty('releaseMode')
 
-project.ext {
-    releaseMode = project.hasProperty("releaseMode")
-}
+def branch = releaseMode ? '5.0.0' : 'develop'
+apply from: "https://raw.githubusercontent.com/reportportal/gradle-scripts/$branch/build-quality.gradle"
+apply from: "https://raw.githubusercontent.com/reportportal/gradle-scripts/$branch/release-commons.gradle"
 
-description = 'TestNG Agent'
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
     jcenter()
     mavenCentral()
-    maven { url "https://dl.bintray.com/epam/reportportal" }
-    maven { url "https://jitpack.io" }
+    releaseMode ? maven { url "https://dl.bintray.com/epam/reportportal" } : maven { url "https://jitpack.io" }
 }
 
 dependencies {
     if (releaseMode) {
-        compile 'com.epam.reportportal:client-java:5.0.0-BETA-4'
-        compile 'com.epam.reportportal:commons-model:5.0.0-BETA-11'
+        compile 'com.epam.reportportal:client-java:5.0.0-BETA-10'
+        compile 'com.epam.reportportal:commons-model:5.0.0'
     } else {
-        compile 'com.github.reportportal:client-java:5.0.0-BETA-4'
-        compile 'com.github.reportportal:commons-model:5.0.0-BETA-13'
+        compile 'com.github.reportportal:client-java:8825155'
+        compile 'com.github.reportportal:commons-model:5.0.0'
     }
 
     compile 'org.testng:testng:6.14.3'
@@ -40,4 +34,18 @@ dependencies {
 
 wrapper {
     gradleVersion = '5.4.1'
+}
+
+processResources {
+    filesMatching('agent.properties') {
+        expand(project.properties)
+    }
+}
+
+afterReleaseBuild.dependsOn bintrayUpload
+
+release {
+    git {
+        requireBranch = 'v5-testng6'
+    }
 }

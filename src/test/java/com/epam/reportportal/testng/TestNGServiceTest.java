@@ -83,6 +83,7 @@ public class TestNGServiceTest {
 		when(testResult.getTestContext()).thenReturn(testContext);
 		when(testResult.getMethod()).thenReturn(method);
 		when(testResult.getAttribute(RP_ID)).thenReturn(id);
+		when(method.getRetryAnalyzer()).thenReturn(result -> false);
 		when(testContext.getSuite()).thenReturn(suite);
 		when(testContext.getAttribute(RP_ID)).thenReturn(id);
 	}
@@ -162,9 +163,7 @@ public class TestNGServiceTest {
 
 	@Test
 	public void startTestMethod() {
-		ITestNGMethod method = mock(ITestNGMethod.class);
 		when(method.isTest()).thenReturn(true);
-		when(testResult.getMethod()).thenReturn(method);
 
 		testNGService.startTestMethod(testResult);
 		verify(launch, times(1)).startTestItem(eq(id), any(StartTestItemRQ.class));
@@ -183,9 +182,7 @@ public class TestNGServiceTest {
 		listenerParameters.setSkippedAnIssue(true);
 		when(launch.getParameters()).thenReturn(listenerParameters);
 		when(testResult.getAttribute(RP_ID)).thenReturn(null);
-		ITestNGMethod method = mock(ITestNGMethod.class);
 		when(method.isTest()).thenReturn(true);
-		when(testResult.getMethod()).thenReturn(method);
 
 		testNGService.finishTestMethod(Statuses.SKIPPED, testResult);
 
