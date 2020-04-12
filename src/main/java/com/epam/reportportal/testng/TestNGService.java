@@ -25,10 +25,10 @@ import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
+import com.epam.reportportal.testng.step.StepReporter;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
-import com.epam.reportportal.testng.step.StepReporter;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
@@ -123,7 +123,6 @@ public class TestNGService implements ITestNGService {
 		final Maybe<String> item = launch.get().startTestItem(rq);
 		suite.setAttribute(RP_ID, item);
 		StepAspect.setParentId(item);
-		stepReporter.addParent(item);
 	}
 
 	@Override
@@ -143,7 +142,6 @@ public class TestNGService implements ITestNGService {
 			final Maybe<String> testID = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
 			testContext.setAttribute(RP_ID, testID);
 			StepAspect.setParentId(testID);
-			stepReporter.addParent(testID);
 		}
 	}
 
@@ -166,7 +164,7 @@ public class TestNGService implements ITestNGService {
 		Maybe<String> stepMaybe = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
 		StepAspect.setParentId(stepMaybe);
-		stepReporter.addParent(stepMaybe);
+		stepReporter.setParent(stepMaybe);
 	}
 
 	@Override
@@ -175,6 +173,7 @@ public class TestNGService implements ITestNGService {
 			startTestMethod(testResult);
 		}
 
+		stepReporter.finishPreviousStep();
 		Maybe<String> itemId = this.getAttribute(testResult, RP_ID);
 		if (stepReporter.isParentFailed(itemId)) {
 			status = Statuses.FAILED;
@@ -194,7 +193,7 @@ public class TestNGService implements ITestNGService {
 		final Maybe<String> itemID = launch.get().startTestItem(parentId, rq);
 		testResult.setAttribute(RP_ID, itemID);
 		StepAspect.setParentId(itemID);
-		stepReporter.addParent(itemID);
+		stepReporter.setParent(itemID);
 	}
 
 	@Override

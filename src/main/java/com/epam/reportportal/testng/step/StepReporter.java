@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+import static java.util.Optional.ofNullable;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
 /**
@@ -28,15 +29,24 @@ public class StepReporter {
 
 	private final ThreadLocal<Launch> launch;
 
-	private final ThreadLocal<Deque<Maybe<String>>> parents;
+	private final ThreadLocal<Maybe<String>> parent;
+
+	private final ThreadLocal<Deque<StepEntry>> steps;
 
 	private final ThreadLocal<Set<Maybe<String>>> parentFailures;
 
 	private StepReporter() {
 		launch = new InheritableThreadLocal<Launch>();
-		parents = new InheritableThreadLocal<Deque<Maybe<String>>>() {
+		parent = new InheritableThreadLocal<Maybe<String>>() {
 			@Override
-			protected Deque<Maybe<String>> initialValue() {
+			protected Maybe<String> initialValue() {
+				return Maybe.empty();
+			}
+		};
+		steps = new InheritableThreadLocal<Deque<StepEntry>>() {
+
+			@Override
+			protected Deque<StepEntry> initialValue() {
 				return Queues.newArrayDeque();
 			}
 		};
@@ -46,6 +56,24 @@ public class StepReporter {
 				return Sets.newHashSet();
 			}
 		};
+	}
+
+	private static class StepEntry {
+		private final Maybe<String> itemId;
+		private final FinishTestItemRQ finishTestItemRQ;
+
+		private StepEntry(Maybe<String> itemId, FinishTestItemRQ finishTestItemRQ) {
+			this.itemId = itemId;
+			this.finishTestItemRQ = finishTestItemRQ;
+		}
+
+		public Maybe<String> getItemId() {
+			return itemId;
+		}
+
+		public FinishTestItemRQ getFinishTestItemRQ() {
+			return finishTestItemRQ;
+		}
 	}
 
 	public static StepReporter getInstance() {
@@ -63,14 +91,16 @@ public class StepReporter {
 		this.launch.set(launch);
 	}
 
-	public void addParent(Maybe<String> parent) {
+	public void setParent(Maybe<String> parent) {
 		if (parent != null) {
-			this.parents.get().push(parent);
+			this.parent.set(parent);
 		}
 	}
 
 	public Maybe<String> removeParent() {
-		return this.parents.get().poll();
+		Maybe<String> parent = this.parent.get();
+		this.parent.set(Maybe.empty());
+		return parent;
 	}
 
 	public boolean isParentFailed(Maybe<String> parentId) {
@@ -141,9 +171,15 @@ public class StepReporter {
 		finishStepRequest(stepId, status);
 	}
 
+	public void finishPreviousStep() {
+		ofNullable(steps.get().poll()).ifPresent(stepEntry -> launch.get()
+				.finishTestItem(stepEntry.getItemId(), stepEntry.getFinishTestItemRQ()));
+	}
+
 	private Maybe<String> startStepRequest(String name) {
+		finishPreviousStep();
 		StartTestItemRQ startTestItemRQ = buildStartStepRequest(name);
-		return launch.get().startTestItem(parents.get().peek(), startTestItemRQ);
+		return launch.get().startTestItem(parent.get(), startTestItemRQ);
 	}
 
 	private StartTestItemRQ buildStartStepRequest(String name) {
@@ -157,10 +193,9 @@ public class StepReporter {
 
 	private void finishStepRequest(Maybe<String> stepId, String status) {
 		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status, Calendar.getInstance().getTime());
-		launch.get().finishTestItem(stepId, finishTestItemRQ);
+		steps.get().add(new StepEntry(stepId, finishTestItemRQ));
 		if ("FAILED".equalsIgnoreCase(status)) {
-			Maybe<String> parentId = parents.get().peek();
-			parentFailures.get().add(parentId);
+			parentFailures.get().add(parent.get());
 		}
 	}
 
