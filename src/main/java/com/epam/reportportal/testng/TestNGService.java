@@ -25,6 +25,7 @@ import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
+import com.epam.reportportal.testng.step.StepReporter;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
@@ -56,6 +57,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.testng.ITestResult.FAILURE;
 import static rp.com.google.common.base.Optional.fromNullable;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
@@ -75,6 +77,8 @@ public class TestNGService implements ITestNGService {
 
 	private MemoizingSupplier<Launch> launch;
 
+	private final StepReporter stepReporter;
+
 	public TestNGService() {
 		this.launch = new MemoizingSupplier<Launch>(new Supplier<Launch>() {
 			@Override
@@ -87,16 +91,19 @@ public class TestNGService implements ITestNGService {
 				return reportPortal.newLaunch(rq);
 			}
 		});
+		this.stepReporter = StepReporter.getInstance();
 	}
 
 	public TestNGService(Supplier<Launch> launch) {
 		this.launch = new MemoizingSupplier<Launch>(launch);
+		this.stepReporter = StepReporter.getInstance();
 	}
 
 	@Override
 	public void startLaunch() {
 		this.launch.get().start();
 		StepAspect.addLaunch("default", this.launch.get());
+		stepReporter.setLaunch(this.launch.get());
 	}
 
 	@Override
@@ -155,6 +162,7 @@ public class TestNGService implements ITestNGService {
 		Maybe<String> stepMaybe = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
 		StepAspect.setParentId(stepMaybe);
+		stepReporter.setParent(stepMaybe);
 	}
 
 	@Override
@@ -163,8 +171,15 @@ public class TestNGService implements ITestNGService {
 			startTestMethod(testResult);
 		}
 
+		stepReporter.finishPreviousStep();
+		Maybe<String> itemId = this.getAttribute(testResult, RP_ID);
+		if (stepReporter.isParentFailed(itemId)) {
+			status = Statuses.FAILED;
+			testResult.setStatus(FAILURE);
+		}
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
-		launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testResult, RP_ID), rq);
+		launch.get().finishTestItem(itemId, rq);
+		stepReporter.removeParent();
 	}
 
 	@Override
@@ -176,6 +191,7 @@ public class TestNGService implements ITestNGService {
 		final Maybe<String> itemID = launch.get().startTestItem(parentId, rq);
 		testResult.setAttribute(RP_ID, itemID);
 		StepAspect.setParentId(itemID);
+		stepReporter.setParent(itemID);
 	}
 
 	@Override
