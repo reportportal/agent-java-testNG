@@ -28,6 +28,7 @@ import static com.epam.reportportal.testng.integration.feature.step.ManualStepRe
 import static com.epam.reportportal.testng.integration.feature.step.ManualStepReporterFeatureTest.SECOND_NAME;
 import static java.util.stream.Collectors.groupingBy;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
@@ -113,10 +114,10 @@ public class StepReporterTest {
 		assertEquals("INFO", firstStepLogs.get(1).getLevel());
 		assertEquals("ERROR", secondStepLogs.get(0).getLevel());
 
-		assertEquals("[main] - Main test method error log\n", testMethodLogs.get(0).getMessage());
-		assertEquals("[main] - First info log of the first step\n", firstStepLogs.get(0).getMessage());
-		assertEquals("[main] - Second info log of the first step\n", firstStepLogs.get(1).getMessage());
-		assertEquals("[main] - First error log of the second step\n", secondStepLogs.get(0).getMessage());
+		assertTrue(testMethodLogs.get(0).getMessage().contains("Main test method error log"));
+		assertTrue(firstStepLogs.get(0).getMessage().contains("First info log of the first step"));
+		assertTrue(firstStepLogs.get(1).getMessage().contains("Second info log of the first step"));
+		assertTrue(secondStepLogs.get(0).getMessage().contains("First error log of the second step"));
 
 		List<StartTestItemRQ> nestedSteps = captor.getAllValues();
 
