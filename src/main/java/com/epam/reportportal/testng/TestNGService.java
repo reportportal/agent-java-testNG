@@ -131,7 +131,6 @@ public class TestNGService implements ITestNGService {
 			FinishTestItemRQ rq = buildFinishTestSuiteRq(suite);
 			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
 			suite.removeAttribute(RP_ID);
-			stepReporter.removeParent();
 		}
 	}
 
@@ -150,7 +149,6 @@ public class TestNGService implements ITestNGService {
 		if (hasMethodsToRun(testContext)) {
 			FinishTestItemRQ rq = buildFinishTestRq(testContext);
 			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
-			stepReporter.removeParent();
 		}
 	}
 
