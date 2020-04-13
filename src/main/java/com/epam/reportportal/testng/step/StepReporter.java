@@ -27,7 +27,7 @@ public class StepReporter {
 
 	private static StepReporter instance;
 
-	private final ThreadLocal<Launch> launch;
+	private Launch launch;
 
 	private final ThreadLocal<Maybe<String>> parent;
 
@@ -36,7 +36,6 @@ public class StepReporter {
 	private final ThreadLocal<Set<Maybe<String>>> parentFailures;
 
 	private StepReporter() {
-		launch = new InheritableThreadLocal<Launch>();
 		parent = new InheritableThreadLocal<Maybe<String>>() {
 			@Override
 			protected Maybe<String> initialValue() {
@@ -88,7 +87,7 @@ public class StepReporter {
 	}
 
 	public void setLaunch(Launch launch) {
-		this.launch.set(launch);
+		this.launch = launch;
 	}
 
 	public void setParent(Maybe<String> parent) {
@@ -172,14 +171,15 @@ public class StepReporter {
 	}
 
 	public void finishPreviousStep() {
-		ofNullable(steps.get().poll()).ifPresent(stepEntry -> launch.get()
-				.finishTestItem(stepEntry.getItemId(), stepEntry.getFinishTestItemRQ()));
+		ofNullable(steps.get().poll()).ifPresent(stepEntry -> launch.finishTestItem(stepEntry.getItemId(),
+				stepEntry.getFinishTestItemRQ()
+		));
 	}
 
 	private Maybe<String> startStepRequest(String name) {
 		finishPreviousStep();
 		StartTestItemRQ startTestItemRQ = buildStartStepRequest(name);
-		return launch.get().startTestItem(parent.get(), startTestItemRQ);
+		return launch.startTestItem(parent.get(), startTestItemRQ);
 	}
 
 	private StartTestItemRQ buildStartStepRequest(String name) {
