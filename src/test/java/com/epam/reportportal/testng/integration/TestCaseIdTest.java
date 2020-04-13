@@ -13,6 +13,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -32,20 +33,21 @@ public class TestCaseIdTest {
 
 	@Before
 	public void initMocks() {
-		TestReportPortalListener.launch = mock(Launch.class);
-		when(TestReportPortalListener.launch.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
-		when(TestReportPortalListener.launch.startTestItem(any(),
+		Launch launch = mock(Launch.class);
+		when(launch.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
+		when(launch.startTestItem(any(),
 				any()
 		)).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
+		TestReportPortalListener.initLaunch(launch);
 	}
 
 	@Test
 	public void testCaseIdFromCodeRef() {
-		TestUtils.runTests(TestCaseIdFromCodeReference.class);
+		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), TestCaseIdFromCodeReference.class);
 
 		String expectedCodeRef = TestCaseIdFromCodeReference.class.getCanonicalName() + "." + TestCaseIdFromCodeReference.STEP_NAME;
 
-		Launch launch = TestReportPortalListener.launch;
+		Launch launch = TestReportPortalListener.getLaunch();
 
 		verify(launch, times(1)).startTestItem(any());  // Start parent suite
 
@@ -62,14 +64,14 @@ public class TestCaseIdTest {
 
 	@Test
 	public void testCaseIdFromCodeRefAndParams() {
-		TestUtils.runTests(TestCaseIdFromCodeRefAndParams.class);
+		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), TestCaseIdFromCodeRefAndParams.class);
 
 		String expectedCodeRef = TestCaseIdFromCodeRefAndParams.class.getCanonicalName() + "." + TestCaseIdFromCodeReference.STEP_NAME;
 		List<String> expectedTestCaseIds = Stream.of("one", "two", "three")
 				.map(it -> expectedCodeRef + "[" + it + "]")
 				.collect(Collectors.toList());
 
-		Launch launch = TestReportPortalListener.launch;
+		Launch launch = TestReportPortalListener.getLaunch();
 
 		verify(launch, times(1)).startTestItem(any());  // Start parent suites
 
@@ -87,9 +89,9 @@ public class TestCaseIdTest {
 
 	@Test
 	public void testCaseIdFromAnnotationValue() {
-		TestUtils.runTests(TestCaseIdFromAnnotationValue.class);
+		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), TestCaseIdFromAnnotationValue.class);
 
-		Launch launch = TestReportPortalListener.launch;
+		Launch launch = TestReportPortalListener.getLaunch();
 
 		verify(launch, times(1)).startTestItem(any());  // Start parent suites
 
@@ -105,9 +107,9 @@ public class TestCaseIdTest {
 
 	@Test
 	public void testCaseIdFromAnnotationValueParametrized() {
-		TestUtils.runTests(TestCaseIdFromAnnotationValueParametrized.class);
+		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), TestCaseIdFromAnnotationValueParametrized.class);
 
-		Launch launch = TestReportPortalListener.launch;
+		Launch launch = TestReportPortalListener.getLaunch();
 
 		verify(launch, times(1)).startTestItem(any());  // Start parent suites
 
