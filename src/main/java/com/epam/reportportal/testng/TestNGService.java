@@ -67,13 +67,20 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
  */
 public class TestNGService implements ITestNGService {
 
+	private static final String DEFAULT_REPORT_PORTAL_KEY = "default";
+
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
 	public static final String NOT_ISSUE = "NOT_ISSUE";
 	public static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 	public static final String RP_ID = "rp_id";
 	public static final String ARGUMENT = "arg";
 
-	public static final ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
+	protected static final Map<String, ReportPortal> REPORT_PORTAL_MAPPING = new HashMap<>();
+
+	static {
+		REPORT_PORTAL_MAPPING.put(DEFAULT_REPORT_PORTAL_KEY, ReportPortal.builder().build());
+	}
+
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
 	public static final ReentrantLock FINISH_LAUNCH_LOCK = new ReentrantLock();
 
@@ -88,15 +95,19 @@ public class TestNGService implements ITestNGService {
 				//this reads property, so we want to
 				//init ReportPortal object each time Launch object is going to be created
 
-				StartLaunchRQ rq = buildStartLaunchRq(REPORT_PORTAL.getParameters());
+				StartLaunchRQ rq = buildStartLaunchRq(REPORT_PORTAL_MAPPING.get(DEFAULT_REPORT_PORTAL_KEY).getParameters());
 				rq.setStartTime(Calendar.getInstance().getTime());
-				return REPORT_PORTAL.newLaunch(rq);
+				return REPORT_PORTAL_MAPPING.get(DEFAULT_REPORT_PORTAL_KEY).newLaunch(rq);
 			}
 		});
 	}
 
 	public TestNGService(Supplier<Launch> launch) {
 		this.launch = new MemoizingSupplier<>(launch);
+	}
+
+	public static ReportPortal getReportPortal() {
+		return REPORT_PORTAL_MAPPING.get(DEFAULT_REPORT_PORTAL_KEY);
 	}
 
 	@Override

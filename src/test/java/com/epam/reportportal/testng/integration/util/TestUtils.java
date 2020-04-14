@@ -1,13 +1,12 @@
 package com.epam.reportportal.testng.integration.util;
 
-import com.epam.reportportal.testng.integration.TestReportPortalListener;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import junit.framework.AssertionFailedError;
 import org.mockito.ArgumentCaptor;
+import org.testng.ITestNGListener;
 import org.testng.TestNG;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -19,9 +18,9 @@ public class TestUtils {
 
 	public static final String TEST_NAME = "TestContainer";
 
-	public static void runTests(Class... classes) {
+	public static void runTests(List<Class<? extends ITestNGListener>> listeners, Class... classes) {
 		final TestNG testNG = new TestNG(true);
-		testNG.setListenerClasses(Collections.singletonList(TestReportPortalListener.class));
+		testNG.setListenerClasses(listeners);
 		testNG.setTestClasses(classes);
 		testNG.setDefaultTestName(TEST_NAME);
 		testNG.setExcludedGroups("optional");
