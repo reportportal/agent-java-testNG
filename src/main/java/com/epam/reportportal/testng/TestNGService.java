@@ -36,7 +36,6 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
-import org.apache.commons.lang3.StringUtils;
 import org.testng.*;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -55,6 +54,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
 import static java.util.Optional.ofNullable;
@@ -347,7 +347,7 @@ public class TestNGService implements ITestNGService {
 			skippedIssueAttribute.setSystem(true);
 			rq.getAttributes().add(skippedIssueAttribute);
 		}
-		rq.getAttributes().addAll(SystemAttributesExtractor.extract(AGENT_PROPERTIES_FILE));
+		rq.getAttributes().addAll(SystemAttributesExtractor.extract(AGENT_PROPERTIES_FILE, TestNGService.class.getClassLoader()));
 		return rq;
 	}
 
@@ -389,11 +389,7 @@ public class TestNGService implements ITestNGService {
 		rq.setName(testStepName);
 		String codeRef = testResult.getMethod().getQualifiedName();
 		rq.setCodeRef(codeRef);
-		TestCaseIdEntry testCaseIdEntry = getTestCaseId(codeRef, testResult);
-		if (testCaseIdEntry != null) {
-			rq.setTestCaseId(testCaseIdEntry.getId());
-			rq.setTestCaseHash(testCaseIdEntry.getHash());
-		}
+		rq.setTestCaseId(getTestCaseId(codeRef, testResult).getId());
 		rq.setAttributes(createStepAttributes(testResult));
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
@@ -601,10 +597,17 @@ public class TestNGService implements ITestNGService {
 		TestCaseId testCaseId = getMethodAnnotation(TestCaseId.class, testResult);
 		return testCaseId != null ?
 				getTestCaseId(testCaseId, testResult) :
-				new TestCaseIdEntry(StringUtils.join(codeRef, Arrays.toString(testResult.getParameters())),
-						Arrays.deepHashCode(new Object[] { codeRef, testResult.getParameters() })
-				);
+				new TestCaseIdEntry(testCaseIdFromCodeRefAndParams(codeRef, testResult.getParameters()));
 	}
+
+	private String testCaseIdFromCodeRefAndParams(String codeRef, Object[] parameters) {
+		boolean isParametersPresent = Objects.nonNull(parameters) && parameters.length > 0;
+		return isParametersPresent ? codeRef + TRANSFORM_PARAMETERS.apply(parameters) : codeRef;
+	}
+
+	private static final Function<Object[], String> TRANSFORM_PARAMETERS = it -> "[" + Arrays.stream(it)
+			.map(String::valueOf)
+			.collect(Collectors.joining(",")) + "]";
 
 	@Nullable
 	private TestCaseIdEntry getTestCaseId(TestCaseId testCaseId, ITestResult testResult) {
@@ -613,7 +616,7 @@ public class TestNGService implements ITestNGService {
 					testResult.getParameters()
 			);
 		}
-		return new TestCaseIdEntry(testCaseId.value(), testCaseId.value().hashCode());
+		return new TestCaseIdEntry(testCaseId.value());
 	}
 
 	protected Set<ItemAttributesRQ> createStepAttributes(ITestResult testResult) {
