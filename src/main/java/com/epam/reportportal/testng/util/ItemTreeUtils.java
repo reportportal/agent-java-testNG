@@ -1,7 +1,6 @@
 package com.epam.reportportal.testng.util;
 
 import com.epam.reportportal.service.tree.TestItemTree;
-import io.reactivex.annotations.Nullable;
 import org.testng.IClass;
 import org.testng.ISuite;
 import org.testng.ITestContext;
@@ -9,6 +8,9 @@ import org.testng.ITestResult;
 import org.testng.xml.XmlClass;
 
 import java.util.Arrays;
+import java.util.Optional;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -39,26 +41,25 @@ public class ItemTreeUtils {
 		return TestItemTree.ItemTreeKey.of(testResult.getName(), Arrays.hashCode(testResult.getParameters()));
 	}
 
-	@Nullable
-	public static TestItemTree.TestItemLeaf retrieveLeaf(ISuite suite, TestItemTree testItemTree) {
-		return testItemTree.getTestItems().get(createKey(suite));
+	public static Optional<TestItemTree.TestItemLeaf> retrieveLeaf(ISuite suite, TestItemTree testItemTree) {
+		return ofNullable(testItemTree.getTestItems().get(createKey(suite)));
 	}
 
-	@Nullable
-	public static TestItemTree.TestItemLeaf retrieveLeaf(ITestContext testContext, TestItemTree testItemTree) {
-		TestItemTree.TestItemLeaf suiteLeaf = retrieveLeaf(testContext.getSuite(), testItemTree);
-		return suiteLeaf != null ? suiteLeaf.getChildItems().get(createKey(testContext)) : null;
+	public static Optional<TestItemTree.TestItemLeaf> retrieveLeaf(ITestContext testContext, TestItemTree testItemTree) {
+		Optional<TestItemTree.TestItemLeaf> suiteLeaf = retrieveLeaf(testContext.getSuite(), testItemTree);
+		return suiteLeaf.map(leaf -> leaf.getChildItems().get(createKey(testContext)));
 	}
 
-	@Nullable
-	public static TestItemTree.TestItemLeaf retrieveLeaf(ITestResult testResult, TestItemTree testItemTree) {
-		TestItemTree.TestItemLeaf testClassLeaf = retrieveLeaf(testResult.getTestContext(), testResult.getTestClass(), testItemTree);
-		return testClassLeaf != null ? testClassLeaf.getChildItems().get(createKey(testResult)) : null;
+	public static Optional<TestItemTree.TestItemLeaf> retrieveLeaf(ITestResult testResult, TestItemTree testItemTree) {
+		Optional<TestItemTree.TestItemLeaf> testClassLeaf = retrieveLeaf(testResult.getTestContext(),
+				testResult.getTestClass(),
+				testItemTree
+		);
+		return testClassLeaf.map(leaf -> leaf.getChildItems().get(createKey(testResult)));
 	}
 
-	@Nullable
-	private static TestItemTree.TestItemLeaf retrieveLeaf(ITestContext testContext, IClass testClass, TestItemTree testItemTree) {
-		TestItemTree.TestItemLeaf testLeaf = retrieveLeaf(testContext, testItemTree);
-		return testLeaf != null ? testLeaf.getChildItems().get(createKey(testClass)) : null;
+	private static Optional<TestItemTree.TestItemLeaf> retrieveLeaf(ITestContext testContext, IClass testClass, TestItemTree testItemTree) {
+		Optional<TestItemTree.TestItemLeaf> testLeaf = retrieveLeaf(testContext, testItemTree);
+		return testLeaf.map(leaf -> leaf.getChildItems().get(createKey(testClass)));
 	}
 }
