@@ -52,7 +52,6 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -82,23 +81,19 @@ public class TestNGService implements ITestNGService {
 	}
 
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
-	public static final ReentrantLock FINISH_LAUNCH_LOCK = new ReentrantLock();
 
 	private final AtomicBoolean isLaunchFailed = new AtomicBoolean();
 
 	private MemoizingSupplier<Launch> launch;
 
 	public TestNGService() {
-		this.launch = new MemoizingSupplier<Launch>(new Supplier<Launch>() {
-			@Override
-			public Launch get() {
-				//this reads property, so we want to
-				//init ReportPortal object each time Launch object is going to be created
+		this.launch = new MemoizingSupplier<>(() -> {
+			//this reads property, so we want to
+			//init ReportPortal object each time Launch object is going to be created
 
-				StartLaunchRQ rq = buildStartLaunchRq(REPORT_PORTAL_MAPPING.get(DEFAULT_REPORT_PORTAL_KEY).getParameters());
-				rq.setStartTime(Calendar.getInstance().getTime());
-				return REPORT_PORTAL_MAPPING.get(DEFAULT_REPORT_PORTAL_KEY).newLaunch(rq);
-			}
+			StartLaunchRQ rq = buildStartLaunchRq(REPORT_PORTAL_MAPPING.get(DEFAULT_REPORT_PORTAL_KEY).getParameters());
+			rq.setStartTime(Calendar.getInstance().getTime());
+			return REPORT_PORTAL_MAPPING.get(DEFAULT_REPORT_PORTAL_KEY).newLaunch(rq);
 		});
 	}
 
@@ -122,16 +117,8 @@ public class TestNGService implements ITestNGService {
 		FinishExecutionRQ rq = new FinishExecutionRQ();
 		rq.setEndTime(Calendar.getInstance().getTime());
 		rq.setStatus(isLaunchFailed.get() ? Statuses.FAILED : Statuses.PASSED);
-
-		FINISH_LAUNCH_LOCK.lock();
-		try {
-			launch.get().finish(rq);
-		} finally {
-			FINISH_LAUNCH_LOCK.unlock();
-		}
-
+		launch.get().finish(rq);
 		this.launch.reset();
-
 	}
 
 	@Override
