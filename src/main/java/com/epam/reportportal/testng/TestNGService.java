@@ -74,11 +74,7 @@ public class TestNGService implements ITestNGService {
 	public static final String RP_ID = "rp_id";
 	public static final String ARGUMENT = "arg";
 
-	protected static final Map<String, ReportPortal> REPORT_PORTAL_MAPPING = new HashMap<>();
-
-	static {
-		REPORT_PORTAL_MAPPING.put(DEFAULT_REPORT_PORTAL_KEY, ReportPortal.builder().build());
-	}
+	private static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
 
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
 
@@ -91,9 +87,9 @@ public class TestNGService implements ITestNGService {
 			//this reads property, so we want to
 			//init ReportPortal object each time Launch object is going to be created
 
-			StartLaunchRQ rq = buildStartLaunchRq(REPORT_PORTAL_MAPPING.get(DEFAULT_REPORT_PORTAL_KEY).getParameters());
+			StartLaunchRQ rq = buildStartLaunchRq(REPORT_PORTAL.getParameters());
 			rq.setStartTime(Calendar.getInstance().getTime());
-			return REPORT_PORTAL_MAPPING.get(DEFAULT_REPORT_PORTAL_KEY).newLaunch(rq);
+			return REPORT_PORTAL.newLaunch(rq);
 		});
 	}
 
@@ -102,7 +98,11 @@ public class TestNGService implements ITestNGService {
 	}
 
 	public static ReportPortal getReportPortal() {
-		return REPORT_PORTAL_MAPPING.get(DEFAULT_REPORT_PORTAL_KEY);
+		return REPORT_PORTAL;
+	}
+
+	protected static void setReportPortal(ReportPortal reportPortal) {
+		REPORT_PORTAL = reportPortal;
 	}
 
 	@Override

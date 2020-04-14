@@ -11,6 +11,6 @@ public class TestNGServiceExtension extends TestNGService {
 
 	public TestNGServiceExtension(Supplier<Launch> launch, ReportPortal reportPortal) {
 		super(launch);
-		REPORT_PORTAL_MAPPING.put("default", reportPortal);
+		setReportPortal(reportPortal);
 	}
 }
