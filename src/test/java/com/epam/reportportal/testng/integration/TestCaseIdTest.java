@@ -1,5 +1,6 @@
 package com.epam.reportportal.testng.integration;
 
+import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.testng.integration.feature.testcaseid.TestCaseIdFromAnnotationValue;
 import com.epam.reportportal.testng.integration.feature.testcaseid.TestCaseIdFromAnnotationValueParametrized;
@@ -11,6 +12,8 @@ import io.reactivex.Maybe;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
 
 import java.util.Collections;
@@ -31,14 +34,21 @@ import static org.mockito.Mockito.*;
  */
 public class TestCaseIdTest {
 
+	@Mock
+	private Launch launch;
+	@Mock
+	private ListenerParameters parameters;
+
 	@Before
 	public void initMocks() {
-		Launch launch = mock(Launch.class);
+		MockitoAnnotations.initMocks(this);
+		when(launch.getParameters()).thenReturn(parameters);
 		when(launch.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
 		when(launch.startTestItem(any(),
 				any()
 		)).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
 		TestReportPortalListener.initLaunch(launch);
+		when(parameters.isCallbackReportingEnabled()).thenReturn(Boolean.TRUE);
 	}
 
 	@Test
