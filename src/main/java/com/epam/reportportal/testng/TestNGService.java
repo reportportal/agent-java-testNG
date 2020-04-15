@@ -25,14 +25,12 @@ import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
+import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.testng.step.StepReporter;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
-import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
-import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
-import com.epam.ta.reportportal.ws.model.ParameterResource;
-import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -53,10 +51,13 @@ import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
+import static java.util.Optional.ofNullable;
 import static org.testng.ITestResult.FAILURE;
 import static rp.com.google.common.base.Optional.fromNullable;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
@@ -67,11 +68,17 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
  */
 public class TestNGService implements ITestNGService {
 
+	private static final String DEFAULT_REPORT_PORTAL_KEY = "default";
+
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
 	public static final String NOT_ISSUE = "NOT_ISSUE";
 	public static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 	public static final String RP_ID = "rp_id";
 	public static final String ARGUMENT = "arg";
+
+	private static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
+
+	public static final TestItemTree ITEM_TREE = new TestItemTree();
 
 	private final AtomicBoolean isLaunchFailed = new AtomicBoolean();
 
@@ -80,29 +87,35 @@ public class TestNGService implements ITestNGService {
 	private final StepReporter stepReporter;
 
 	public TestNGService() {
-		this.launch = new MemoizingSupplier<Launch>(new Supplier<Launch>() {
-			@Override
-			public Launch get() {
-				//this reads property, so we want to
-				//init ReportPortal object each time Launch object is going to be created
-				final ReportPortal reportPortal = ReportPortal.builder().build();
-				StartLaunchRQ rq = buildStartLaunchRq(reportPortal.getParameters());
-				rq.setStartTime(Calendar.getInstance().getTime());
-				return reportPortal.newLaunch(rq);
-			}
+		this.launch = new MemoizingSupplier<>(() -> {
+			//this reads property, so we want to
+			//init ReportPortal object each time Launch object is going to be created
+
+			StartLaunchRQ rq = buildStartLaunchRq(REPORT_PORTAL.getParameters());
+			rq.setStartTime(Calendar.getInstance().getTime());
+			return REPORT_PORTAL.newLaunch(rq);
 		});
 		this.stepReporter = StepReporter.getInstance();
 	}
 
 	public TestNGService(Supplier<Launch> launch) {
-		this.launch = new MemoizingSupplier<Launch>(launch);
+		this.launch = new MemoizingSupplier<>(launch);
 		this.stepReporter = StepReporter.getInstance();
+	}
+
+	public static ReportPortal getReportPortal() {
+		return REPORT_PORTAL;
+	}
+
+	protected static void setReportPortal(ReportPortal reportPortal) {
+		REPORT_PORTAL = reportPortal;
 	}
 
 	@Override
 	public void startLaunch() {
-		this.launch.get().start();
+		Maybe<String> launchId = this.launch.get().start();
 		StepAspect.addLaunch("default", this.launch.get());
+		ITEM_TREE.setLaunchId(launchId);
 		stepReporter.setLaunch(this.launch.get());
 	}
 
@@ -112,44 +125,79 @@ public class TestNGService implements ITestNGService {
 		rq.setEndTime(Calendar.getInstance().getTime());
 		rq.setStatus(isLaunchFailed.get() ? Statuses.FAILED : Statuses.PASSED);
 		launch.get().finish(rq);
-
 		this.launch.reset();
-
 	}
 
 	@Override
 	public synchronized void startTestSuite(ISuite suite) {
 		StartTestItemRQ rq = buildStartSuiteRq(suite);
 		final Maybe<String> item = launch.get().startTestItem(rq);
+		if (launch.get().getParameters().isCallbackReportingEnabled()) {
+			addToTree(suite, item);
+		}
 		suite.setAttribute(RP_ID, item);
 		StepAspect.setParentId(item);
+	}
+
+	private void addToTree(ISuite suite, Maybe<String> item) {
+		ITEM_TREE.getTestItems().put(createKey(suite), TestItemTree.createTestItemLeaf(item, suite.getXmlSuite().getTests().size()));
 	}
 
 	@Override
 	public synchronized void finishTestSuite(ISuite suite) {
 		if (null != suite.getAttribute(RP_ID)) {
 			FinishTestItemRQ rq = buildFinishTestSuiteRq(suite);
-			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
+			launch.get().finishTestItem(this.getAttribute(suite, RP_ID), rq);
 			suite.removeAttribute(RP_ID);
 		}
+		if (launch.get().getParameters().isCallbackReportingEnabled()) {
+			removeFromTree(suite);
+		}
+	}
+
+	private void removeFromTree(ISuite suite) {
+		ITEM_TREE.getTestItems().remove(createKey(suite));
 	}
 
 	@Override
 	public void startTest(ITestContext testContext) {
 		if (hasMethodsToRun(testContext)) {
 			StartTestItemRQ rq = buildStartTestItemRq(testContext);
-			final Maybe<String> testID = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
+			final Maybe<String> testID = launch.get().startTestItem(this.getAttribute(testContext.getSuite(), RP_ID), rq);
+			if (launch.get().getParameters().isCallbackReportingEnabled()) {
+				addToTree(testContext, testID);
+			}
 			testContext.setAttribute(RP_ID, testID);
 			StepAspect.setParentId(testID);
 		}
+	}
+
+	private void addToTree(ITestContext testContext, Maybe<String> testId) {
+		ofNullable(ITEM_TREE.getTestItems().get(createKey(testContext.getSuite()))).ifPresent(suiteLeaf -> {
+			List<XmlClass> testClasses = testContext.getCurrentXmlTest().getClasses();
+			ConcurrentHashMap<TestItemTree.ItemTreeKey, TestItemTree.TestItemLeaf> testClassesMapping = new ConcurrentHashMap<>(testClasses.size());
+			for (XmlClass testClass : testClasses) {
+				TestItemTree.TestItemLeaf testClassLeaf = TestItemTree.createTestItemLeaf(testId, new ConcurrentHashMap<>());
+				testClassesMapping.put(createKey(testClass), testClassLeaf);
+			}
+			suiteLeaf.getChildItems().put(createKey(testContext), TestItemTree.createTestItemLeaf(testId, testClassesMapping));
+		});
 	}
 
 	@Override
 	public void finishTest(ITestContext testContext) {
 		if (hasMethodsToRun(testContext)) {
 			FinishTestItemRQ rq = buildFinishTestRq(testContext);
-			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
+			launch.get().finishTestItem(this.getAttribute(testContext, RP_ID), rq);
+			if (launch.get().getParameters().isCallbackReportingEnabled()) {
+				removeFromTree(testContext);
+			}
 		}
+	}
+
+	private void removeFromTree(ITestContext testContext) {
+		ofNullable(ITEM_TREE.getTestItems().get(createKey(testContext.getSuite()))).ifPresent(suiteLeaf -> suiteLeaf.getChildItems()
+				.remove(createKey(testContext)));
 	}
 
 	@Override
@@ -158,11 +206,24 @@ public class TestNGService implements ITestNGService {
 		if (rq == null) {
 			return;
 		}
-
-		Maybe<String> stepMaybe = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
+		Maybe<String> stepMaybe = launch.get().startTestItem(this.getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
 		StepAspect.setParentId(stepMaybe);
 		stepReporter.setParent(stepMaybe);
+		if (launch.get().getParameters().isCallbackReportingEnabled()) {
+			addToTree(testResult, stepMaybe);
+		}
+	}
+
+	private void addToTree(ITestResult testResult, Maybe<String> stepMaybe) {
+		ITestContext testContext = testResult.getTestContext();
+
+		ofNullable(ITEM_TREE.getTestItems()
+				.get(createKey(testContext.getSuite()))).flatMap(suiteLeaf -> ofNullable(suiteLeaf.getChildItems()
+				.get(createKey(testContext))).flatMap(testLeaf -> ofNullable(testLeaf.getChildItems()
+				.get(createKey(testResult.getTestClass())))))
+				.ifPresent(testClassLeaf -> testClassLeaf.getChildItems()
+						.put(createKey(testResult), TestItemTree.createTestItemLeaf(stepMaybe, 0)));
 	}
 
 	@Override
@@ -178,8 +239,28 @@ public class TestNGService implements ITestNGService {
 			testResult.setStatus(FAILURE);
 		}
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
-		launch.get().finishTestItem(itemId, rq);
 		stepReporter.removeParent();
+		Maybe<OperationCompletionRS> finishItemResponse = launch.get().finishTestItem(this.getAttribute(testResult, RP_ID), rq);
+		if (launch.get().getParameters().isCallbackReportingEnabled()) {
+			updateTestItemTree(finishItemResponse, testResult);
+		}
+	}
+
+	private void updateTestItemTree(Maybe<OperationCompletionRS> finishItemResponse, ITestResult testResult) {
+		ITestContext testContext = testResult.getTestContext();
+		TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE.getTestItems().get(createKey(testContext.getSuite()));
+		if (suiteLeaf != null) {
+			TestItemTree.TestItemLeaf testLeaf = suiteLeaf.getChildItems().get(createKey(testContext));
+			if (testLeaf != null) {
+				TestItemTree.TestItemLeaf testClassLeaf = testLeaf.getChildItems().get(createKey(testResult.getTestClass()));
+				if (testClassLeaf != null) {
+					TestItemTree.TestItemLeaf testItemLeaf = testClassLeaf.getChildItems().get(createKey(testResult));
+					if (testItemLeaf != null) {
+						testItemLeaf.setFinishResponse(finishItemResponse);
+					}
+				}
+			}
+		}
 	}
 
 	@Override
