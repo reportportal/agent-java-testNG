@@ -1,11 +1,13 @@
 package com.epam.reportportal.testng.integration;
 
+import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.testng.integration.feature.testcaseid.TestCaseIdFromAnnotationValue;
 import com.epam.reportportal.testng.integration.feature.testcaseid.TestCaseIdFromAnnotationValueParametrized;
 import com.epam.reportportal.testng.integration.feature.testcaseid.TestCaseIdFromCodeRefAndParams;
 import com.epam.reportportal.testng.integration.feature.testcaseid.TestCaseIdFromCodeReference;
 import com.epam.reportportal.testng.integration.util.TestUtils;
+import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import org.junit.Before;
@@ -13,6 +15,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,6 +36,7 @@ public class TestCaseIdTest {
 	@Before
 	public void initMocks() {
 		TestReportPortalListener.launch = mock(Launch.class);
+		when(TestReportPortalListener.launch.getParameters()).thenReturn(new ListenerParameters(PropertiesLoader.load()));
 		when(TestReportPortalListener.launch.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
 		when(TestReportPortalListener.launch.startTestItem(any(),
 				any()
@@ -41,7 +45,7 @@ public class TestCaseIdTest {
 
 	@Test
 	public void testCaseIdFromCodeRef() {
-		TestUtils.runTests(TestCaseIdFromCodeReference.class);
+		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), TestCaseIdFromCodeReference.class);
 
 		String expectedCodeRef = TestCaseIdFromCodeReference.class.getCanonicalName() + "." + TestCaseIdFromCodeReference.STEP_NAME;
 
@@ -62,7 +66,7 @@ public class TestCaseIdTest {
 
 	@Test
 	public void testCaseIdFromCodeRefAndParams() {
-		TestUtils.runTests(TestCaseIdFromCodeRefAndParams.class);
+		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), TestCaseIdFromCodeRefAndParams.class);
 
 		String expectedCodeRef = TestCaseIdFromCodeRefAndParams.class.getCanonicalName() + "." + TestCaseIdFromCodeReference.STEP_NAME;
 		List<String> expectedTestCaseIds = Stream.of("one", "two", "three")
@@ -87,7 +91,7 @@ public class TestCaseIdTest {
 
 	@Test
 	public void testCaseIdFromAnnotationValue() {
-		TestUtils.runTests(TestCaseIdFromAnnotationValue.class);
+		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), TestCaseIdFromAnnotationValue.class);
 
 		Launch launch = TestReportPortalListener.launch;
 
@@ -105,7 +109,7 @@ public class TestCaseIdTest {
 
 	@Test
 	public void testCaseIdFromAnnotationValueParametrized() {
-		TestUtils.runTests(TestCaseIdFromAnnotationValueParametrized.class);
+		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), TestCaseIdFromAnnotationValueParametrized.class);
 
 		Launch launch = TestReportPortalListener.launch;
 
