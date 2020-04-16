@@ -76,7 +76,7 @@ public class BuildTestTest {
 
 	@Before
 	public void preconditions() {
-		testNGService = new TestNGService(new TestNGService.MemoizingSupplier<>(() -> launch));
+		testNGService = new TestNGService(new TestNGService.MemorizingSupplier<>(() -> launch));
 		MockitoAnnotations.initMocks(this);
 	}
 

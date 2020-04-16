@@ -7,8 +7,10 @@ import org.mockito.ArgumentCaptor;
 import org.testng.ITestNGListener;
 import org.testng.TestNG;
 
+import java.util.Calendar;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 /**
@@ -50,5 +52,25 @@ public class TestUtils {
 
 	public static List<StartTestItemRQ> extractRequests(ArgumentCaptor<StartTestItemRQ> captor, String methodType) {
 		return captor.getAllValues().stream().filter(it -> methodType.equalsIgnoreCase(it.getType())).collect(Collectors.toList());
+	}
+
+	/**
+	 * Generates a unique ID shorter than UUID based on current time in milliseconds and thread ID.
+	 *
+	 * @return a unique ID string
+	 */
+	public static String generateUniqueId() {
+		return System.currentTimeMillis() + "-" + Thread.currentThread().getId() + "-" + ThreadLocalRandom.current().nextInt(9999);
+	}
+
+	public static StartTestItemRQ standardStartStepRequest() {
+		StartTestItemRQ rq = new StartTestItemRQ();
+		rq.setStartTime(Calendar.getInstance().getTime());
+		String id = generateUniqueId();
+		rq.setName("Step_" + id);
+		rq.setDescription("Test step description");
+		rq.setUniqueId(id);
+		rq.setType("STEP");
+		return rq;
 	}
 }

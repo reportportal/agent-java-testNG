@@ -73,7 +73,7 @@ public class TestNGServiceTest {
 	public void preconditions() {
 		MockitoAnnotations.initMocks(this);
 
-		testNGService = new TestNGService(new TestNGService.MemoizingSupplier<Launch>(new Supplier<Launch>() {
+		testNGService = new TestNGService(new TestNGService.MemorizingSupplier<Launch>(new Supplier<Launch>() {
 			@Override
 			public Launch get() {
 				return launch;

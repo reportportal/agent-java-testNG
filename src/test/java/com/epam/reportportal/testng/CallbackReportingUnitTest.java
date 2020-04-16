@@ -55,7 +55,7 @@ public class CallbackReportingUnitTest {
 	public void preconditions() {
 		MockitoAnnotations.initMocks(this);
 
-		testNGService = new TestNGService(new TestNGService.MemoizingSupplier<>(() -> launch));
+		testNGService = new TestNGService(new TestNGService.MemorizingSupplier<>(() -> launch));
 
 		when(testResult.getTestContext()).thenReturn(testContext);
 		when(testResult.getMethod()).thenReturn(method);

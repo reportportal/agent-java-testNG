@@ -68,8 +68,6 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
  */
 public class TestNGService implements ITestNGService {
 
-	private static final String DEFAULT_REPORT_PORTAL_KEY = "default";
-
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
 	public static final String NOT_ISSUE = "NOT_ISSUE";
 	public static final String SKIPPED_ISSUE_KEY = "skippedIssue";
@@ -82,12 +80,12 @@ public class TestNGService implements ITestNGService {
 
 	private final AtomicBoolean isLaunchFailed = new AtomicBoolean();
 
-	private MemoizingSupplier<Launch> launch;
+	private final MemorizingSupplier<Launch> launch;
 
 	private final StepReporter stepReporter;
 
 	public TestNGService() {
-		this.launch = new MemoizingSupplier<>(() -> {
+		this.launch = new MemorizingSupplier<>(() -> {
 			//this reads property, so we want to
 			//init ReportPortal object each time Launch object is going to be created
 
@@ -99,7 +97,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	public TestNGService(Supplier<Launch> launch) {
-		this.launch = new MemoizingSupplier<>(launch);
+		this.launch = new MemorizingSupplier<>(launch);
 		this.stepReporter = StepReporter.getInstance();
 	}
 
@@ -129,7 +127,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	@Override
-	public synchronized void startTestSuite(ISuite suite) {
+	public void startTestSuite(ISuite suite) {
 		StartTestItemRQ rq = buildStartSuiteRq(suite);
 		final Maybe<String> item = launch.get().startTestItem(rq);
 		if (launch.get().getParameters().isCallbackReportingEnabled()) {
@@ -144,7 +142,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	@Override
-	public synchronized void finishTestSuite(ISuite suite) {
+	public void finishTestSuite(ISuite suite) {
 		if (null != suite.getAttribute(RP_ID)) {
 			FinishTestItemRQ rq = buildFinishTestSuiteRq(suite);
 			launch.get().finishTestItem(this.getAttribute(suite, RP_ID), rq);
@@ -277,24 +275,20 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public void sendReportPortalMsg(final ITestResult result) {
-		ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String itemUuid) {
-				SaveLogRQ rq = new SaveLogRQ();
-				rq.setItemUuid(itemUuid);
-				rq.setLevel("ERROR");
-				rq.setLogTime(Calendar.getInstance().getTime());
-				if (result.getThrowable() != null) {
-					rq.setMessage(getStackTraceAsString(result.getThrowable()));
-				} else {
-					rq.setMessage("Test has failed without exception");
-				}
-				rq.setLogTime(Calendar.getInstance().getTime());
-
-				return rq;
+		ReportPortal.emitLog(itemUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setItemUuid(itemUuid);
+			rq.setLevel("ERROR");
+			rq.setLogTime(Calendar.getInstance().getTime());
+			if (result.getThrowable() != null) {
+				rq.setMessage(getStackTraceAsString(result.getThrowable()));
+			} else {
+				rq.setMessage("Test has failed without exception");
 			}
-		});
+			rq.setLogTime(Calendar.getInstance().getTime());
 
+			return rq;
+		});
 	}
 
 	/**
@@ -697,33 +691,28 @@ public class TestNGService implements ITestNGService {
 	}
 
 	@VisibleForTesting
-	static class MemoizingSupplier<T> implements Supplier<T>, Serializable {
+	static class MemorizingSupplier<T> implements Supplier<T>, Serializable {
 		final Supplier<T> delegate;
-		transient volatile boolean initialized;
-		transient T value;
+		transient volatile T value;
 		private static final long serialVersionUID = 0L;
 
-		MemoizingSupplier(Supplier<T> delegate) {
+		MemorizingSupplier(Supplier<T> delegate) {
 			this.delegate = delegate;
 		}
 
 		public T get() {
-			if (!this.initialized) {
+			if (value == null) {
 				synchronized (this) {
-					if (!this.initialized) {
-						T t = this.delegate.get();
-						this.value = t;
-						this.initialized = true;
-						return t;
+					if (value == null) {
+						return (value = delegate.get());
 					}
 				}
 			}
-
-			return this.value;
+			return value;
 		}
 
-		public synchronized void reset() {
-			this.initialized = false;
+		public void reset() {
+			value = null;
 		}
 
 		public String toString() {
