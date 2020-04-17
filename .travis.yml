@@ -1,12 +1,9 @@
-sudo: false
 language: java
 
 script: ./gradlew build
 
 jdk:
     - openjdk8
-# Gradle requires JDK7 to build the project
-#    - openjdk6
 
 before_install:
   - JAVA_HOME=$(jdk_switcher home openjdk8) ./gradlew

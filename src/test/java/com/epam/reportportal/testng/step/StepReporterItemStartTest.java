@@ -39,11 +39,13 @@ import org.mockito.stubbing.Answer;
 
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.epam.reportportal.testng.integration.feature.step.ManualStepReporterFeatureTest.FIRST_NAME;
 import static com.epam.reportportal.testng.integration.feature.step.ManualStepReporterFeatureTest.SECOND_NAME;
 import static java.util.stream.Collectors.groupingBy;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -129,8 +131,7 @@ public class StepReporterItemStartTest {
 		assertEquals("INFO", firstStepLogs.get(0).getLevel());
 		assertEquals("INFO", firstStepLogs.get(1).getLevel());
 		assertEquals("ERROR", secondStepLogs.get(0).getLevel());
-		assertEquals("INFO", thirdStepLogs.get(0).getLevel());
-		assertEquals("ERROR", thirdStepLogs.get(1).getLevel());
+		assertThat(thirdStepLogs.stream().map(SaveLogRQ::getLevel).collect(Collectors.toList()), hasItems("ERROR", "INFO"));
 
 		assertTrue(testMethodLogs.get(0).getMessage().contains("Main test method error log"));
 		assertTrue(firstStepLogs.get(0).getMessage().contains("First info log of the first step"));
