@@ -25,6 +25,7 @@ import com.epam.reportportal.testng.integration.feature.step.ManualStepReporterF
 import com.epam.reportportal.testng.integration.util.TestUtils;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
+import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
@@ -38,6 +39,7 @@ import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
 
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -45,8 +47,11 @@ import static com.epam.reportportal.testng.integration.feature.step.ManualStepRe
 import static com.epam.reportportal.testng.integration.feature.step.ManualStepReporterFeatureTest.SECOND_NAME;
 import static java.util.stream.Collectors.groupingBy;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
@@ -60,8 +65,17 @@ public class StepReporterItemStartTest {
 	private final String testClassUuid = UUID.randomUUID().toString();
 	private final String testMethodUuid = UUID.randomUUID().toString();
 
+	List<Maybe<ItemCreatedRS>> createdStepsList = new CopyOnWriteArrayList<>();
+	private final Supplier<Maybe<ItemCreatedRS>> maybeSupplier = () -> {
+		String uuid = UUID.randomUUID().toString();
+		Maybe<ItemCreatedRS> maybe = TestUtils.createMaybe(new ItemCreatedRS(uuid, uuid));
+		createdStepsList.add(maybe);
+		return maybe;
+	};
+
 	@Mock
-	private ReportPortalClient reportPortalClient;;
+	private ReportPortalClient reportPortalClient;
+	;
 
 	@BeforeEach
 	public void initMocks() {
@@ -71,10 +85,21 @@ public class StepReporterItemStartTest {
 		when(reportPortalClient.startTestItem(any())).thenReturn(suiteMaybe);
 
 		Maybe<ItemCreatedRS> testClassMaybe = TestUtils.createMaybe(new ItemCreatedRS(testClassUuid, testClassUuid));
-		when(reportPortalClient.startTestItem(eq(suiteMaybe.blockingGet().getId()), any())).thenReturn(testClassMaybe);
+		when(reportPortalClient.startTestItem(eq(suitedUuid), any())).thenReturn(testClassMaybe);
 
 		Maybe<ItemCreatedRS> testMethodMaybe = TestUtils.createMaybe(new ItemCreatedRS(testMethodUuid, testMethodUuid));
-		when(reportPortalClient.startTestItem(eq(testClassMaybe.blockingGet().getId()), any())).thenReturn(testMethodMaybe);
+		when(reportPortalClient.startTestItem(eq(testClassUuid), any())).thenReturn(testMethodMaybe);
+
+		Maybe<OperationCompletionRS> testMethodFinishMaybe = TestUtils.createMaybe(new OperationCompletionRS());
+		when(reportPortalClient.finishTestItem(eq(testMethodUuid), any())).thenReturn(testMethodFinishMaybe);
+
+		Maybe<OperationCompletionRS> testClassFinishMaybe = TestUtils.createMaybe(new OperationCompletionRS());
+		when(reportPortalClient.finishTestItem(eq(testClassUuid), any())).thenReturn(testClassFinishMaybe);
+
+		Maybe<OperationCompletionRS> suiteFinishMaybe = TestUtils.createMaybe(new OperationCompletionRS());
+		when(reportPortalClient.finishTestItem(eq(suitedUuid), any())).thenReturn(suiteFinishMaybe);
+
+		when(reportPortalClient.finishLaunch(eq("launchUuid"), any())).thenReturn(TestUtils.createMaybe(new OperationCompletionRS()));
 
 		when(reportPortalClient.log(any(MultiPartRequest.class))).thenReturn(TestUtils.createMaybe(new BatchSaveOperatingRS()));
 
@@ -85,16 +110,12 @@ public class StepReporterItemStartTest {
 	@SuppressWarnings("unchecked")
 	@Test
 	public void manualStepReporterTest() {
-		List<Maybe<ItemCreatedRS>> createdStepsList = new ArrayList<>();
-
-		Supplier<Maybe<ItemCreatedRS>> maybeSupplier = () -> {
-			String uuid = UUID.randomUUID().toString();
-			Maybe<ItemCreatedRS> maybe = TestUtils.createMaybe(new ItemCreatedRS(uuid, uuid));
-			createdStepsList.add(maybe);
-			return maybe;
-		};
-
-		when(reportPortalClient.startTestItem(eq(testMethodUuid), any())).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> maybeSupplier.get());
+		when(reportPortalClient.startTestItem(eq(testMethodUuid),
+				any()
+		)).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> maybeSupplier.get());
+		when(reportPortalClient.finishTestItem(eq(testMethodUuid),
+				any()
+		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> TestUtils.createMaybe(new OperationCompletionRS()));
 
 		TestUtils.runTests(Collections.singletonList(ManualStepReportPortalListener.class), ManualStepReporterFeatureTest.class);
 
@@ -137,8 +158,10 @@ public class StepReporterItemStartTest {
 		assertTrue(firstStepLogs.get(0).getMessage().contains("First info log of the first step"));
 		assertTrue(firstStepLogs.get(1).getMessage().contains("Second info log of the first step"));
 		assertTrue(secondStepLogs.get(0).getMessage().contains("First error log of the second step"));
-		assertTrue(thirdStepLogs.get(0).getMessage().contains("unlucky.jpg"));
-		assertTrue(thirdStepLogs.get(1).getMessage().contains("Second error log of the second step"));
+		List<String> logs = thirdStepLogs.stream().map(SaveLogRQ::getMessage).collect(Collectors.toList());
+		assertThat(logs, hasSize(2));
+		assertThat(logs, hasItem(equalTo("unlucky.jpg")));
+		assertThat(logs, hasItem(containsString("Second error log of the second step")));
 
 		List<StartTestItemRQ> nestedSteps = captor.getAllValues();
 

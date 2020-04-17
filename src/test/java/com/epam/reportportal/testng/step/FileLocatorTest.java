@@ -91,7 +91,7 @@ public class FileLocatorTest {
 		sr.sendStep("Test image by relative workdir path", new File("src/test/resources/pug/lucky.jpg"));
 
 		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
-		verify(client, after(500).times(1)).log(logCaptor.capture());
+		verify(client, after(1000).times(1)).log(logCaptor.capture());
 
 		MultiPartRequest logRq = logCaptor.getValue();
 		verifyFile(logRq, ByteStreams.toByteArray(getClass().getClassLoader().getResourceAsStream("pug/lucky.jpg")), "lucky.jpg");
@@ -110,7 +110,7 @@ public class FileLocatorTest {
 		sr.sendStep("Test image by relative classpath path", new File("pug/unlucky.jpg"));
 
 		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
-		verify(client, after(500).times(1)).log(logCaptor.capture());
+		verify(client, after(1000).times(1)).log(logCaptor.capture());
 
 		MultiPartRequest logRq = logCaptor.getValue();
 		verifyFile(logRq, ByteStreams.toByteArray(getClass().getClassLoader().getResourceAsStream("pug/unlucky.jpg")), "unlucky.jpg");
@@ -130,7 +130,7 @@ public class FileLocatorTest {
 		sr.sendStep("Test image by relative classpath path", new File("pug/not_exists.jpg"));
 
 		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
-		verify(client, after(500).times(1)).log(logCaptor.capture());
+		verify(client, after(1000).times(1)).log(logCaptor.capture());
 
 		MultiPartRequest logRq = logCaptor.getValue();
 		SaveLogRQ saveRq = verifyRq(logRq);

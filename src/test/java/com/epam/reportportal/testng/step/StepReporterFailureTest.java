@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -55,8 +56,7 @@ public class StepReporterFailureTest {
 	@Mock
 	private ReportPortalClient reportPortalClient;
 
-	private final List<Maybe<ItemCreatedRS>> createdStepsList = new ArrayList<>();
-
+	List<Maybe<ItemCreatedRS>> createdStepsList = new CopyOnWriteArrayList<>();
 	private final Supplier<Maybe<ItemCreatedRS>> maybeSupplier = () -> {
 		String uuid = UUID.randomUUID().toString();
 		Maybe<ItemCreatedRS> maybe = TestUtils.createMaybe(new ItemCreatedRS(uuid, uuid));
@@ -110,20 +110,15 @@ public class StepReporterFailureTest {
 	@Test
 	public void failed_to_finish_nested_step_should_not_hang_the_launch() {
 
-		// create 3 nested steps
-		maybeSupplier.get();
-		maybeSupplier.get();
-		maybeSupplier.get();
-
 		// mock start nested steps
 		when(reportPortalClient.startTestItem(
 				eq(testMethodUuid),
 				any()
-		)).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> createdStepsList.get(counter.getAndIncrement()));
+		)).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> maybeSupplier.get());
 
 		// Finish first nested steps and throw an exception on second
-		when(reportPortalClient.finishTestItem(eq(testMethodUuid), any())).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> createdStepsList.get(
-				0)).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> createdStepsList.get(1)).thenThrow(EXCEPTION);
+		when(reportPortalClient.finishTestItem(eq(testMethodUuid), any())).thenReturn(TestUtils.createMaybe(new OperationCompletionRS()))
+				.thenReturn(TestUtils.createMaybe(new OperationCompletionRS())).thenThrow(EXCEPTION);
 
 		TestUtils.runTests(Collections.singletonList(ManualStepReportPortalListenerFailure.class), ManualStepReporterFeatureTest.class);
 
