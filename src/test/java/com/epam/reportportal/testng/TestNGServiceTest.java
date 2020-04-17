@@ -21,20 +21,18 @@ import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 import org.testng.ISuite;
 import org.testng.ITestContext;
 import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
 import org.testng.internal.ResultMap;
-import rp.com.google.common.base.Supplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -68,14 +66,12 @@ public class TestNGServiceTest {
 	@Mock
 	private Maybe<String> id;
 
+	@Mock
+	private Maybe<OperationCompletionRS> complete;
+
 	@BeforeEach
 	public void preconditions() {
-		testNGService = new TestNGService(new TestNGService.MemorizingSupplier<Launch>(new Supplier<Launch>() {
-			@Override
-			public Launch get() {
-				return launch;
-			}
-		}));
+		testNGService = new TestNGService(new TestNGService.MemorizingSupplier<>(() -> launch));
 	}
 
 	@Test
@@ -130,14 +126,14 @@ public class TestNGServiceTest {
 		testNGService.startTest(testContext);
 
 		verify(launch, times(1)).startTestItem(eq(id), any(StartTestItemRQ.class));
-		verify(testContext, times(1)).setAttribute(eq(RP_ID), Matchers.any(Maybe.class));
+		verify(testContext, times(1)).setAttribute(eq(RP_ID), any(Maybe.class));
 	}
 
 	@Test
 	public void startTestWithoutMethods() {
 		testNGService.startTest(testContext);
 		verify(launch, never()).startTestItem(eq(id), any(StartTestItemRQ.class));
-		verify(testContext, never()).setAttribute(eq(RP_ID), Matchers.any(Maybe.class));
+		verify(testContext, never()).setAttribute(eq(RP_ID), any(Maybe.class));
 	}
 
 	@Test
@@ -190,7 +186,7 @@ public class TestNGServiceTest {
 	public void finishTestMethodSkipped() {
 		when(launch.getParameters()).thenReturn(new ListenerParameters());
 		when(launch.startTestItem(any(Maybe.class), any())).thenReturn(id);
-		when(launch.finishTestItem(any(Maybe.class), any())).thenReturn(id);
+		when(launch.finishTestItem(any(Maybe.class), any())).thenReturn(complete);
 		when(testResult.getTestContext()).thenReturn(testContext);
 		when(testResult.getMethod()).thenReturn(method);
 		when(testResult.getAttribute(RP_ID)).thenReturn(id);
