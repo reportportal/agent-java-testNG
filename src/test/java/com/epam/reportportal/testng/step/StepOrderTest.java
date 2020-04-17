@@ -25,11 +25,10 @@ import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import io.reactivex.Maybe;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
@@ -40,8 +39,7 @@ import java.util.function.Supplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
 public class StepOrderTest {
@@ -65,10 +63,8 @@ public class StepOrderTest {
 		return maybe;
 	};
 
-	@Before
+	@BeforeEach
 	public void initMocks() {
-		MockitoAnnotations.initMocks(this);
-
 		Maybe<ItemCreatedRS> testMethodCreatedMaybe = TestUtils.createMaybe(new ItemCreatedRS(testMethodUuid, testMethodUuid));
 		when(client.startTestItem(eq(testClassUuid), any())).thenReturn(testMethodCreatedMaybe);
 		when(client.startTestItem(eq(testMethodUuid), any())).thenReturn(testMethodCreatedMaybe);
@@ -111,8 +107,11 @@ public class StepOrderTest {
 		List<StartTestItemRQ> rqs = stepCaptor.getAllValues();
 		assertThat(rqs, hasSize(stepNum));
 		for (int i = 1; i < stepNum; i++) {
-			assertThat("Each nested step should not complete in the same millisecond, iteration: " + i,
-					rqs.get(i - 1).getStartTime(), not(equalTo(rqs.get(i).getStartTime())));
+			assertThat(
+					"Each nested step should not complete in the same millisecond, iteration: " + i,
+					rqs.get(i - 1).getStartTime(),
+					not(equalTo(rqs.get(i).getStartTime()))
+			);
 		}
 	}
 }

@@ -55,7 +55,8 @@ public class CallbackReportingTest {
 	}
 
 	private void attachLog(TestItemTree.TestItemLeaf testItemLeaf) {
-		ItemTreeReporter.sendLog(TestNGService.getReportPortal().getClient(),
+		ItemTreeReporter.sendLog(
+				TestNGService.getReportPortal().getClient(),
 				"ERROR",
 				"Error message",
 				Calendar.getInstance().getTime(),

@@ -26,11 +26,10 @@ import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
 import rp.com.google.common.io.ByteStreams;
 
@@ -43,8 +42,7 @@ import java.util.function.Supplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
 public class FileLocatorTest {
@@ -55,7 +53,7 @@ public class FileLocatorTest {
 	private final Maybe<String> launchUuid = TestUtils.createMaybe(testLaunchUuid);
 
 	@Mock
-	private ReportPortalClient client;
+	public ReportPortalClient client;
 
 	private final StepReporter sr = StepReporter.getInstance();
 
@@ -67,17 +65,12 @@ public class FileLocatorTest {
 		return maybe;
 	};
 
-	@Before
+	@BeforeEach
 	public void initMocks() {
-		MockitoAnnotations.initMocks(this);
-
 		Maybe<ItemCreatedRS> testMethodCreatedMaybe = TestUtils.createMaybe(new ItemCreatedRS(testMethodUuid, testMethodUuid));
 		when(client.startTestItem(eq(testClassUuid), any())).thenReturn(testMethodCreatedMaybe);
-		when(client.startTestItem(eq(testMethodUuid), any())).thenReturn(testMethodCreatedMaybe);
 
 		ListenerParameters params = new ListenerParameters(PropertiesLoader.load());
-		params.setBatchLogsSize(1);
-		params.setClientJoin(false);
 		ReportPortal rp = ReportPortal.create(client, params);
 		Launch launch = rp.withLaunch(launchUuid);
 		sr.setLaunch(launch);
@@ -98,7 +91,7 @@ public class FileLocatorTest {
 		sr.sendStep("Test image by relative workdir path", new File("src/test/resources/pug/lucky.jpg"));
 
 		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
-		verify(client, after(1000).times(1)).log(logCaptor.capture());
+		verify(client, after(500).times(1)).log(logCaptor.capture());
 
 		MultiPartRequest logRq = logCaptor.getValue();
 		verifyFile(logRq, ByteStreams.toByteArray(getClass().getClassLoader().getResourceAsStream("pug/lucky.jpg")), "lucky.jpg");
@@ -106,7 +99,6 @@ public class FileLocatorTest {
 
 	@Test
 	public void test_file_location_by_relative_classpath_path() throws IOException {
-
 		// create a nested step
 		maybeSupplier.get();
 
@@ -118,7 +110,7 @@ public class FileLocatorTest {
 		sr.sendStep("Test image by relative classpath path", new File("pug/unlucky.jpg"));
 
 		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
-		verify(client, after(1000).times(1)).log(logCaptor.capture());
+		verify(client, after(500).times(1)).log(logCaptor.capture());
 
 		MultiPartRequest logRq = logCaptor.getValue();
 		verifyFile(logRq, ByteStreams.toByteArray(getClass().getClassLoader().getResourceAsStream("pug/unlucky.jpg")), "unlucky.jpg");

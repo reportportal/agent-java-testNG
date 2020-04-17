@@ -10,14 +10,11 @@ import rp.com.google.common.base.Suppliers;
 
 import java.util.Calendar;
 
-/**
- * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
- */
-public class ManualStepReportPortalListener extends BaseTestNGListener {
+public class ManualStepReportPortalListenerFailure extends BaseTestNGListener {
 
 	public static final ThreadLocal<ReportPortal> REPORT_PORTAL_THREAD_LOCAL = new ThreadLocal<>();
 
-	public ManualStepReportPortalListener() {
+	public ManualStepReportPortalListenerFailure() {
 		super(new TestNGService(Suppliers.memoize(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters()))));
 	}
 

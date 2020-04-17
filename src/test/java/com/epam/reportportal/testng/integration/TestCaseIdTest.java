@@ -9,8 +9,8 @@ import com.epam.reportportal.testng.integration.feature.testcaseid.TestCaseIdFro
 import com.epam.reportportal.testng.integration.util.TestUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -23,10 +23,9 @@ import java.util.stream.Stream;
 
 import static com.epam.reportportal.testng.integration.util.TestUtils.extractRequest;
 import static com.epam.reportportal.testng.integration.util.TestUtils.extractRequests;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.*;
 
 /**
@@ -39,14 +38,11 @@ public class TestCaseIdTest {
 	@Mock
 	private ListenerParameters parameters;
 
-	@Before
+	@BeforeEach
 	public void initMocks() {
-		MockitoAnnotations.initMocks(this);
 		when(launch.getParameters()).thenReturn(parameters);
 		when(launch.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
-		when(launch.startTestItem(any(),
-				any()
-		)).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
+		when(launch.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
 		TestReportPortalListener.initLaunch(launch);
 		when(parameters.isCallbackReportingEnabled()).thenReturn(Boolean.TRUE);
 	}
@@ -67,9 +63,9 @@ public class TestCaseIdTest {
 		StartTestItemRQ testRequest = extractRequest(captor, "test");
 		StartTestItemRQ stepRequest = extractRequest(captor, "step");
 
-		assertEquals(TestUtils.TEST_NAME, testRequest.getName());
-		assertEquals(expectedCodeRef, stepRequest.getCodeRef());
-		assertEquals(expectedCodeRef, stepRequest.getTestCaseId());
+		assertThat(testRequest.getName(), equalTo(TestUtils.TEST_NAME));
+		assertThat(stepRequest.getCodeRef(), equalTo(expectedCodeRef));
+		assertThat(stepRequest.getTestCaseId(), equalTo(expectedCodeRef));
 	}
 
 	@Test
@@ -93,8 +89,8 @@ public class TestCaseIdTest {
 				.map(StartTestItemRQ::getTestCaseId)
 				.collect(Collectors.toList());
 
-		assertEquals(TestUtils.TEST_NAME, testRequest.getName());
-		assertEquals(expectedTestCaseIds, actualTestCaseIds);
+		assertThat(testRequest.getName(), equalTo(TestUtils.TEST_NAME));
+		assertThat(actualTestCaseIds, equalTo(expectedTestCaseIds));
 	}
 
 	@Test
@@ -111,8 +107,8 @@ public class TestCaseIdTest {
 		StartTestItemRQ testRequest = extractRequest(captor, "test");
 		StartTestItemRQ stepRequest = extractRequest(captor, "step");
 
-		assertEquals(TestUtils.TEST_NAME, testRequest.getName());
-		assertEquals(TestCaseIdFromAnnotationValue.TEST_CASE_ID, stepRequest.getTestCaseId());
+		assertThat(testRequest.getName(), equalTo(TestUtils.TEST_NAME));
+		assertThat(stepRequest.getTestCaseId(), equalTo(TestCaseIdFromAnnotationValue.TEST_CASE_ID));
 	}
 
 	@Test
@@ -130,7 +126,7 @@ public class TestCaseIdTest {
 		List<StartTestItemRQ> stepRequests = extractRequests(captor, "step");
 		List<String> actualTestCaseIds = stepRequests.stream().map(StartTestItemRQ::getTestCaseId).collect(Collectors.toList());
 
-		assertEquals(TestUtils.TEST_NAME, testRequest.getName());
+		assertThat(testRequest.getName(), equalTo(TestUtils.TEST_NAME));
 		assertThat(actualTestCaseIds, containsInAnyOrder("one", "two", "three"));
 	}
 }

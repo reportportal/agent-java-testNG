@@ -6,9 +6,8 @@ import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.testng.util.ItemTreeUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.ISuite;
@@ -20,6 +19,7 @@ import org.testng.xml.XmlSuite;
 import java.util.ArrayList;
 
 import static com.epam.reportportal.testng.TestNGService.ITEM_TREE;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -51,19 +51,9 @@ public class CallbackReportingUnitTest {
 	@Mock
 	private Maybe<String> id;
 
-	@Before
+	@BeforeEach
 	public void preconditions() {
-		MockitoAnnotations.initMocks(this);
-
 		testNGService = new TestNGService(new TestNGService.MemorizingSupplier<>(() -> launch));
-
-		when(testResult.getTestContext()).thenReturn(testContext);
-		when(testResult.getMethod()).thenReturn(method);
-		when(testResult.getAttribute(RP_ID)).thenReturn(id);
-		when(method.getRetryAnalyzer()).thenReturn(result -> false);
-		when(testContext.getSuite()).thenReturn(suite);
-		when(testContext.getAttribute(RP_ID)).thenReturn(id);
-
 		ITEM_TREE.getTestItems().clear();
 	}
 
@@ -72,7 +62,7 @@ public class CallbackReportingUnitTest {
 		when(launch.start()).thenReturn(id);
 
 		testNGService.startLaunch();
-		Assert.assertNotNull(ITEM_TREE.getLaunchId());
+		assertNotNull(ITEM_TREE.getLaunchId());
 	}
 
 	@Test
@@ -90,8 +80,8 @@ public class CallbackReportingUnitTest {
 		when(xmlSuiteMock.getTests()).thenReturn(new ArrayList<>());
 
 		testNGService.startTestSuite(suite);
-		Assert.assertFalse(ITEM_TREE.getTestItems().isEmpty());
-		Assert.assertEquals(1, ITEM_TREE.getTestItems().size());
+		assertFalse(ITEM_TREE.getTestItems().isEmpty());
+		assertEquals(1, ITEM_TREE.getTestItems().size());
 	}
 
 	@Test
@@ -105,11 +95,9 @@ public class CallbackReportingUnitTest {
 
 		XmlSuite xmlSuiteMock = mock(XmlSuite.class);
 		when(suite.getName()).thenReturn(suiteName);
-		when(suite.getXmlSuite()).thenReturn(xmlSuiteMock);
-		when(xmlSuiteMock.getTests()).thenReturn(new ArrayList<>());
 
 		testNGService.startTestSuite(suite);
-		Assert.assertTrue(ITEM_TREE.getTestItems().isEmpty());
+		assertTrue(ITEM_TREE.getTestItems().isEmpty());
 	}
 
 	@Test
@@ -119,16 +107,13 @@ public class CallbackReportingUnitTest {
 		ListenerParameters listenerParameters = mock(ListenerParameters.class);
 		when(launch.getParameters()).thenReturn(listenerParameters);
 		when(listenerParameters.isCallbackReportingEnabled()).thenReturn(true);
-		when(launch.startTestItem(any(StartTestItemRQ.class))).thenReturn(id);
 
 		XmlSuite xmlSuiteMock = mock(XmlSuite.class);
 		when(suite.getName()).thenReturn(suiteName);
-		when(suite.getXmlSuite()).thenReturn(xmlSuiteMock);
-		when(xmlSuiteMock.getTests()).thenReturn(new ArrayList<>());
 		ITEM_TREE.getTestItems().put(ItemTreeUtils.createKey(suite), TestItemTree.createTestItemLeaf(id, 1));
 
 		testNGService.finishTestSuite(suite);
-		Assert.assertTrue(ITEM_TREE.getTestItems().isEmpty());
+		assertTrue(ITEM_TREE.getTestItems().isEmpty());
 	}
 
 }

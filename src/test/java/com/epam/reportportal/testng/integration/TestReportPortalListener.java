@@ -9,20 +9,10 @@ import com.epam.reportportal.testng.TestNGService;
  * @author <a href="mailto:ihar_kahadouski@epam.com">Ihar Kahadouski</a>
  */
 public class TestReportPortalListener extends BaseTestNGListener {
-
-	public static final ThreadLocal<ReportPortal> REPORT_PORTAL_THREAD_LOCAL = new ThreadLocal<>();
 	public static final ThreadLocal<Launch> LAUNCH_THREAD_LOCAL = new ThreadLocal<>();
 
 	public TestReportPortalListener() {
 		super(new TestNGService(LAUNCH_THREAD_LOCAL::get));
-	}
-
-	public static void initReportPortal(ReportPortal reportPortal) {
-		REPORT_PORTAL_THREAD_LOCAL.set(reportPortal);
-	}
-
-	public static ReportPortal getReportPortal() {
-		return REPORT_PORTAL_THREAD_LOCAL.get();
 	}
 
 	public static void initLaunch(Launch launch) {

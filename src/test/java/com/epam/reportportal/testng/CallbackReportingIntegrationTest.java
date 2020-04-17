@@ -13,16 +13,14 @@ import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.*;
 
 import static java.util.stream.Collectors.groupingBy;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 /**
@@ -34,7 +32,7 @@ public class CallbackReportingIntegrationTest {
 	private final String testClassUuid = UUID.randomUUID().toString();
 	private final String testMethodUuid = UUID.randomUUID().toString();
 
-	@Before
+	@BeforeEach
 	public void initMocks() {
 		ReportPortalClient reportPortalClient = mock(ReportPortalClient.class);
 

@@ -2,7 +2,6 @@ package com.epam.reportportal.testng.integration.util;
 
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
-import junit.framework.AssertionFailedError;
 import org.mockito.ArgumentCaptor;
 import org.testng.ITestNGListener;
 import org.testng.TestNG;
@@ -45,9 +44,7 @@ public class TestUtils {
 				.stream()
 				.filter(it -> methodType.equalsIgnoreCase(it.getType()))
 				.findAny()
-				.orElseThrow(() -> new AssertionFailedError(String.format("Method type '%s' should be present among requests",
-						methodType
-				)));
+				.orElseThrow(() -> new AssertionError(String.format("Method type '%s' should be present among requests", methodType)));
 	}
 
 	public static List<StartTestItemRQ> extractRequests(ArgumentCaptor<StartTestItemRQ> captor, String methodType) {

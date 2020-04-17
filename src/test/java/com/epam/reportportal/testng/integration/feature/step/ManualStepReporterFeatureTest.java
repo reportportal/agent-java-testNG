@@ -16,12 +16,10 @@
 
 package com.epam.reportportal.testng.integration.feature.step;
 
-import com.epam.reportportal.testng.ReportPortalTestNGListener;
 import com.epam.reportportal.testng.step.ItemStatus;
 import com.epam.reportportal.testng.step.StepReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import java.io.File;

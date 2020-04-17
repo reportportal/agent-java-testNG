@@ -25,9 +25,9 @@ import com.epam.ta.reportportal.ws.model.attribute.ItemAttributeResource;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.IResultMap;
@@ -43,9 +43,9 @@ import java.util.regex.Pattern;
 import static com.epam.reportportal.testng.Constants.*;
 import static com.epam.reportportal.testng.TestNGService.SKIPPED_ISSUE_KEY;
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -56,7 +56,7 @@ public class BuildTestTest {
 
 	private static final Map<String, Pattern> predefinedProperties = new HashMap<>();
 
-	@BeforeClass
+	@BeforeAll
 	public static void initKeys() {
 		predefinedProperties.put("os", Pattern.compile("^.+\\|.+\\|.+$"));
 		predefinedProperties.put("jvm", Pattern.compile("^.+\\|.+\\|.+$"));
@@ -74,10 +74,9 @@ public class BuildTestTest {
 	@Mock
 	private Launch launch;
 
-	@Before
+	@BeforeEach
 	public void preconditions() {
 		testNGService = new TestNGService(new TestNGService.MemorizingSupplier<>(() -> launch));
-		MockitoAnnotations.initMocks(this);
 	}
 
 	@Test
@@ -115,7 +114,7 @@ public class BuildTestTest {
 		Set<String> keys = startLaunchRQ.getAttributes().stream().map(ItemAttributeResource::getKey).collect(toSet());
 		predefinedProperties.forEach((predefinedKey, predefinedValue) -> assertTrue(keys.contains(predefinedKey)));
 		startLaunchRQ.getAttributes().forEach(attribute -> {
-			assertTrue(predefinedProperties.get(attribute.getKey()).matcher(attribute.getValue()).matches());
+			assertThat(attribute.getValue(), matchesPattern(predefinedProperties.get(attribute.getKey())));
 			assertTrue(attribute.isSystem());
 		});
 	}
@@ -183,10 +182,6 @@ public class BuildTestTest {
 
 		ResultMap empty = new ResultMap();
 
-		when(testContext.getFailedConfigurations()).thenReturn(empty);
-		when(testContext.getSkippedTests()).thenReturn(empty);
-		when(testContext.getSkippedConfigurations()).thenReturn(empty);
-
 		when(failedTests.size()).thenReturn(1);
 		when(testContext.getFailedTests()).thenReturn(failedTests);
 
@@ -201,8 +196,6 @@ public class BuildTestTest {
 		ResultMap empty = new ResultMap();
 
 		when(testContext.getFailedTests()).thenReturn(empty);
-		when(testContext.getSkippedTests()).thenReturn(empty);
-		when(testContext.getSkippedConfigurations()).thenReturn(empty);
 
 		when(failedConfigurations.size()).thenReturn(1);
 		when(testContext.getFailedConfigurations()).thenReturn(failedConfigurations);
@@ -236,7 +229,6 @@ public class BuildTestTest {
 
 		when(testContext.getFailedTests()).thenReturn(empty);
 		when(testContext.getFailedConfigurations()).thenReturn(empty);
-		when(testContext.getSkippedTests()).thenReturn(empty);
 
 		when(skippedConfigurations.size()).thenReturn(1);
 		when(testContext.getSkippedConfigurations()).thenReturn(skippedConfigurations);

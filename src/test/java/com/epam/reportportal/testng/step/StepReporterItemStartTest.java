@@ -25,16 +25,16 @@ import com.epam.reportportal.testng.integration.feature.step.ManualStepReporterF
 import com.epam.reportportal.testng.integration.util.TestUtils;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
-import com.epam.ta.reportportal.ws.model.EntryCreatedAsyncRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
 
 import java.util.*;
@@ -43,9 +43,10 @@ import java.util.function.Supplier;
 import static com.epam.reportportal.testng.integration.feature.step.ManualStepReporterFeatureTest.FIRST_NAME;
 import static com.epam.reportportal.testng.integration.feature.step.ManualStepReporterFeatureTest.SECOND_NAME;
 import static java.util.stream.Collectors.groupingBy;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 /**
@@ -57,10 +58,11 @@ public class StepReporterItemStartTest {
 	private final String testClassUuid = UUID.randomUUID().toString();
 	private final String testMethodUuid = UUID.randomUUID().toString();
 
-	@Before
-	public void initMocks() {
-		ReportPortalClient reportPortalClient = mock(ReportPortalClient.class);
+	@Mock
+	private ReportPortalClient reportPortalClient;;
 
+	@BeforeEach
+	public void initMocks() {
 		when(reportPortalClient.startLaunch(any())).thenReturn(TestUtils.createMaybe(new StartLaunchRS("launchUuid", 1L)));
 
 		Maybe<ItemCreatedRS> suiteMaybe = TestUtils.createMaybe(new ItemCreatedRS(suitedUuid, suitedUuid));
@@ -73,17 +75,14 @@ public class StepReporterItemStartTest {
 		when(reportPortalClient.startTestItem(eq(testClassMaybe.blockingGet().getId()), any())).thenReturn(testMethodMaybe);
 
 		when(reportPortalClient.log(any(MultiPartRequest.class))).thenReturn(TestUtils.createMaybe(new BatchSaveOperatingRS()));
-		when(reportPortalClient.log(any(SaveLogRQ.class))).thenReturn(TestUtils.createMaybe(new EntryCreatedAsyncRS("logId")));
 
 		final ReportPortal reportPortal = ReportPortal.create(reportPortalClient, new ListenerParameters(PropertiesLoader.load()));
 		ManualStepReportPortalListener.initReportPortal(reportPortal);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void manualStepReporterTest() {
-
-		ReportPortalClient client = ManualStepReportPortalListener.getReportPortal().getClient();
-
 		List<Maybe<ItemCreatedRS>> createdStepsList = new ArrayList<>();
 
 		Supplier<Maybe<ItemCreatedRS>> maybeSupplier = () -> {
@@ -93,17 +92,17 @@ public class StepReporterItemStartTest {
 			return maybe;
 		};
 
-		when(client.startTestItem(eq(testMethodUuid), any())).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> maybeSupplier.get());
+		when(reportPortalClient.startTestItem(eq(testMethodUuid), any())).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> maybeSupplier.get());
 
 		TestUtils.runTests(Collections.singletonList(ManualStepReportPortalListener.class), ManualStepReporterFeatureTest.class);
 
-		verify(client, times(1)).startTestItem(any());  // Start parent suite
+		verify(reportPortalClient, times(1)).startTestItem(any());  // Start parent suite
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, times(3)).startTestItem(eq(testMethodUuid), captor.capture()); // Start test class and test method
+		verify(reportPortalClient, times(3)).startTestItem(eq(testMethodUuid), captor.capture()); // Start test class and test method
 
 		ArgumentCaptor<MultiPartRequest> multiPartRequestArgumentCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
-		verify(client, times(4)).log(multiPartRequestArgumentCaptor.capture());
+		verify(reportPortalClient, timeout(1000).times(6)).log(multiPartRequestArgumentCaptor.capture());
 
 		Map<String, List<SaveLogRQ>> logsMapping = multiPartRequestArgumentCaptor.getAllValues()
 				.stream()
@@ -119,9 +118,9 @@ public class StepReporterItemStartTest {
 		List<SaveLogRQ> firstStepLogs = logsMapping.get(firstStepUuid);
 		List<SaveLogRQ> secondStepLogs = logsMapping.get(secondStepUuid);
 
-		assertEquals(1, testMethodLogs.size());
-		assertEquals(2, firstStepLogs.size());
-		assertEquals(1, secondStepLogs.size());
+		assertThat(testMethodLogs, hasSize(1));
+		assertThat(firstStepLogs, hasSize(2));
+		assertThat(secondStepLogs, hasSize(1));
 
 		assertEquals("ERROR", testMethodLogs.get(0).getLevel());
 		assertEquals("INFO", firstStepLogs.get(0).getLevel());
@@ -135,7 +134,7 @@ public class StepReporterItemStartTest {
 
 		List<StartTestItemRQ> nestedSteps = captor.getAllValues();
 
-		nestedSteps.stream().map(StartTestItemRQ::isHasStats).forEach(Assert::assertFalse);
+		nestedSteps.stream().map(StartTestItemRQ::isHasStats).forEach(Assertions::assertFalse);
 
 		StartTestItemRQ firstStepRequest = nestedSteps.get(0);
 		StartTestItemRQ secondStepRequest = nestedSteps.get(1);
