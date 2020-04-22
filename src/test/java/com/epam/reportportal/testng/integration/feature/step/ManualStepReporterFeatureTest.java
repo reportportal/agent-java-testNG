@@ -34,10 +34,11 @@ public class ManualStepReporterFeatureTest {
 	public static final String THIRD_NAME = "I am the third nested step";
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ManualStepReporterFeatureTest.class);
-	private final StepReporter stepReporter = StepReporter.getInstance();
 
 	@Test
 	public void manualStepTest() {
+
+		StepReporter stepReporter = StepReporter.getInstance();
 
 		stepReporter.sendStep(FIRST_NAME);
 		LOGGER.info("First info log of the first step");

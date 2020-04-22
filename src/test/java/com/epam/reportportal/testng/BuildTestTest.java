@@ -29,13 +29,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.testng.IResultMap;
 import org.testng.ISuite;
 import org.testng.ISuiteResult;
 import org.testng.ITestContext;
 import org.testng.internal.ResultMap;
-import rp.com.google.common.collect.Sets;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -100,7 +98,7 @@ public class BuildTestTest {
 
 		ListenerParameters parameters = new ListenerParameters();
 		parameters.setSkippedAnIssue(true);
-		parameters.setAttributes(Sets.newHashSet());
+		parameters.setAttributes(new HashSet<>());
 		StartLaunchRQ startLaunchRQ = testNGService.buildStartLaunchRq(parameters);
 		assertTrue(startLaunchRQ.getAttributes().contains(itemAttributeResource));
 	}

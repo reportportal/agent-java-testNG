@@ -26,7 +26,6 @@ import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.service.tree.TestItemTree;
-import com.epam.reportportal.testng.step.StepReporter;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
@@ -45,7 +44,6 @@ import org.testng.internal.ConstructorOrMethod;
 import org.testng.xml.XmlClass;
 import org.testng.xml.XmlTest;
 import rp.com.google.common.annotations.VisibleForTesting;
-import rp.com.google.common.base.Supplier;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -54,12 +52,12 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
 import static java.util.Optional.ofNullable;
 import static org.testng.ITestResult.FAILURE;
-import static rp.com.google.common.base.Optional.fromNullable;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -82,8 +80,6 @@ public class TestNGService implements ITestNGService {
 
 	private final MemorizingSupplier<Launch> launch;
 
-	private final StepReporter stepReporter;
-
 	public TestNGService() {
 		this.launch = new MemorizingSupplier<>(() -> {
 			//this reads property, so we want to
@@ -93,12 +89,10 @@ public class TestNGService implements ITestNGService {
 			rq.setStartTime(Calendar.getInstance().getTime());
 			return REPORT_PORTAL.newLaunch(rq);
 		});
-		this.stepReporter = StepReporter.getInstance();
 	}
 
 	public TestNGService(Supplier<Launch> launch) {
 		this.launch = new MemorizingSupplier<>(launch);
-		this.stepReporter = StepReporter.getInstance();
 	}
 
 	public static ReportPortal getReportPortal() {
@@ -114,7 +108,6 @@ public class TestNGService implements ITestNGService {
 		Maybe<String> launchId = this.launch.get().start();
 		StepAspect.addLaunch("default", this.launch.get());
 		ITEM_TREE.setLaunchId(launchId);
-		stepReporter.setLaunch(this.launch.get());
 	}
 
 	@Override
@@ -207,7 +200,6 @@ public class TestNGService implements ITestNGService {
 		Maybe<String> stepMaybe = launch.get().startTestItem(this.getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
 		StepAspect.setParentId(stepMaybe);
-		stepReporter.setParent(stepMaybe);
 		if (launch.get().getParameters().isCallbackReportingEnabled()) {
 			addToTree(testResult, stepMaybe);
 		}
@@ -230,14 +222,12 @@ public class TestNGService implements ITestNGService {
 			startTestMethod(testResult);
 		}
 
-		stepReporter.finishPreviousStep();
-		Maybe<String> itemId = this.getAttribute(testResult, RP_ID);
-		if (stepReporter.isParentFailed(itemId)) {
+		Maybe<String> itemId = getAttribute(testResult, RP_ID);
+		if (launch.get().getStepReporter().isParentFailed(itemId)) {
 			status = Statuses.FAILED;
 			testResult.setStatus(FAILURE);
 		}
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
-		stepReporter.removeParent();
 		Maybe<OperationCompletionRS> finishItemResponse = launch.get().finishTestItem(this.getAttribute(testResult, RP_ID), rq);
 		if (launch.get().getParameters().isCallbackReportingEnabled()) {
 			updateTestItemTree(finishItemResponse, testResult);
@@ -270,7 +260,6 @@ public class TestNGService implements ITestNGService {
 		final Maybe<String> itemID = launch.get().startTestItem(parentId, rq);
 		testResult.setAttribute(RP_ID, itemID);
 		StepAspect.setParentId(itemID);
-		stepReporter.setParent(itemID);
 	}
 
 	@Override
@@ -453,7 +442,7 @@ public class TestNGService implements ITestNGService {
 		rq.setEndTime(endTime);
 		rq.setStatus(status);
 		// Allows indicate that SKIPPED is not to investigate items for WS
-		if (Statuses.SKIPPED.equals(status) && !fromNullable(launch.get().getParameters().getSkippedAnIssue()).or(false)) {
+		if (Statuses.SKIPPED.equals(status) && !ofNullable(launch.get().getParameters().getSkippedAnIssue()).orElse(false)) {
 			Issue issue = new Issue();
 			issue.setIssueType(NOT_ISSUE);
 			rq.setIssue(issue);

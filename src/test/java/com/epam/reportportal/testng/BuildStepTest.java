@@ -28,14 +28,12 @@ import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Ignore;
 import org.testng.annotations.Parameters;
 import org.testng.internal.ConstructorOrMethod;
-import rp.com.google.common.base.Supplier;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -69,12 +67,7 @@ public class BuildStepTest {
 
 	@BeforeEach
 	public void initMocks() {
-		testNGService = new TestNGService(new TestNGService.MemorizingSupplier<Launch>(new Supplier<Launch>() {
-			@Override
-			public Launch get() {
-				return launch;
-			}
-		}));
+		testNGService = new TestNGService(new TestNGService.MemorizingSupplier<>(() -> launch));
 	}
 
 	@Test

@@ -19,6 +19,7 @@ package com.epam.reportportal.testng;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.step.StepReporter;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
@@ -68,6 +69,9 @@ public class TestNGServiceTest {
 
 	@Mock
 	private Maybe<OperationCompletionRS> complete;
+
+	@Mock
+	private StepReporter stepReporter;
 
 	@BeforeEach
 	public void preconditions() {
@@ -177,6 +181,7 @@ public class TestNGServiceTest {
 	public void finishTestMethod() {
 		when(launch.getParameters()).thenReturn(new ListenerParameters());
 		when(testResult.getAttribute(RP_ID)).thenReturn(id);
+		when(launch.getStepReporter()).thenReturn(stepReporter);
 
 		testNGService.finishTestMethod(Statuses.PASSED, testResult);
 		verify(launch, times(1)).finishTestItem(eq(id), any(FinishTestItemRQ.class));
@@ -187,6 +192,7 @@ public class TestNGServiceTest {
 		when(launch.getParameters()).thenReturn(new ListenerParameters());
 		when(launch.startTestItem(any(Maybe.class), any())).thenReturn(id);
 		when(launch.finishTestItem(any(Maybe.class), any())).thenReturn(complete);
+		when(launch.getStepReporter()).thenReturn(stepReporter);
 		when(testResult.getTestContext()).thenReturn(testContext);
 		when(testResult.getMethod()).thenReturn(method);
 		when(testResult.getAttribute(RP_ID)).thenReturn(id);
