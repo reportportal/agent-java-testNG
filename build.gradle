@@ -45,7 +45,7 @@ dependencies {
         implementation 'com.github.reportportal:commons-model:5.0.0'
     }
 
-    implementation 'org.testng:testng:7.1.0'
+    implementation 'org.testng:testng:6.14.3'
 
     testImplementation ('org.junit.platform:junit-platform-runner:1.6.2') {
         exclude module: 'junit'
