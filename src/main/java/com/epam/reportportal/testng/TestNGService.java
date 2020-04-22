@@ -44,7 +44,6 @@ import org.testng.internal.ConstructorOrMethod;
 import org.testng.xml.XmlClass;
 import org.testng.xml.XmlTest;
 import rp.com.google.common.annotations.VisibleForTesting;
-import rp.com.google.common.base.Supplier;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -53,12 +52,12 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
 import static java.util.Optional.ofNullable;
 import static org.testng.ITestResult.FAILURE;
-import static rp.com.google.common.base.Optional.fromNullable;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -443,7 +442,7 @@ public class TestNGService implements ITestNGService {
 		rq.setEndTime(endTime);
 		rq.setStatus(status);
 		// Allows indicate that SKIPPED is not to investigate items for WS
-		if (Statuses.SKIPPED.equals(status) && !fromNullable(launch.get().getParameters().getSkippedAnIssue()).or(false)) {
+		if (Statuses.SKIPPED.equals(status) && !ofNullable(launch.get().getParameters().getSkippedAnIssue()).orElse(false)) {
 			Issue issue = new Issue();
 			issue.setIssueType(NOT_ISSUE);
 			rq.setIssue(issue);

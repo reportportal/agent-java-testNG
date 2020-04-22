@@ -16,32 +16,10 @@
 
 package com.epam.reportportal.testng.step;
 
-import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.Launch;
-import com.epam.reportportal.service.ReportPortal;
-import com.epam.reportportal.utils.MimeTypeDetector;
-import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
-import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
-import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import io.reactivex.Maybe;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import rp.com.google.common.base.Function;
-import rp.com.google.common.collect.Queues;
-import rp.com.google.common.collect.Sets;
-import rp.com.google.common.io.ByteSource;
-import rp.com.google.common.io.ByteStreams;
-import rp.com.google.common.io.Files;
 
 import javax.validation.constraints.NotNull;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.*;
-
-import static java.util.Optional.ofNullable;
-import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>

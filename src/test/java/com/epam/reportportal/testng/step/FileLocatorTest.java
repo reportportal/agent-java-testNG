@@ -22,24 +22,31 @@ import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.integration.util.TestUtils;
+import com.epam.reportportal.utils.files.Utils;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
-import rp.com.google.common.io.ByteStreams;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static java.util.Optional.ofNullable;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.any;
@@ -47,10 +54,14 @@ import static org.mockito.Mockito.*;
 
 public class FileLocatorTest {
 
+	private static final InputStream EMPTY_STREAM = new ByteArrayInputStream(new byte[0]);
+
 	private final String testLaunchUuid = "launch" + UUID.randomUUID().toString().substring(6);
 	private final String testClassUuid = "class" + UUID.randomUUID().toString().substring(5);
 	private final String testMethodUuid = "test" + UUID.randomUUID().toString().substring(4);
 	private final Maybe<String> launchUuid = TestUtils.createMaybe(testLaunchUuid);
+
+	private ExecutorService executor = Executors.newSingleThreadExecutor();
 
 	@Mock
 	public ReportPortalClient client;
@@ -71,10 +82,18 @@ public class FileLocatorTest {
 		when(client.startTestItem(eq(testClassUuid), any())).thenReturn(testMethodCreatedMaybe);
 
 		ListenerParameters params = new ListenerParameters(PropertiesLoader.load());
-		ReportPortal rp = ReportPortal.create(client, params);
+		ReportPortal rp = ReportPortal.create(client, params, executor);
 		Launch launch = rp.withLaunch(launchUuid);
 		launch.startTestItem(TestUtils.createMaybe(testClassUuid), TestUtils.standardStartStepRequest());
 		sr = StepReporter.getInstance();
+	}
+
+	@AfterEach
+	public void cleanup() throws InterruptedException {
+		executor.shutdown();
+		if(!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+			executor.shutdownNow();
+		}
 	}
 
 	@Test
@@ -93,7 +112,12 @@ public class FileLocatorTest {
 		verify(client, after(1000).times(1)).log(logCaptor.capture());
 
 		MultiPartRequest logRq = logCaptor.getValue();
-		verifyFile(logRq, ByteStreams.toByteArray(getClass().getClassLoader().getResourceAsStream("pug/lucky.jpg")), "lucky.jpg");
+		verifyFile(
+				logRq,
+				Utils.readInputStreamToBytes(ofNullable(getClass().getClassLoader().getResourceAsStream("pug/lucky.jpg")).orElse(
+						EMPTY_STREAM)),
+				"lucky.jpg"
+		);
 	}
 
 	@Test
@@ -112,7 +136,12 @@ public class FileLocatorTest {
 		verify(client, after(1000).times(1)).log(logCaptor.capture());
 
 		MultiPartRequest logRq = logCaptor.getValue();
-		verifyFile(logRq, ByteStreams.toByteArray(getClass().getClassLoader().getResourceAsStream("pug/unlucky.jpg")), "unlucky.jpg");
+		verifyFile(
+				logRq,
+				Utils.readInputStreamToBytes(ofNullable(getClass().getClassLoader().getResourceAsStream("pug/unlucky.jpg")).orElse(
+						EMPTY_STREAM)),
+				"unlucky.jpg"
+		);
 	}
 
 	@Test
@@ -129,7 +158,7 @@ public class FileLocatorTest {
 		sr.sendStep("Test image by relative classpath path", new File("pug/not_exists.jpg"));
 
 		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
-		verify(client, after(1000).times(1)).log(logCaptor.capture());
+		verify(client, timeout(1000).times(1)).log(logCaptor.capture());
 
 		MultiPartRequest logRq = logCaptor.getValue();
 		SaveLogRQ saveRq = verifyRq(logRq);
