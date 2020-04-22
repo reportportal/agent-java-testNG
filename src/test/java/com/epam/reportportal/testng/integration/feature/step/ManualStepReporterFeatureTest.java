@@ -16,8 +16,9 @@
 
 package com.epam.reportportal.testng.integration.feature.step;
 
-import com.epam.reportportal.testng.step.ItemStatus;
-import com.epam.reportportal.testng.step.StepReporter;
+import com.epam.reportportal.listeners.ItemStatus;
+import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.step.StepReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
@@ -38,7 +39,7 @@ public class ManualStepReporterFeatureTest {
 	@Test
 	public void manualStepTest() {
 
-		StepReporter stepReporter = StepReporter.getInstance();
+		StepReporter stepReporter = Launch.currentLaunch().getStepReporter();
 
 		stepReporter.sendStep(FIRST_NAME);
 		LOGGER.info("First info log of the first step");
