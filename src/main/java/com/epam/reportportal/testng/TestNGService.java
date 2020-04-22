@@ -25,6 +25,7 @@ import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
+import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.TestCaseIdUtils;
@@ -223,8 +224,9 @@ public class TestNGService implements ITestNGService {
 		}
 
 		Maybe<String> itemId = getAttribute(testResult, RP_ID);
-		if (launch.get().getStepReporter().isParentFailed(itemId)) {
-			status = Statuses.FAILED;
+		StepReporter sr = launch.get().getStepReporter();
+		sr.finishPreviousStep();
+		if (sr.isFailed(itemId)) {
 			testResult.setStatus(FAILURE);
 		}
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);

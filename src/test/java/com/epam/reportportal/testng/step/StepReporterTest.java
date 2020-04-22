@@ -16,65 +16,58 @@
 
 package com.epam.reportportal.testng.step;
 
-import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.integration.ManualStepReportPortalListener;
-import com.epam.reportportal.testng.integration.ManualStepReportPortalListenerFailure;
 import com.epam.reportportal.testng.integration.feature.step.ManualStepReporterFeatureTest;
+import com.epam.reportportal.testng.integration.feature.step.ManualStepReporterSimpleTest;
 import com.epam.reportportal.testng.integration.util.TestUtils;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
-import com.epam.ta.reportportal.ws.model.*;
+import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
+import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
-import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
+import org.testng.TestNG;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.*;
 
-public class StepReporterFailureTest {
-	private final String suitedUuid = "suite" + UUID.randomUUID().toString().substring(5);
-	private final String testClassUuid = "class" + UUID.randomUUID().toString().substring(5);
-	private final String testMethodUuid = "test" + UUID.randomUUID().toString().substring(4);
+/**
+ * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
+ */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+public class StepReporterTest {
 
-	@Mock
-	private ReportPortalClient reportPortalClient;
+	private final String suitedUuid = UUID.randomUUID().toString();
+	private final String testClassUuid = UUID.randomUUID().toString();
+	private final String testMethodUuid = UUID.randomUUID().toString();
 
-	List<Maybe<ItemCreatedRS>> createdStepsList = new CopyOnWriteArrayList<>();
+	private final List<String> nestedStepsUuids = new ArrayList<>();
 	private final Supplier<Maybe<ItemCreatedRS>> maybeSupplier = () -> {
 		String uuid = UUID.randomUUID().toString();
+		nestedStepsUuids.add(uuid);
 		Maybe<ItemCreatedRS> maybe = TestUtils.createMaybe(new ItemCreatedRS(uuid, uuid));
-		createdStepsList.add(maybe);
 		return maybe;
 	};
 
-	private final AtomicInteger counter = new AtomicInteger();
-
-	private static final ErrorRS ERROR_RS;
-
-	static {
-		ERROR_RS = new ErrorRS();
-		ERROR_RS.setErrorType(ErrorType.INCORRECT_REQUEST);
-		ERROR_RS.setMessage("Incorrect Request. [Value is not allowed for field 'status'.]");
-	}
-
-	private static final ReportPortalException EXCEPTION = new ReportPortalException(400, "Bad Request", ERROR_RS);
+	@Mock
+	private ReportPortalClient reportPortalClient;
 
 	@BeforeEach
 	public void initMocks() {
@@ -101,34 +94,37 @@ public class StepReporterFailureTest {
 		when(reportPortalClient.finishLaunch(eq("launchUuid"), any())).thenReturn(TestUtils.createMaybe(new OperationCompletionRS()));
 
 		when(reportPortalClient.log(any(MultiPartRequest.class))).thenReturn(TestUtils.createMaybe(new BatchSaveOperatingRS()));
-		when(reportPortalClient.log(any(SaveLogRQ.class))).thenReturn(TestUtils.createMaybe(new EntryCreatedAsyncRS("logId")));
+
+		when(reportPortalClient.startTestItem(eq(testMethodUuid),
+				any()
+		)).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> maybeSupplier.get());
+		when(reportPortalClient.finishTestItem(eq(testMethodUuid),
+				any()
+		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> TestUtils.createMaybe(new OperationCompletionRS()));
 
 		final ReportPortal reportPortal = ReportPortal.create(reportPortalClient, new ListenerParameters(PropertiesLoader.load()));
-		ManualStepReportPortalListenerFailure.initReportPortal(reportPortal);
+		ManualStepReportPortalListener.initReportPortal(reportPortal);
+	}
+
+	@AfterEach
+	public void cleanup(){
+		nestedStepsUuids.clear();
 	}
 
 	@Test
-	public void failed_to_finish_nested_step_should_not_hang_the_launch() {
+	public void verify_failed_nested_step_fails_test_run() {
+		TestNG testNg = TestUtils.runTests(Collections.singletonList(ManualStepReportPortalListener.class),
+				ManualStepReporterFeatureTest.class
+		);
 
-		// mock start nested steps
-		when(reportPortalClient.startTestItem(
-				eq(testMethodUuid),
-				any()
-		)).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> maybeSupplier.get());
-
-		// Finish first nested steps and throw an exception on second
-		when(reportPortalClient.finishTestItem(eq(testMethodUuid), any())).thenReturn(TestUtils.createMaybe(new OperationCompletionRS()))
-				.thenReturn(TestUtils.createMaybe(new OperationCompletionRS())).thenThrow(EXCEPTION);
-
-		TestUtils.runTests(Collections.singletonList(ManualStepReportPortalListenerFailure.class), ManualStepReporterFeatureTest.class);
-
-		// First nested step finish
-		verify(reportPortalClient, times(1)).finishTestItem(eq(createdStepsList.get(0).blockingGet().getUniqueId()), any());
-		// Second nested step finish
-		verify(reportPortalClient, times(1)).finishTestItem(eq(createdStepsList.get(1).blockingGet().getUniqueId()), any());
-		verify(reportPortalClient, times(1)).finishTestItem(eq(testMethodUuid), any()); // Test finish
-		verify(reportPortalClient, times(1)).finishTestItem(eq(testClassUuid), any()); // Test class finish
-		verify(reportPortalClient, times(1)).finishTestItem(eq(suitedUuid), any()); // Suite finish
-		verify(reportPortalClient, times(1)).finishLaunch(eq("launchUuid"), any()); // Launch finish
+		assertThat(testNg.hasFailure(), equalTo(Boolean.TRUE));
 	}
+
+	@Test
+	public void verify_listener_finishes_unfinished_step() {
+		TestUtils.runTests(Collections.singletonList(ManualStepReportPortalListener.class), ManualStepReporterSimpleTest.class);
+
+		verify(reportPortalClient, timeout(1000).times(1)).finishTestItem(eq(nestedStepsUuids.get(0)), any());
+	}
+
 }

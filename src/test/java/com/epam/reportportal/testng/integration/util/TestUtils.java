@@ -19,13 +19,14 @@ public class TestUtils {
 
 	public static final String TEST_NAME = "TestContainer";
 
-	public static void runTests(List<Class<? extends ITestNGListener>> listeners, Class... classes) {
+	public static TestNG runTests(List<Class<? extends ITestNGListener>> listeners, Class... classes) {
 		final TestNG testNG = new TestNG(true);
 		testNG.setListenerClasses(listeners);
 		testNG.setTestClasses(classes);
 		testNG.setDefaultTestName(TEST_NAME);
 		testNG.setExcludedGroups("optional");
 		testNG.run();
+		return testNG;
 	}
 
 	public static Maybe<String> createMaybeUuid() {
