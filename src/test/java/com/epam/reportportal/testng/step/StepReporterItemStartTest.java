@@ -122,7 +122,7 @@ public class StepReporterItemStartTest {
 		verify(reportPortalClient, times(1)).startTestItem(any());  // Start parent suite
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(reportPortalClient, times(3)).startTestItem(eq(testMethodUuid), captor.capture()); // Start test class and test method
+		verify(reportPortalClient, times(3)).startTestItem(eq(testMethodUuid), captor.capture()); // Start test class and test methods
 
 		ArgumentCaptor<MultiPartRequest> multiPartRequestArgumentCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
 		verify(reportPortalClient, timeout(1000).times(6)).log(multiPartRequestArgumentCaptor.capture());

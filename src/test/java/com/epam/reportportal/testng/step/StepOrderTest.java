@@ -53,7 +53,7 @@ public class StepOrderTest {
 	@Mock
 	private ReportPortalClient client;
 
-	private final StepReporter sr = StepReporter.getInstance();
+	private StepReporter sr;
 
 	private final List<Maybe<ItemCreatedRS>> createdStepsList = new ArrayList<>();
 	private final Supplier<Maybe<ItemCreatedRS>> maybeSupplier = () -> {
@@ -74,9 +74,8 @@ public class StepOrderTest {
 		params.setClientJoin(false);
 		ReportPortal rp = ReportPortal.create(client, params);
 		Launch launch = rp.withLaunch(launchUuid);
-		sr.setLaunch(launch);
-		Maybe<String> methodMaybe = launch.startTestItem(TestUtils.createMaybe(testClassUuid), TestUtils.standardStartStepRequest());
-		sr.setParent(methodMaybe);
+		launch.startTestItem(TestUtils.createMaybe(testClassUuid), TestUtils.standardStartStepRequest());
+		sr = StepReporter.getInstance();
 	}
 
 	@Test

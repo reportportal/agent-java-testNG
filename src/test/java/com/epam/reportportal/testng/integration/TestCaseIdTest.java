@@ -2,6 +2,7 @@ package com.epam.reportportal.testng.integration;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.testng.integration.feature.testcaseid.TestCaseIdFromAnnotationValue;
 import com.epam.reportportal.testng.integration.feature.testcaseid.TestCaseIdFromAnnotationValueParametrized;
 import com.epam.reportportal.testng.integration.feature.testcaseid.TestCaseIdFromCodeRefAndParams;
@@ -37,12 +38,15 @@ public class TestCaseIdTest {
 	private Launch launch;
 	@Mock
 	private ListenerParameters parameters;
+	@Mock
+	private StepReporter stepReporter;
 
 	@BeforeEach
 	public void initMocks() {
 		when(launch.getParameters()).thenReturn(parameters);
 		when(launch.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
 		when(launch.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
+		when(launch.getStepReporter()).thenReturn(stepReporter);
 		TestReportPortalListener.initLaunch(launch);
 		when(parameters.isCallbackReportingEnabled()).thenReturn(Boolean.TRUE);
 	}
