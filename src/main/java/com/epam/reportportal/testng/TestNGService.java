@@ -55,6 +55,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
 import static java.util.Optional.ofNullable;
@@ -72,6 +73,7 @@ public class TestNGService implements ITestNGService {
 	public static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 	public static final String RP_ID = "rp_id";
 	public static final String ARGUMENT = "arg";
+	public static final String NULL_VALUE = "NULL";
 
 	private static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
 
@@ -375,9 +377,6 @@ public class TestNGService implements ITestNGService {
 	 * @return Request to ReportPortal
 	 */
 	protected StartTestItemRQ buildStartStepRq(ITestResult testResult) {
-		//		if (testResult.getAttribute(RP_ID) != null) {
-		//			return null;
-		//		}
 		StartTestItemRQ rq = new StartTestItemRQ();
 		String testStepName;
 		if (testResult.getTestName() != null) {
@@ -460,37 +459,34 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected List<ParameterResource> createStepParameters(ITestResult testResult) {
 		List<ParameterResource> parameters = Lists.newArrayList();
-		Test testAnnotation = getMethodAnnotation(Test.class, testResult);
-		Parameters parametersAnnotation = getMethodAnnotation(Parameters.class, testResult);
-		if (null != testAnnotation && !isNullOrEmpty(testAnnotation.dataProvider())) {
-			parameters = createDataProviderParameters(testResult);
-		} else if (null != parametersAnnotation) {
-			parameters = createAnnotationParameters(testResult, parametersAnnotation);
-		}
+		parameters.addAll(createDataProviderParameters(testResult));
+		parameters.addAll(createAnnotationParameters(testResult));
+		parameters.addAll(crateFactoryParameters(testResult));
 		return parameters.isEmpty() ? null : parameters;
 	}
 
 	/**
 	 * Process testResult to create parameters provided via {@link Parameters}
 	 *
-	 * @param testResult           TestNG's testResult context
-	 * @param parametersAnnotation Annotation with parameters
+	 * @param testResult TestNG's testResult context
 	 * @return Step Parameters being sent to Report Portal
 	 */
-	private List<ParameterResource> createAnnotationParameters(ITestResult testResult, Parameters parametersAnnotation) {
-		List<ParameterResource> params = Lists.newArrayList();
+	private List<ParameterResource> createAnnotationParameters(ITestResult testResult) {
+		Parameters parametersAnnotation = getMethodAnnotation(Parameters.class, testResult);
+		if (parametersAnnotation == null) {
+			return Collections.emptyList();
+		}
 		String[] keys = parametersAnnotation.value();
 		Object[] parameters = testResult.getParameters();
-		if (parameters.length != keys.length) {
-			return params;
+		if (parameters.length != keys.length || keys.length <= 0) {
+			return Collections.emptyList();
 		}
-		for (int i = 0; i < keys.length; i++) {
+		return IntStream.range(0, keys.length).mapToObj(i -> {
 			ParameterResource parameter = new ParameterResource();
 			parameter.setKey(keys[i]);
-			parameter.setValue(parameters[i] != null ? parameters[i].toString() : "");
-			params.add(parameter);
-		}
-		return params;
+			parameter.setValue(parameters[i] == null ? NULL_VALUE : parameters[i].toString());
+			return parameter;
+		}).collect(Collectors.toList());
 	}
 
 	/**
@@ -503,6 +499,10 @@ public class TestNGService implements ITestNGService {
 	 */
 
 	private List<ParameterResource> createDataProviderParameters(ITestResult testResult) {
+		Test testAnnotation = getMethodAnnotation(Test.class, testResult);
+		if (null == testAnnotation || isNullOrEmpty(testAnnotation.dataProvider())) {
+			return Collections.emptyList();
+		}
 		List<ParameterResource> result = Lists.newArrayList();
 		Annotation[][] parameterAnnotations = testResult.getMethod().getConstructorOrMethod().getMethod().getParameterAnnotations();
 		Object[] values = testResult.getParameters();
@@ -510,23 +510,44 @@ public class TestNGService implements ITestNGService {
 		if (length != values.length) {
 			return result;
 		}
-		for (int i = 0; i < length; i++) {
+
+		return IntStream.range(0, length).mapToObj(i -> {
+			Object p = values[i];
 			ParameterResource parameter = new ParameterResource();
-			String key = ARGUMENT + i;
-			String value = values[i] != null ? values[i].toString() : null;
-			if (parameterAnnotations[i].length > 0) {
-				for (int j = 0; j < parameterAnnotations[i].length; j++) {
-					Annotation annotation = parameterAnnotations[i][j];
-					if (annotation.annotationType().equals(ParameterKey.class)) {
-						key = ((ParameterKey) annotation).value();
-					}
-				}
+			if (p == null) {
+				parameter.setKey(ARGUMENT + i);
+				parameter.setValue(NULL_VALUE);
+			} else {
+				String key = Arrays.stream(parameterAnnotations[i])
+						.filter(a -> ParameterKey.class.equals(a.annotationType()))
+						.map(a -> ((ParameterKey) a).value())
+						.findFirst()
+						.orElseGet(() -> p.getClass().getCanonicalName());
+				parameter.setKey(key);
+				parameter.setValue(p.toString());
 			}
-			parameter.setKey(key);
-			parameter.setValue(value != null ? value : "");
-			result.add(parameter);
+			return parameter;
+		}).collect(Collectors.toList());
+	}
+
+	private List<ParameterResource> crateFactoryParameters(ITestResult testResult) {
+		Object[] parameters = testResult.getFactoryParameters();
+		if (parameters == null || parameters.length <= 0) {
+			return Collections.emptyList();
 		}
-		return result;
+
+		return IntStream.range(0, parameters.length).mapToObj(i -> {
+			Object p = parameters[i];
+			ParameterResource parameter = new ParameterResource();
+			if (p == null) {
+				parameter.setKey(ARGUMENT + i);
+				parameter.setValue(NULL_VALUE);
+			} else {
+				parameter.setKey(p.getClass().getCanonicalName());
+				parameter.setValue(p.toString());
+			}
+			return parameter;
+		}).collect(Collectors.toList());
 	}
 
 	/**
@@ -628,7 +649,7 @@ public class TestNGService implements ITestNGService {
 
 	/**
 	 * Returns method annotation by specified annotation class from
-	 * from TestNG Method or null if the method does not contain
+	 * TestNG Method or null if the method does not contain
 	 * such annotation.
 	 *
 	 * @param annotation Annotation class to find

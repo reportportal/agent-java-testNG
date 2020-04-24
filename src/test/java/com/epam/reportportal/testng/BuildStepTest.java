@@ -147,12 +147,11 @@ public class BuildStepTest {
 		when(testResult.getParameters()).thenReturn(new Object[] { "param_0", "param_1" });
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
 
-		assertThat("Incorrect parameter key", rq.getParameters().get(0).getKey(), is("arg0"));
+		assertThat("Incorrect parameter key", rq.getParameters().get(0).getKey(), is(String.class.getCanonicalName()));
 		assertThat("Incorrect parameter value", rq.getParameters().get(0).getValue(), is("param_0"));
 
-		assertThat("Incorrect parameter key", rq.getParameters().get(1).getKey(), is("arg1"));
+		assertThat("Incorrect parameter key", rq.getParameters().get(1).getKey(), is(String.class.getCanonicalName()));
 		assertThat("Incorrect parameter value", rq.getParameters().get(1).getValue(), is("param_1"));
-
 	}
 
 	@Test
@@ -175,7 +174,7 @@ public class BuildStepTest {
 		assertThat("Incorrect parameter key", rq.getParameters().get(0).getKey(), is("key_0"));
 		assertThat("Incorrect parameter value", rq.getParameters().get(0).getValue(), is("param_0"));
 
-		assertThat("Incorrect parameter key", rq.getParameters().get(1).getKey(), is("arg1"));
+		assertThat("Incorrect parameter key", rq.getParameters().get(1).getKey(), is(String.class.getCanonicalName()));
 		assertThat("Incorrect parameter value", rq.getParameters().get(1).getValue(), is("param_1"));
 
 	}
