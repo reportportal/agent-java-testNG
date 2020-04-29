@@ -435,12 +435,8 @@ public class TestNGService implements ITestNGService {
 	 * @return Request to ReportPortal
 	 */
 	protected FinishTestItemRQ buildFinishTestMethodRq(String status, ITestResult testResult) {
-		return buildFinishTestMethodRq(status, new Date(testResult.getEndMillis()));
-	}
-
-	private FinishTestItemRQ buildFinishTestMethodRq(String status, Date endTime) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(endTime);
+		rq.setEndTime(new Date(testResult.getEndMillis()));
 		rq.setStatus(status);
 		// Allows indicate that SKIPPED is not to investigate items for WS
 		if (Statuses.SKIPPED.equals(status) && !ofNullable(launch.get().getParameters().getSkippedAnIssue()).orElse(false)) {
@@ -699,7 +695,7 @@ public class TestNGService implements ITestNGService {
 
 	private boolean isRetry(ITestResult result) {
 		IRetryAnalyzer retryAnalyzer = result.getMethod().getRetryAnalyzer(result);
-		return Objects.nonNull(retryAnalyzer) && retryAnalyzer.retry(result);
+		return Objects.nonNull(retryAnalyzer);
 	}
 
 	@VisibleForTesting
