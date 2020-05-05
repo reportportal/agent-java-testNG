@@ -1,8 +1,9 @@
-package com.epam.reportportal.testng.integration;
+package com.epam.reportportal.testng;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.step.StepReporter;
+import com.epam.reportportal.testng.integration.TestReportPortalListener;
 import com.epam.reportportal.testng.integration.feature.testcaseid.TestCaseIdFromAnnotationValue;
 import com.epam.reportportal.testng.integration.feature.testcaseid.TestCaseIdFromAnnotationValueParametrized;
 import com.epam.reportportal.testng.integration.feature.testcaseid.TestCaseIdFromCodeRefAndParams;
@@ -14,7 +15,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
 
 import java.util.Collections;
@@ -57,8 +57,6 @@ public class TestCaseIdTest {
 
 		String expectedCodeRef = TestCaseIdFromCodeReference.class.getCanonicalName() + "." + TestCaseIdFromCodeReference.STEP_NAME;
 
-		Launch launch = TestReportPortalListener.getLaunch();
-
 		verify(launch, times(1)).startTestItem(any());  // Start parent suite
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
@@ -81,8 +79,6 @@ public class TestCaseIdTest {
 				.map(it -> expectedCodeRef + "[" + it + "]")
 				.collect(Collectors.toList());
 
-		Launch launch = TestReportPortalListener.getLaunch();
-
 		verify(launch, times(1)).startTestItem(any());  // Start parent suites
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
@@ -101,8 +97,6 @@ public class TestCaseIdTest {
 	public void testCaseIdFromAnnotationValue() {
 		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), TestCaseIdFromAnnotationValue.class);
 
-		Launch launch = TestReportPortalListener.getLaunch();
-
 		verify(launch, times(1)).startTestItem(any());  // Start parent suites
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
@@ -118,8 +112,6 @@ public class TestCaseIdTest {
 	@Test
 	public void testCaseIdFromAnnotationValueParametrized() {
 		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), TestCaseIdFromAnnotationValueParametrized.class);
-
-		Launch launch = TestReportPortalListener.getLaunch();
 
 		verify(launch, times(1)).startTestItem(any());  // Start parent suites
 

@@ -20,8 +20,8 @@ import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.UniqueID;
 import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.aspect.StepAspect;
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
@@ -32,11 +32,11 @@ import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
-import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
+import org.apache.commons.lang3.tuple.Pair;
 import org.testng.*;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -51,8 +51,10 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -69,17 +71,25 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 public class TestNGService implements ITestNGService {
 
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
-	public static final String NOT_ISSUE = "NOT_ISSUE";
 	public static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 	public static final String RP_ID = "rp_id";
+	public static final String RP_RETRY = "rp_retry";
+	public static final String RP_METHOD_TYPE = "rp_method_type";
 	public static final String ARGUMENT = "arg";
 	public static final String NULL_VALUE = "NULL";
+
+	private static final Predicate<StackTraceElement> IS_RETRY_ELEMENT = e -> "org.testng.internal.TestInvoker".equals(e.getClassName())
+			&& "retryFailed".equals(e.getMethodName());
+
+	private static final Predicate<StackTraceElement[]> IS_RETRY = eList -> Arrays.stream(eList).anyMatch(IS_RETRY_ELEMENT);
 
 	private static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
 
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
 
 	private final AtomicBoolean isLaunchFailed = new AtomicBoolean();
+
+	private final Map<Object, Queue<Pair<Maybe<String>, FinishTestItemRQ>>> BEFORE_METHOD_TRACKER = new ConcurrentHashMap<>();
 
 	private final MemorizingSupplier<Launch> launch;
 
@@ -117,9 +127,13 @@ public class TestNGService implements ITestNGService {
 	public void finishLaunch() {
 		FinishExecutionRQ rq = new FinishExecutionRQ();
 		rq.setEndTime(Calendar.getInstance().getTime());
-		rq.setStatus(isLaunchFailed.get() ? Statuses.FAILED : Statuses.PASSED);
+		rq.setStatus(isLaunchFailed.get() ? ItemStatus.FAILED.name() : ItemStatus.PASSED.name());
 		launch.get().finish(rq);
 		this.launch.reset();
+	}
+
+	private void addToTree(ISuite suite, Maybe<String> item) {
+		ITEM_TREE.getTestItems().put(createKey(suite), TestItemTree.createTestItemLeaf(item, suite.getXmlSuite().getTests().size()));
 	}
 
 	@Override
@@ -133,15 +147,17 @@ public class TestNGService implements ITestNGService {
 		StepAspect.setParentId(item);
 	}
 
-	private void addToTree(ISuite suite, Maybe<String> item) {
-		ITEM_TREE.getTestItems().put(createKey(suite), TestItemTree.createTestItemLeaf(item, suite.getXmlSuite().getTests().size()));
+	@SuppressWarnings("unchecked")
+	protected <T> T getAttribute(IAttributes attributes, String attribute) {
+		return (T) attributes.getAttribute(attribute);
 	}
 
 	@Override
 	public void finishTestSuite(ISuite suite) {
-		if (null != suite.getAttribute(RP_ID)) {
+		Maybe<String> rpId = getAttribute(suite, RP_ID);
+		if (null != rpId) {
 			FinishTestItemRQ rq = buildFinishTestSuiteRq(suite);
-			launch.get().finishTestItem(this.getAttribute(suite, RP_ID), rq);
+			launch.get().finishTestItem(rpId, rq);
 			suite.removeAttribute(RP_ID);
 		}
 		if (launch.get().getParameters().isCallbackReportingEnabled()) {
@@ -194,18 +210,69 @@ public class TestNGService implements ITestNGService {
 				.remove(createKey(testContext)));
 	}
 
+	/**
+	 * Extension point to customize beforeXXX creation event/request
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @param type       Type of method
+	 * @return Request to ReportPortal
+	 */
+	protected StartTestItemRQ buildStartConfigurationRq(ITestResult testResult, TestMethodType type) {
+		StartTestItemRQ rq = new StartTestItemRQ();
+		rq.setName(testResult.getMethod().getMethodName());
+		rq.setCodeRef(testResult.getMethod().getQualifiedName());
+		rq.setDescription(testResult.getMethod().getDescription());
+		rq.setStartTime(new Date(testResult.getStartMillis()));
+		rq.setType(type == null ? null : type.toString());
+		rq.setRetry(getRetryStart(testResult));
+		return rq;
+	}
+
 	@Override
-	public void startTestMethod(ITestResult testResult) {
-		StartTestItemRQ rq = buildStartStepRq(testResult);
-		if (rq == null) {
-			return;
+	public void startConfiguration(ITestResult testResult) {
+		TestMethodType type = TestMethodType.getStepType(testResult.getMethod());
+		testResult.setAttribute(RP_METHOD_TYPE, type);
+		StartTestItemRQ rq = buildStartConfigurationRq(testResult, type);
+		Maybe<String> parentId = getConfigParent(testResult, type);
+		Maybe<String> itemID = launch.get().startTestItem(parentId, rq);
+		testResult.setAttribute(RP_ID, itemID);
+		StepAspect.setParentId(itemID);
+	}
+
+	private boolean getRetryStart(ITestResult testResult) {
+		if (IS_RETRY.test(Thread.currentThread().getStackTrace())) {
+			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
+			return true;
 		}
-		Maybe<String> stepMaybe = launch.get().startTestItem(this.getAttribute(testResult.getTestContext(), RP_ID), rq);
-		testResult.setAttribute(RP_ID, stepMaybe);
-		StepAspect.setParentId(stepMaybe);
-		if (launch.get().getParameters().isCallbackReportingEnabled()) {
-			addToTree(testResult, stepMaybe);
+		return false;
+	}
+
+	/**
+	 * Extension point to customize test step creation event/request
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Request to ReportPortal
+	 */
+	protected StartTestItemRQ buildStartStepRq(ITestResult testResult) {
+		StartTestItemRQ rq = new StartTestItemRQ();
+		String testStepName;
+		if (testResult.getTestName() != null) {
+			testStepName = testResult.getTestName();
+		} else {
+			testStepName = testResult.getMethod().getMethodName();
 		}
+		rq.setName(testStepName);
+		String codeRef = testResult.getMethod().getQualifiedName();
+		rq.setCodeRef(codeRef);
+		rq.setTestCaseId(getTestCaseId(codeRef, testResult).getId());
+		rq.setAttributes(createStepAttributes(testResult));
+		rq.setDescription(createStepDescription(testResult));
+		rq.setParameters(createStepParameters(testResult));
+		rq.setUniqueId(extractUniqueID(testResult));
+		rq.setStartTime(new Date(testResult.getStartMillis()));
+		rq.setType(ofNullable(TestMethodType.getStepType(testResult.getMethod())).orElse(TestMethodType.STEP).toString());
+		rq.setRetry(getRetryStart(testResult));
+		return rq;
 	}
 
 	private void addToTree(ITestResult testResult, Maybe<String> stepMaybe) {
@@ -220,22 +287,38 @@ public class TestNGService implements ITestNGService {
 	}
 
 	@Override
-	public void finishTestMethod(String status, ITestResult testResult) {
-		if (Statuses.SKIPPED.equals(status) && !isRetry(testResult) && null == testResult.getAttribute(RP_ID)) {
-			startTestMethod(testResult);
+	public void startTestMethod(ITestResult testResult) {
+		StartTestItemRQ rq = buildStartStepRq(testResult);
+		if (rq == null) {
+			return;
 		}
-
-		Maybe<String> itemId = getAttribute(testResult, RP_ID);
-		StepReporter sr = launch.get().getStepReporter();
-		sr.finishPreviousStep();
-		if (sr.isFailed(itemId)) {
-			testResult.setStatus(FAILURE);
-		}
-		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
-		Maybe<OperationCompletionRS> finishItemResponse = launch.get().finishTestItem(this.getAttribute(testResult, RP_ID), rq);
+		Maybe<String> stepMaybe = launch.get().startTestItem(this.getAttribute(testResult.getTestContext(), RP_ID), rq);
+		testResult.setAttribute(RP_ID, stepMaybe);
+		StepAspect.setParentId(stepMaybe);
 		if (launch.get().getParameters().isCallbackReportingEnabled()) {
-			updateTestItemTree(finishItemResponse, testResult);
+			addToTree(testResult, stepMaybe);
 		}
+	}
+
+	private boolean getRetryFinish(ITestResult testResult) {
+		return testResult.wasRetried();
+	}
+
+	/**
+	 * Extension point to customize test method on it's finish
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Request to ReportPortal
+	 */
+	protected FinishTestItemRQ buildFinishTestMethodRq(ItemStatus status, ITestResult testResult) {
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		rq.setEndTime(new Date(testResult.getEndMillis()));
+		rq.setStatus(status.name());
+		Boolean alreadyRetried = getAttribute(testResult, RP_RETRY);
+		if ((alreadyRetried == null || !alreadyRetried) && getRetryFinish(testResult)) {
+			rq.setRetry(true);
+		}
+		return rq;
 	}
 
 	private void updateTestItemTree(Maybe<OperationCompletionRS> finishItemResponse, ITestResult testResult) {
@@ -256,14 +339,39 @@ public class TestNGService implements ITestNGService {
 	}
 
 	@Override
-	public void startConfiguration(ITestResult testResult) {
-		TestMethodType type = TestMethodType.getStepType(testResult.getMethod());
-		StartTestItemRQ rq = buildStartConfigurationRq(testResult, type);
+	public void finishTestMethod(String statusStr, ITestResult testResult) {
+		ItemStatus status = ItemStatus.valueOf(statusStr);
+		Maybe<String> itemId = getAttribute(testResult, RP_ID);
+		boolean isRetried = getRetryFinish(testResult);
+		if (ItemStatus.SKIPPED == status && !isRetried && null == itemId) {
+			startTestMethod(testResult);
+		}
 
-		Maybe<String> parentId = getConfigParent(testResult, type);
-		final Maybe<String> itemID = launch.get().startTestItem(parentId, rq);
-		testResult.setAttribute(RP_ID, itemID);
-		StepAspect.setParentId(itemID);
+		StepReporter sr = launch.get().getStepReporter();
+		sr.finishPreviousStep();
+		if (sr.isFailed(itemId)) {
+			testResult.setStatus(FAILURE);
+		}
+		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
+		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
+
+		// Save before method finish requests to update them with a retry flag in case of main test method failed
+		if (TestMethodType.BEFORE_METHOD == type && getAttribute(testResult, RP_RETRY) == null) {
+			BEFORE_METHOD_TRACKER.computeIfAbsent(testResult.getInstance(), i -> new ConcurrentLinkedQueue<>()).add(Pair.of(itemId, rq));
+		} else {
+			Queue<Pair<Maybe<String>, FinishTestItemRQ>> beforeFinish = BEFORE_METHOD_TRACKER.remove(testResult.getInstance());
+			if (beforeFinish != null && isRetried) {
+				beforeFinish.stream().filter(e -> e.getValue().isRetry() == null || !e.getValue().isRetry()).forEach(e -> {
+					FinishTestItemRQ f = e.getValue();
+					f.setRetry(true);
+					launch.get().finishTestItem(e.getKey(), f);
+				});
+			}
+		}
+		Maybe<OperationCompletionRS> finishItemResponse = launch.get().finishTestItem(itemId, rq);
+		if (launch.get().getParameters().isCallbackReportingEnabled()) {
+			updateTestItemTree(finishItemResponse, testResult);
+		}
 	}
 
 	@Override
@@ -353,53 +461,6 @@ public class TestNGService implements ITestNGService {
 	}
 
 	/**
-	 * Extension point to customize beforeXXX creation event/request
-	 *
-	 * @param testResult TestNG's testResult context
-	 * @param type       Type of method
-	 * @return Request to ReportPortal
-	 */
-	protected StartTestItemRQ buildStartConfigurationRq(ITestResult testResult, TestMethodType type) {
-		StartTestItemRQ rq = new StartTestItemRQ();
-		String configName = testResult.getMethod().getMethodName();
-		rq.setName(configName);
-
-		rq.setDescription(testResult.getMethod().getDescription());
-		rq.setStartTime(new Date(testResult.getStartMillis()));
-		rq.setType(type == null ? null : type.toString());
-		return rq;
-	}
-
-	/**
-	 * Extension point to customize test step creation event/request
-	 *
-	 * @param testResult TestNG's testResult context
-	 * @return Request to ReportPortal
-	 */
-	protected StartTestItemRQ buildStartStepRq(ITestResult testResult) {
-		StartTestItemRQ rq = new StartTestItemRQ();
-		String testStepName;
-		if (testResult.getTestName() != null) {
-			testStepName = testResult.getTestName();
-		} else {
-			testStepName = testResult.getMethod().getMethodName();
-		}
-		rq.setName(testStepName);
-		String codeRef = testResult.getMethod().getQualifiedName();
-		rq.setCodeRef(codeRef);
-		rq.setTestCaseId(getTestCaseId(codeRef, testResult).getId());
-		rq.setAttributes(createStepAttributes(testResult));
-		rq.setDescription(createStepDescription(testResult));
-		rq.setParameters(createStepParameters(testResult));
-		rq.setUniqueId(extractUniqueID(testResult));
-		rq.setStartTime(new Date(testResult.getStartMillis()));
-		rq.setType(TestMethodType.getStepType(testResult.getMethod()).toString());
-
-		rq.setRetry(isRetry(testResult));
-		return rq;
-	}
-
-	/**
 	 * Extension point to customize test suite on it's finish
 	 *
 	 * @param suite TestNG's suite context
@@ -423,27 +484,8 @@ public class TestNGService implements ITestNGService {
 	protected FinishTestItemRQ buildFinishTestRq(ITestContext testContext) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(testContext.getEndDate());
-		String status = isTestPassed(testContext) ? Statuses.PASSED : Statuses.FAILED;
+		String status = isTestPassed(testContext) ? ItemStatus.PASSED.name() : ItemStatus.FAILED.name();
 		rq.setStatus(status);
-		return rq;
-	}
-
-	/**
-	 * Extension point to customize test method on it's finish
-	 *
-	 * @param testResult TestNG's testResult context
-	 * @return Request to ReportPortal
-	 */
-	protected FinishTestItemRQ buildFinishTestMethodRq(String status, ITestResult testResult) {
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(new Date(testResult.getEndMillis()));
-		rq.setStatus(status);
-		// Allows indicate that SKIPPED is not to investigate items for WS
-		if (Statuses.SKIPPED.equals(status) && !ofNullable(launch.get().getParameters().getSkippedAnIssue()).orElse(false)) {
-			Issue issue = new Issue();
-			issue.setIssueType(NOT_ISSUE);
-			rq.setIssue(issue);
-		}
 		return rq;
 	}
 
@@ -568,16 +610,16 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected String getSuiteStatus(ISuite suite) {
 		Collection<ISuiteResult> suiteResults = suite.getResults().values();
-		String suiteStatus = Statuses.PASSED;
+		ItemStatus suiteStatus = ItemStatus.PASSED;
 		for (ISuiteResult suiteResult : suiteResults) {
 			if (!(isTestPassed(suiteResult.getTestContext()))) {
-				suiteStatus = Statuses.FAILED;
+				suiteStatus = ItemStatus.FAILED;
 				break;
 			}
 		}
 		// if at least one suite failed launch should be failed
-		isLaunchFailed.compareAndSet(false, suiteStatus.equals(Statuses.FAILED));
-		return suiteStatus;
+		isLaunchFailed.compareAndSet(false, suiteStatus == ItemStatus.FAILED);
+		return suiteStatus.name();
 	}
 
 	/**
@@ -590,11 +632,6 @@ public class TestNGService implements ITestNGService {
 	protected boolean isTestPassed(ITestContext testContext) {
 		return testContext.getFailedTests().size() == 0 && testContext.getFailedConfigurations().size() == 0
 				&& testContext.getSkippedConfigurations().size() == 0 && testContext.getSkippedTests().size() == 0;
-	}
-
-	@SuppressWarnings("unchecked")
-	protected <T> T getAttribute(IAttributes attributes, String attribute) {
-		return (T) attributes.getAttribute(attribute);
 	}
 
 	/**
@@ -691,11 +728,6 @@ public class TestNGService implements ITestNGService {
 			parentId = getAttribute(testResult.getTestContext(), RP_ID);
 		}
 		return parentId;
-	}
-
-	private boolean isRetry(ITestResult result) {
-		IRetryAnalyzer retryAnalyzer = result.getMethod().getRetryAnalyzer(result);
-		return Objects.nonNull(retryAnalyzer);
 	}
 
 	@VisibleForTesting
