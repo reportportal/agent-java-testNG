@@ -24,19 +24,26 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.service.analytics.GoogleAnalytics;
+import com.epam.reportportal.service.analytics.item.AnalyticsEvent;
+import com.epam.reportportal.service.analytics.item.AnalyticsItem;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.TestCaseIdUtils;
+import com.epam.reportportal.utils.properties.ClientProperties;
+import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
+import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
+import io.reactivex.schedulers.Schedulers;
 import org.testng.*;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -51,6 +58,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -59,6 +67,7 @@ import java.util.stream.IntStream;
 
 import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toList;
 import static org.testng.ITestResult.FAILURE;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
@@ -69,6 +78,8 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 public class TestNGService implements ITestNGService {
 
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
+	private static final String CLIENT_PROPERTIES_FILE = "client.properties";
+	private static final String START_LAUNCH_EVENT_ACTION = "Start launch";
 	public static final String NOT_ISSUE = "NOT_ISSUE";
 	public static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 	public static final String RP_ID = "rp_id";
@@ -83,12 +94,17 @@ public class TestNGService implements ITestNGService {
 
 	private final MemorizingSupplier<Launch> launch;
 
+	private final GoogleAnalytics googleAnalytics = getGoogleAnalytics();
+	private final List<AnalyticsItem> analyticsItems = new CopyOnWriteArrayList<>();
+	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
+
 	public TestNGService() {
 		this.launch = new MemorizingSupplier<>(() -> {
 			//this reads property, so we want to
 			//init ReportPortal object each time Launch object is going to be created
 
 			StartLaunchRQ rq = buildStartLaunchRq(REPORT_PORTAL.getParameters());
+			addStartLaunchEvent(rq);
 			rq.setStartTime(Calendar.getInstance().getTime());
 			return REPORT_PORTAL.newLaunch(rq);
 		});
@@ -106,11 +122,17 @@ public class TestNGService implements ITestNGService {
 		REPORT_PORTAL = reportPortal;
 	}
 
+	protected GoogleAnalytics getGoogleAnalytics() {
+		return new GoogleAnalytics(Schedulers.from(REPORT_PORTAL.getExecutor()), "UA-96321031-1");
+	}
+
 	@Override
 	public void startLaunch() {
 		Maybe<String> launchId = this.launch.get().start();
 		StepAspect.addLaunch("default", this.launch.get());
 		ITEM_TREE.setLaunchId(launchId);
+		dependencies.add(launchId.map(l -> analyticsItems.stream().map(googleAnalytics::send).map(Maybe::ignoreElement).collect(toList()))
+				.ignoreElement());
 	}
 
 	@Override
@@ -118,7 +140,7 @@ public class TestNGService implements ITestNGService {
 		FinishExecutionRQ rq = new FinishExecutionRQ();
 		rq.setEndTime(Calendar.getInstance().getTime());
 		rq.setStatus(isLaunchFailed.get() ? Statuses.FAILED : Statuses.PASSED);
-		launch.get().finish(rq);
+		launch.get().finish(rq, dependencies.stream().toArray(Completable[]::new));
 		this.launch.reset();
 	}
 
@@ -465,6 +487,22 @@ public class TestNGService implements ITestNGService {
 		return parameters.isEmpty() ? null : parameters;
 	}
 
+	private void addStartLaunchEvent(StartLaunchRQ rq) {
+		AnalyticsEvent.AnalyticsEventBuilder analyticsEventBuilder = AnalyticsEvent.builder();
+		analyticsEventBuilder.withAction(START_LAUNCH_EVENT_ACTION);
+		SystemAttributesExtractor.extract(CLIENT_PROPERTIES_FILE, TestNGService.class.getClassLoader(), ClientProperties.CLIENT)
+				.stream()
+				.findFirst()
+				.ifPresent(clientAttribute -> analyticsEventBuilder.withCategory(clientAttribute.getValue()));
+
+		rq.getAttributes()
+				.stream()
+				.filter(attribute -> attribute.isSystem() && DefaultProperties.AGENT.getName().equalsIgnoreCase(attribute.getKey()))
+				.findFirst()
+				.ifPresent(agentAttribute -> analyticsEventBuilder.withLabel(agentAttribute.getValue()));
+		analyticsItems.add(analyticsEventBuilder.build());
+	}
+
 	/**
 	 * Process testResult to create parameters provided via {@link Parameters}
 	 *
@@ -486,7 +524,7 @@ public class TestNGService implements ITestNGService {
 			parameter.setKey(keys[i]);
 			parameter.setValue(parameters[i] == null ? NULL_VALUE : parameters[i].toString());
 			return parameter;
-		}).collect(Collectors.toList());
+		}).collect(toList());
 	}
 
 	/**
@@ -527,7 +565,7 @@ public class TestNGService implements ITestNGService {
 				parameter.setValue(p.toString());
 			}
 			return parameter;
-		}).collect(Collectors.toList());
+		}).collect(toList());
 	}
 
 	private List<ParameterResource> crateFactoryParameters(ITestResult testResult) {
@@ -547,7 +585,7 @@ public class TestNGService implements ITestNGService {
 				parameter.setValue(p.toString());
 			}
 			return parameter;
-		}).collect(Collectors.toList());
+		}).collect(toList());
 	}
 
 	/**
