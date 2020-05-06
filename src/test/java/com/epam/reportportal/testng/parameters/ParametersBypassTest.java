@@ -6,8 +6,6 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.BaseTestNGListener;
 import com.epam.reportportal.testng.TestNGServiceExtension;
-import com.epam.reportportal.testng.integration.feature.parameters.ConstructorParameterTest;
-import com.epam.reportportal.testng.integration.feature.parameters.ConstructorParameterTestNullValues;
 import com.epam.reportportal.testng.integration.feature.parameters.MethodDataProviderParameterTest;
 import com.epam.reportportal.testng.integration.feature.parameters.MethodDataProviderParameterTestNullValues;
 import com.epam.reportportal.testng.integration.util.TestUtils;
@@ -107,26 +105,6 @@ public class ParametersBypassTest {
 			ParameterResource param = params.get(0);
 			assertThat(expectedResult, hasItem(param.getKey() + "-" + param.getValue()));
 		});
-	}
-
-	@Test
-	public void verify_factory_constructor_parameters_bypass() {
-		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), ConstructorParameterTest.class);
-
-		ArgumentCaptor<StartTestItemRQ> testCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, timeout(1000).times(2)).startTestItem(startsWith("class"), testCaptor.capture());
-
-		verify_parameters(testCaptor.getAllValues());
-	}
-
-	@Test
-	public void verify_factory_constructor_parameters_bypass_with_null() {
-		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), ConstructorParameterTestNullValues.class);
-
-		ArgumentCaptor<StartTestItemRQ> testCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, timeout(1000).times(3)).startTestItem(startsWith("class"), testCaptor.capture());
-
-		verify_null_parameter(testCaptor.getAllValues());
 	}
 
 	@Test

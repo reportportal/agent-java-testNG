@@ -231,16 +231,6 @@ public class BuildStepTest {
 	}
 
 	@Test
-	public void testRetryFlagPositive() {
-		when(testResult.getMethod()).thenReturn(testNGMethod);
-		when(testResult.wasRetried()).thenReturn(true);
-		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
-		when(testNGMethod.isTest()).thenReturn(true);
-		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
-		assertThat("Incorrect retry flag", rq.isRetry(), is(true));
-	}
-
-	@Test
 	public void testRetryAnalyzerNull() {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);

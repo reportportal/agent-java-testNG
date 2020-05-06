@@ -101,6 +101,7 @@ public class TestNGService implements ITestNGService {
 	public static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 	public static final String RP_ID = "rp_id";
 	public static final String RP_RETRY = "rp_retry";
+	public static final String RP_RETRY_SET = "rp_retry_set";
 	public static final String RP_METHOD_TYPE = "rp_method_type";
 	public static final String ARGUMENT = "arg";
 	public static final String NULL_VALUE = "NULL";
@@ -234,9 +235,6 @@ public class TestNGService implements ITestNGService {
 	}
 
 	private boolean getRetry(ITestResult testResult) {
-		if (testResult.wasRetried()) {
-			return true;
-		}
 		Object instance = testResult.getInstance();
 		if (instance != null && RETRY_STATUS_TRACKER.containsKey(instance)) {
 			return true;
@@ -272,6 +270,7 @@ public class TestNGService implements ITestNGService {
 		StartTestItemRQ rq = buildStartConfigurationRq(testResult, type);
 		if (Boolean.TRUE == rq.isRetry()) {
 			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
+			testResult.setAttribute(RP_RETRY_SET, Boolean.TRUE);
 		}
 		Maybe<String> parentId = getConfigParent(testResult, type);
 		Maybe<String> itemID = launch.get().startTestItem(parentId, rq);
@@ -339,6 +338,7 @@ public class TestNGService implements ITestNGService {
 		StartTestItemRQ rq = buildStartStepRq(testResult, methodType);
 		if (Boolean.TRUE == rq.isRetry()) {
 			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
+			testResult.setAttribute(RP_RETRY_SET, Boolean.TRUE);
 		}
 
 		Maybe<String> stepMaybe = launch.get().startTestItem(getAttribute(testResult.getTestContext(), RP_ID), rq);
@@ -381,10 +381,9 @@ public class TestNGService implements ITestNGService {
 	}
 
 	private void processFinishRetryFlag(ITestResult testResult, FinishTestItemRQ rq) {
-		boolean isRetried = testResult.wasRetried();
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
-
-		if (TestMethodType.STEP == type && getAttribute(testResult, RP_RETRY) == null && isRetried) {
+		if (TestMethodType.STEP == type && getAttribute(testResult, RP_RETRY) == Boolean.TRUE
+				&& getAttribute(testResult, RP_RETRY_SET) == null) {
 			RETRY_STATUS_TRACKER.put(testResult.getInstance(), Boolean.TRUE);
 			rq.setRetry(Boolean.TRUE);
 		}
@@ -397,7 +396,9 @@ public class TestNGService implements ITestNGService {
 				BEFORE_METHOD_TRACKER.computeIfAbsent(instance, i -> new ConcurrentLinkedQueue<>()).add(Pair.of(itemId, rq));
 			} else {
 				Queue<Pair<Maybe<String>, FinishTestItemRQ>> beforeFinish = BEFORE_METHOD_TRACKER.remove(instance);
-				if (beforeFinish != null && isRetried) {
+				if (beforeFinish != null && getAttribute(testResult, RP_RETRY) == Boolean.TRUE
+						&& getAttribute(testResult, RP_RETRY_SET) == null) {
+					testResult.setAttribute(RP_RETRY_SET, Boolean.TRUE);
 					beforeFinish.stream().filter(e -> e.getValue().isRetry() == null || !e.getValue().isRetry()).forEach(e -> {
 						FinishTestItemRQ f = e.getValue();
 						f.setRetry(true);
@@ -412,9 +413,14 @@ public class TestNGService implements ITestNGService {
 	public void finishTestMethod(String statusStr, ITestResult testResult) {
 		ItemStatus status = ItemStatus.valueOf(statusStr);
 		Maybe<String> itemId = getAttribute(testResult, RP_ID);
-		if (ItemStatus.SKIPPED == status && !testResult.wasRetried() && null == itemId) {
-			startTestMethod(testResult);
-			itemId = getAttribute(testResult, RP_ID); // if we started new test method we need to get new item ID
+		if (ItemStatus.SKIPPED == status) {
+			if(null == itemId) {
+				startTestMethod(testResult);
+				itemId = getAttribute(testResult, RP_ID); // if we started new test method we need to get new item ID
+			} else {
+				// skipped but has start method, assume it's a retry
+				testResult.setAttribute(RP_RETRY, Boolean.TRUE);
+			}
 		}
 
 		StepReporter sr = launch.get().getStepReporter();
@@ -557,7 +563,6 @@ public class TestNGService implements ITestNGService {
 		List<ParameterResource> parameters = Lists.newArrayList();
 		parameters.addAll(createDataProviderParameters(testResult));
 		parameters.addAll(createAnnotationParameters(testResult));
-		parameters.addAll(crateFactoryParameters(testResult));
 		return parameters.isEmpty() ? null : parameters;
 	}
 
@@ -620,26 +625,6 @@ public class TestNGService implements ITestNGService {
 						.findFirst()
 						.orElseGet(() -> p.getClass().getCanonicalName());
 				parameter.setKey(key);
-				parameter.setValue(p.toString());
-			}
-			return parameter;
-		}).collect(Collectors.toList());
-	}
-
-	private List<ParameterResource> crateFactoryParameters(ITestResult testResult) {
-		Object[] parameters = testResult.getFactoryParameters();
-		if (parameters == null || parameters.length <= 0) {
-			return Collections.emptyList();
-		}
-
-		return IntStream.range(0, parameters.length).mapToObj(i -> {
-			Object p = parameters[i];
-			ParameterResource parameter = new ParameterResource();
-			if (p == null) {
-				parameter.setKey(ARGUMENT + i);
-				parameter.setValue(NULL_VALUE);
-			} else {
-				parameter.setKey(p.getClass().getCanonicalName());
 				parameter.setValue(p.toString());
 			}
 			return parameter;
