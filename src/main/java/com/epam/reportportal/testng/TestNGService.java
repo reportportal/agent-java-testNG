@@ -88,7 +88,10 @@ public class TestNGService implements ITestNGService {
 		@Override
 		public V put(@NotNull final K key, @NotNull final V value) {
 			if (size() > maxSize) {
-				remove(inputOrder.poll());
+				K keyToRemove = inputOrder.poll();
+				if(keyToRemove != null){
+					remove(keyToRemove);
+				}
 			}
 			inputOrder.add(key);
 			return super.put(key, value);
