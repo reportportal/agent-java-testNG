@@ -131,8 +131,10 @@ public class TestNGService implements ITestNGService {
 		Maybe<String> launchId = this.launch.get().start();
 		StepAspect.addLaunch("default", this.launch.get());
 		ITEM_TREE.setLaunchId(launchId);
-		dependencies.add(launchId.map(l -> analyticsItems.stream().map(googleAnalytics::send).map(Maybe::ignoreElement).collect(toList()))
-				.ignoreElement());
+		dependencies.addAll(analyticsItems.stream()
+				.map(it -> launchId.flatMap(l -> googleAnalytics.send(it)))
+				.map(Maybe::ignoreElement)
+				.collect(toList()));
 	}
 
 	@Override
