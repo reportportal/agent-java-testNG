@@ -85,6 +85,6 @@ afterReleaseBuild.dependsOn bintrayUpload
 
 release {
     git {
-        requireBranch = 'v5-testng6'
+        requireBranch = 'master'
     }
 }
