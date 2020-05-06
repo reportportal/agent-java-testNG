@@ -168,7 +168,6 @@ public class TestNGServiceTest {
 		when(launch.startTestItem(any(Maybe.class), any())).thenReturn(id);
 		when(testResult.getTestContext()).thenReturn(testContext);
 		when(testResult.getMethod()).thenReturn(method);
-		when(method.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		when(testContext.getAttribute(RP_ID)).thenReturn(id);
 		when(method.isTest()).thenReturn(true);
 
@@ -195,8 +194,6 @@ public class TestNGServiceTest {
 		when(launch.getStepReporter()).thenReturn(stepReporter);
 		when(testResult.getTestContext()).thenReturn(testContext);
 		when(testResult.getMethod()).thenReturn(method);
-		when(testResult.getAttribute(RP_ID)).thenReturn(id);
-		when(method.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		when(testContext.getAttribute(RP_ID)).thenReturn(id);
 		ListenerParameters listenerParameters = new ListenerParameters();
 		listenerParameters.setSkippedAnIssue(true);

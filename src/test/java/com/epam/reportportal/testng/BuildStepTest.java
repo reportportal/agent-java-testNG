@@ -20,7 +20,7 @@ import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.TestCaseIdKey;
 import com.epam.reportportal.annotations.UniqueID;
-import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
@@ -44,7 +44,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 /**
@@ -76,7 +75,6 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		when(testResult.getTestName()).thenReturn(DEFAULT_NAME);
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
 		assertThat("Incorrect test item name", rq.getName(), is(DEFAULT_NAME));
@@ -87,7 +85,6 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		when(testNGMethod.getMethodName()).thenReturn(DEFAULT_NAME);
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
 		assertThat("Incorrect test item name", rq.getName(), is(DEFAULT_NAME));
@@ -98,7 +95,6 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		when(testNGMethod.getDescription()).thenReturn(DEFAULT_DESCRIPTION);
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
 		assertThat("Incorrect test description", rq.getDescription(), is(DEFAULT_DESCRIPTION));
@@ -109,7 +105,6 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		Method[] methods = TestMethodsExamples.class.getDeclaredMethods();
 		Method method = null;
 		for (Method m : methods) {
@@ -134,7 +129,6 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		Method[] methods = TestMethodsExamples.class.getDeclaredMethods();
 		Method method = null;
 		for (Method m : methods) {
@@ -159,7 +153,6 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		Method[] methods = TestMethodsExamples.class.getDeclaredMethods();
 		Method method = null;
 		for (Method m : methods) {
@@ -184,7 +177,6 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
 		assertThat("Incorrect test item parameters", rq.getParameters(), nullValue());
 	}
@@ -194,7 +186,6 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		Method[] methods = TestMethodsExamples.class.getDeclaredMethods();
 		Method method = null;
 		for (Method m : methods) {
@@ -214,7 +205,6 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
 		assertThat("Incorrect test item unique id", rq.getUniqueId(), nullValue());
 	}
@@ -224,7 +214,6 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		Calendar instance = Calendar.getInstance();
 		instance.setTimeInMillis(DEFAULT_TIME);
 		when(testResult.getStartMillis()).thenReturn(instance.getTimeInMillis());
@@ -237,7 +226,6 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
 		assertThat("Incorrect test item type", rq.getType(), is("STEP"));
 	}
@@ -245,21 +233,11 @@ public class BuildStepTest {
 	@Test
 	public void testRetryFlagPositive() {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
+		when(testResult.wasRetried()).thenReturn(true);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> true);
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
 		assertThat("Incorrect retry flag", rq.isRetry(), is(true));
-	}
-
-	@Test
-	public void testRetryFlagNegative() {
-		when(testResult.getMethod()).thenReturn(testNGMethod);
-		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
-		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
-		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
-		assertThat("Incorrect retry flag", rq.isRetry(), is(false));
 	}
 
 	@Test
@@ -267,28 +245,17 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false).thenReturn(null);
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
-		assertThat("Incorrect retry flag", rq.isRetry(), is(false));
+		assertThat("Incorrect retry flag", rq.isRetry(), nullValue());
 	}
 
 	@Test
 	public void testBuildFinishRQ() {
 		when(testResult.getEndMillis()).thenReturn(DEFAULT_TIME);
-		FinishTestItemRQ rq = testNGService.buildFinishTestMethodRq(Statuses.PASSED, testResult);
+		FinishTestItemRQ rq = testNGService.buildFinishTestMethodRq(ItemStatus.PASSED, testResult);
 		assertThat("Incorrect end time", rq.getEndTime().getTime(), is(DEFAULT_TIME));
 		assertThat("Incorrect status", rq.getStatus(), is(Statuses.PASSED));
 		assertThat("Incorrect issue", rq.getIssue(), nullValue());
-	}
-
-	@Test
-	public void testSkippedNotIssue() {
-		ListenerParameters listenerParameters = new ListenerParameters();
-		listenerParameters.setSkippedAnIssue(false);
-		when(launch.getParameters()).thenReturn(listenerParameters);
-
-		FinishTestItemRQ rq = testNGService.buildFinishTestMethodRq(Statuses.SKIPPED, testResult);
-		assertThat("Incorrect issue type", rq.getIssue().getIssueType(), is("NOT_ISSUE"));
 	}
 
 	@Test
@@ -318,7 +285,6 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		String expected = "com.test.BuildStepTest.codeRefTest";
 		when(testResult.getMethod().getQualifiedName()).thenReturn(expected);
 
@@ -332,7 +298,6 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		String expected = "com.test.BuildStepTest.codeRefTest";
 		when(testResult.getMethod().getQualifiedName()).thenReturn(expected);
 
@@ -347,7 +312,6 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		String expectedCodeRef = "com.test.BuildStepTest.codeRefTest";
 		String expectedParam1 = "param_0";
 		String expectedParam2 = "param_1";
@@ -366,7 +330,6 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		Optional<Method> methodOptional = Arrays.stream(TestMethodsExamples.class.getDeclaredMethods())
 				.filter(it -> it.getName().equals("testCaseId"))
 				.findFirst();
@@ -387,7 +350,6 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		when(testNGMethod.getRetryAnalyzer(eq(testResult))).thenReturn(result -> false);
 		Optional<Method> methodOptional = Arrays.stream(TestMethodsExamples.class.getDeclaredMethods())
 				.filter(it -> it.getName().equals("testCaseIdParameterized"))
 				.findFirst();

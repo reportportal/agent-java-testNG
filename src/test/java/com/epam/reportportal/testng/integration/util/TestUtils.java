@@ -1,7 +1,11 @@
 package com.epam.reportportal.testng.integration.util;
 
+import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.restendpoint.http.MultiPartRequest;
+import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.service.step.StepReporter;
+import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -19,8 +23,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 /**
@@ -30,7 +33,7 @@ public class TestUtils {
 
 	public static final String TEST_NAME = "TestContainer";
 
-	public static TestNG runTests(List<Class<? extends ITestNGListener>> listeners, Class... classes) {
+	public static TestNG runTests(List<Class<? extends ITestNGListener>> listeners, Class<?>... classes) {
 		final TestNG testNG = new TestNG(true);
 		testNG.setListenerClasses(listeners);
 		testNG.setTestClasses(classes);
@@ -83,6 +86,41 @@ public class TestUtils {
 		return rq;
 	}
 
+	public static void mockLaunch(Launch launch, StepReporter reporter, Maybe<String> launchUuid, Maybe<String> suiteUuid,
+			Maybe<String> testClassUuid, Collection<Maybe<String>> testMethodUuidList) {
+		mockLaunch(launch,
+				new ListenerParameters(PropertiesLoader.load()),
+				reporter,
+				launchUuid,
+				suiteUuid,
+				testClassUuid,
+				testMethodUuidList
+		);
+	}
+
+	@SuppressWarnings("unchecked")
+	public static void mockLaunch(Launch launch, ListenerParameters parameters, StepReporter reporter, Maybe<String> launchUuid,
+			Maybe<String> suiteUuid, Maybe<String> testClassUuid, Collection<Maybe<String>> testMethodUuidList) {
+		when(launch.getParameters()).thenReturn(parameters);
+		when(launch.getStepReporter()).thenReturn(reporter);
+
+		when(launch.start()).thenReturn(launchUuid);
+		when(launch.startTestItem(any())).thenReturn(suiteUuid);
+		when(launch.startTestItem(same(suiteUuid), any())).thenReturn(testClassUuid);
+
+		Iterator<Maybe<String>> methodIterator = testMethodUuidList.iterator();
+		Maybe<String> first = methodIterator.next();
+		List<Maybe<String>> methodMaybes = new ArrayList<>();
+		methodIterator.forEachRemaining(methodMaybes::add);
+		Maybe<String>[] other = methodMaybes.toArray(new Maybe[0]);
+		when(launch.startTestItem(same(testClassUuid), any())).thenReturn(first, other);
+
+		new HashSet<>(testMethodUuidList).forEach(methodUuidMaybe -> when(launch.finishTestItem(same(methodUuidMaybe), any())).thenReturn(
+				TestUtils.createMaybe(new OperationCompletionRS())));
+		when(launch.finishTestItem(same(testClassUuid), any())).thenReturn(TestUtils.createMaybe(new OperationCompletionRS()));
+		when(launch.finishTestItem(same(suiteUuid), any())).thenReturn(TestUtils.createMaybe(new OperationCompletionRS()));
+	}
+
 	public static void mockLaunch(ReportPortalClient client, String launchUuid, String suiteUuid, String testClassUuid,
 			String testMethodUuid) {
 		mockLaunch(client, launchUuid, suiteUuid, testClassUuid, Collections.singleton(testMethodUuid));
@@ -109,9 +147,8 @@ public class TestUtils {
 		Maybe<ItemCreatedRS> first = responses.get(0);
 		Maybe<ItemCreatedRS>[] other = responses.subList(1, responses.size()).toArray(new Maybe[0]);
 		when(client.startTestItem(eq(testClassUuid), any())).thenReturn(first, other);
-		testMethodUuidList.forEach(testMethodUuid -> {
-			when(client.finishTestItem(eq(testMethodUuid), any())).thenReturn(TestUtils.createMaybe(new OperationCompletionRS()));
-		});
+		new HashSet<>(testMethodUuidList).forEach(testMethodUuid -> when(client.finishTestItem(eq(testMethodUuid), any())).thenReturn(
+				TestUtils.createMaybe(new OperationCompletionRS())));
 
 		Maybe<OperationCompletionRS> testClassFinishMaybe = TestUtils.createMaybe(new OperationCompletionRS());
 		when(client.finishTestItem(eq(testClassUuid), any())).thenReturn(testClassFinishMaybe);
@@ -129,13 +166,11 @@ public class TestUtils {
 		Supplier<Maybe<ItemCreatedRS>> maybeSupplier = () -> {
 			String uuid = UUID.randomUUID().toString();
 			nestedStepsUuids.add(uuid);
-			Maybe<ItemCreatedRS> maybe = TestUtils.createMaybe(new ItemCreatedRS(uuid, uuid));
-			return maybe;
+			return TestUtils.createMaybe(new ItemCreatedRS(uuid, uuid));
 		};
 
 		when(client.startTestItem(eq(testMethodUuid), any())).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> maybeSupplier.get());
-		when(client.finishTestItem(
-				eq(testMethodUuid),
+		when(client.finishTestItem(eq(testMethodUuid),
 				any()
 		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> TestUtils.createMaybe(new OperationCompletionRS()));
 		return nestedStepsUuids;
