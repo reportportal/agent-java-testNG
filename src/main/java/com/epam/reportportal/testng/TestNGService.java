@@ -411,10 +411,11 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public void finishTestMethod(String statusStr, ITestResult testResult) {
 		ItemStatus status = ItemStatus.valueOf(statusStr);
-		if (ItemStatus.SKIPPED == status && !testResult.wasRetried() && null == getAttribute(testResult, RP_ID)) {
+		Maybe<String> itemId = getAttribute(testResult, RP_ID);
+		if (ItemStatus.SKIPPED == status && !testResult.wasRetried() && null == itemId) {
 			startTestMethod(testResult);
+			itemId = getAttribute(testResult, RP_ID); // if we started new test method we need to get new item ID
 		}
-		Maybe<String> itemId = getAttribute(testResult, RP_ID); // if we started new test method we need to get new item ID
 
 		StepReporter sr = launch.get().getStepReporter();
 		sr.finishPreviousStep();
