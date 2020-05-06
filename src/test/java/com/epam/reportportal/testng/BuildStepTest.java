@@ -21,7 +21,6 @@ import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.TestCaseIdKey;
 import com.epam.reportportal.annotations.UniqueID;
 import com.epam.reportportal.listeners.ItemStatus;
-import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
@@ -45,7 +44,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 /**
@@ -243,21 +241,12 @@ public class BuildStepTest {
 	}
 
 	@Test
-	public void testRetryFlagNegative() {
-		when(testResult.getMethod()).thenReturn(testNGMethod);
-		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
-		when(testNGMethod.isTest()).thenReturn(true);
-		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
-		assertThat("Incorrect retry flag", rq.isRetry(), is(false));
-	}
-
-	@Test
 	public void testRetryAnalyzerNull() {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
-		assertThat("Incorrect retry flag", rq.isRetry(), is(false));
+		assertThat("Incorrect retry flag", rq.isRetry(), nullValue());
 	}
 
 	@Test
@@ -267,16 +256,6 @@ public class BuildStepTest {
 		assertThat("Incorrect end time", rq.getEndTime().getTime(), is(DEFAULT_TIME));
 		assertThat("Incorrect status", rq.getStatus(), is(Statuses.PASSED));
 		assertThat("Incorrect issue", rq.getIssue(), nullValue());
-	}
-
-	@Test
-	public void testSkippedNotIssue() {
-		ListenerParameters listenerParameters = new ListenerParameters();
-		listenerParameters.setSkippedAnIssue(false);
-		when(launch.getParameters()).thenReturn(listenerParameters);
-
-		FinishTestItemRQ rq = testNGService.buildFinishTestMethodRq(ItemStatus.SKIPPED, testResult);
-		assertThat("Incorrect issue type", rq.getIssue().getIssueType(), is("NOT_ISSUE"));
 	}
 
 	@Test

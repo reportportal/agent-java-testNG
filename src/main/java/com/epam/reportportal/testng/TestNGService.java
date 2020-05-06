@@ -46,6 +46,7 @@ import org.testng.xml.XmlClass;
 import org.testng.xml.XmlTest;
 import rp.com.google.common.annotations.VisibleForTesting;
 
+import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -71,25 +72,44 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 public class TestNGService implements ITestNGService {
 
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
+	private static final Predicate<StackTraceElement> IS_RETRY_ELEMENT = e -> "org.testng.internal.TestInvoker".equals(e.getClassName())
+			&& "retryFailed".equals(e.getMethodName());
+	private static final Predicate<StackTraceElement[]> IS_RETRY = eList -> Arrays.stream(eList).anyMatch(IS_RETRY_ELEMENT);
+	private static final int MAXIMUM_HISTORY_SIZE = 1000;
+
+	private static class MaxSizeConcurrentHashMap<K, V> extends ConcurrentHashMap<K, V> {
+		private final int maxSize;
+		private final Queue<K> inputOrder = new ConcurrentLinkedQueue<>();
+
+		public MaxSizeConcurrentHashMap(final int maximumMapSize) {
+			maxSize = maximumMapSize;
+		}
+
+		@Override
+		public V put(@NotNull final K key, @NotNull final V value) {
+			if (size() > maxSize) {
+				remove(inputOrder.poll());
+			}
+			inputOrder.add(key);
+			return super.put(key, value);
+		}
+	}
+
 	public static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 	public static final String RP_ID = "rp_id";
 	public static final String RP_RETRY = "rp_retry";
 	public static final String RP_METHOD_TYPE = "rp_method_type";
 	public static final String ARGUMENT = "arg";
 	public static final String NULL_VALUE = "NULL";
-
-	private static final Predicate<StackTraceElement> IS_RETRY_ELEMENT = e -> "org.testng.internal.TestInvoker".equals(e.getClassName())
-			&& "retryFailed".equals(e.getMethodName());
-
-	private static final Predicate<StackTraceElement[]> IS_RETRY = eList -> Arrays.stream(eList).anyMatch(IS_RETRY_ELEMENT);
+	public static final TestItemTree ITEM_TREE = new TestItemTree();
 
 	private static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
-
-	public static final TestItemTree ITEM_TREE = new TestItemTree();
 
 	private final AtomicBoolean isLaunchFailed = new AtomicBoolean();
 
 	private final Map<Object, Queue<Pair<Maybe<String>, FinishTestItemRQ>>> BEFORE_METHOD_TRACKER = new ConcurrentHashMap<>();
+
+	private final Map<Object, Boolean> RETRY_STATUS_TRACKER = new MaxSizeConcurrentHashMap<>(MAXIMUM_HISTORY_SIZE);
 
 	private final MemorizingSupplier<Launch> launch;
 
@@ -210,6 +230,17 @@ public class TestNGService implements ITestNGService {
 				.remove(createKey(testContext)));
 	}
 
+	private boolean getRetry(ITestResult testResult) {
+		if (testResult.wasRetried()) {
+			return true;
+		}
+		Object instance = testResult.getInstance();
+		if (instance != null && RETRY_STATUS_TRACKER.containsKey(instance)) {
+			return true;
+		}
+		return IS_RETRY.test(Thread.currentThread().getStackTrace());
+	}
+
 	/**
 	 * Extension point to customize beforeXXX creation event/request
 	 *
@@ -224,7 +255,10 @@ public class TestNGService implements ITestNGService {
 		rq.setDescription(testResult.getMethod().getDescription());
 		rq.setStartTime(new Date(testResult.getStartMillis()));
 		rq.setType(type == null ? null : type.toString());
-		rq.setRetry(getRetryStart(testResult));
+		boolean retry = getRetry(testResult);
+		if (retry) {
+			rq.setRetry(Boolean.TRUE);
+		}
 		return rq;
 	}
 
@@ -233,18 +267,13 @@ public class TestNGService implements ITestNGService {
 		TestMethodType type = TestMethodType.getStepType(testResult.getMethod());
 		testResult.setAttribute(RP_METHOD_TYPE, type);
 		StartTestItemRQ rq = buildStartConfigurationRq(testResult, type);
+		if (Boolean.TRUE == rq.isRetry()) {
+			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
+		}
 		Maybe<String> parentId = getConfigParent(testResult, type);
 		Maybe<String> itemID = launch.get().startTestItem(parentId, rq);
 		testResult.setAttribute(RP_ID, itemID);
 		StepAspect.setParentId(itemID);
-	}
-
-	private boolean getRetryStart(ITestResult testResult) {
-		if (IS_RETRY.test(Thread.currentThread().getStackTrace())) {
-			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
-			return true;
-		}
-		return false;
 	}
 
 	/**
@@ -253,7 +282,18 @@ public class TestNGService implements ITestNGService {
 	 * @param testResult TestNG's testResult context
 	 * @return Request to ReportPortal
 	 */
-	protected StartTestItemRQ buildStartStepRq(ITestResult testResult) {
+	protected StartTestItemRQ buildStartStepRq(final @NotNull ITestResult testResult) {
+		return buildStartStepRq(testResult, ofNullable(TestMethodType.getStepType(testResult.getMethod())).orElse(TestMethodType.STEP));
+	}
+
+	/**
+	 * Extension point to customize test step creation event/request
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @param type       method type
+	 * @return Request to ReportPortal
+	 */
+	protected StartTestItemRQ buildStartStepRq(final @NotNull ITestResult testResult, final @NotNull TestMethodType type) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		String testStepName;
 		if (testResult.getTestName() != null) {
@@ -270,8 +310,11 @@ public class TestNGService implements ITestNGService {
 		rq.setParameters(createStepParameters(testResult));
 		rq.setUniqueId(extractUniqueID(testResult));
 		rq.setStartTime(new Date(testResult.getStartMillis()));
-		rq.setType(ofNullable(TestMethodType.getStepType(testResult.getMethod())).orElse(TestMethodType.STEP).toString());
-		rq.setRetry(getRetryStart(testResult));
+		rq.setType(type.toString());
+		boolean retry = getRetry(testResult);
+		if (retry) {
+			rq.setRetry(Boolean.TRUE);
+		}
 		return rq;
 	}
 
@@ -288,11 +331,14 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public void startTestMethod(ITestResult testResult) {
-		StartTestItemRQ rq = buildStartStepRq(testResult);
-		if (rq == null) {
-			return;
+		TestMethodType methodType = ofNullable(TestMethodType.getStepType(testResult.getMethod())).orElse(TestMethodType.STEP);
+		testResult.setAttribute(RP_METHOD_TYPE, methodType);
+		StartTestItemRQ rq = buildStartStepRq(testResult, methodType);
+		if (Boolean.TRUE == rq.isRetry()) {
+			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
 		}
-		Maybe<String> stepMaybe = launch.get().startTestItem(this.getAttribute(testResult.getTestContext(), RP_ID), rq);
+
+		Maybe<String> stepMaybe = launch.get().startTestItem(getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
 		StepAspect.setParentId(stepMaybe);
 		if (launch.get().getParameters().isCallbackReportingEnabled()) {
@@ -300,13 +346,10 @@ public class TestNGService implements ITestNGService {
 		}
 	}
 
-	private boolean getRetryFinish(ITestResult testResult) {
-		return testResult.wasRetried();
-	}
-
 	/**
 	 * Extension point to customize test method on it's finish
 	 *
+	 * @param status     item execution status
 	 * @param testResult TestNG's testResult context
 	 * @return Request to ReportPortal
 	 */
@@ -314,10 +357,6 @@ public class TestNGService implements ITestNGService {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(new Date(testResult.getEndMillis()));
 		rq.setStatus(status.name());
-		Boolean alreadyRetried = getAttribute(testResult, RP_RETRY);
-		if ((alreadyRetried == null || !alreadyRetried) && getRetryFinish(testResult)) {
-			rq.setRetry(true);
-		}
 		return rq;
 	}
 
@@ -338,14 +377,41 @@ public class TestNGService implements ITestNGService {
 		}
 	}
 
+	private void processFinishRetryFlag(ITestResult testResult, FinishTestItemRQ rq) {
+		boolean isRetried = testResult.wasRetried();
+		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
+
+		if (TestMethodType.STEP == type && getAttribute(testResult, RP_RETRY) == null && isRetried) {
+			RETRY_STATUS_TRACKER.put(testResult.getInstance(), Boolean.TRUE);
+			rq.setRetry(Boolean.TRUE);
+		}
+
+		Object instance = testResult.getInstance();
+		// Save before method finish requests to update them with a retry flag in case of main test method failed
+		if (instance != null) {
+			if (TestMethodType.BEFORE_METHOD == type && getAttribute(testResult, RP_RETRY) == null) {
+				Maybe<String> itemId = getAttribute(testResult, RP_ID);
+				BEFORE_METHOD_TRACKER.computeIfAbsent(instance, i -> new ConcurrentLinkedQueue<>()).add(Pair.of(itemId, rq));
+			} else {
+				Queue<Pair<Maybe<String>, FinishTestItemRQ>> beforeFinish = BEFORE_METHOD_TRACKER.remove(instance);
+				if (beforeFinish != null && isRetried) {
+					beforeFinish.stream().filter(e -> e.getValue().isRetry() == null || !e.getValue().isRetry()).forEach(e -> {
+						FinishTestItemRQ f = e.getValue();
+						f.setRetry(true);
+						launch.get().finishTestItem(e.getKey(), f);
+					});
+				}
+			}
+		}
+	}
+
 	@Override
 	public void finishTestMethod(String statusStr, ITestResult testResult) {
 		ItemStatus status = ItemStatus.valueOf(statusStr);
-		Maybe<String> itemId = getAttribute(testResult, RP_ID);
-		boolean isRetried = getRetryFinish(testResult);
-		if (ItemStatus.SKIPPED == status && !isRetried && null == itemId) {
+		if (ItemStatus.SKIPPED == status && !testResult.wasRetried() && null == getAttribute(testResult, RP_ID)) {
 			startTestMethod(testResult);
 		}
+		Maybe<String> itemId = getAttribute(testResult, RP_ID); // if we started new test method we need to get new item ID
 
 		StepReporter sr = launch.get().getStepReporter();
 		sr.finishPreviousStep();
@@ -353,21 +419,9 @@ public class TestNGService implements ITestNGService {
 			testResult.setStatus(FAILURE);
 		}
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
-		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
 
-		// Save before method finish requests to update them with a retry flag in case of main test method failed
-		if (TestMethodType.BEFORE_METHOD == type && getAttribute(testResult, RP_RETRY) == null) {
-			BEFORE_METHOD_TRACKER.computeIfAbsent(testResult.getInstance(), i -> new ConcurrentLinkedQueue<>()).add(Pair.of(itemId, rq));
-		} else {
-			Queue<Pair<Maybe<String>, FinishTestItemRQ>> beforeFinish = BEFORE_METHOD_TRACKER.remove(testResult.getInstance());
-			if (beforeFinish != null && isRetried) {
-				beforeFinish.stream().filter(e -> e.getValue().isRetry() == null || !e.getValue().isRetry()).forEach(e -> {
-					FinishTestItemRQ f = e.getValue();
-					f.setRetry(true);
-					launch.get().finishTestItem(e.getKey(), f);
-				});
-			}
-		}
+		processFinishRetryFlag(testResult, rq);
+
 		Maybe<OperationCompletionRS> finishItemResponse = launch.get().finishTestItem(itemId, rq);
 		if (launch.get().getParameters().isCallbackReportingEnabled()) {
 			updateTestItemTree(finishItemResponse, testResult);
