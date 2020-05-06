@@ -22,6 +22,8 @@
 - [Example and step-by-step instruction with Log4j](https://github.com/reportportal/examples-java/tree/master/example-testng-log4j)
 ---
 
+| WARNING: This is transitional version of agent for those who can't switch on TestNG 7 due to binary incompatibility! <br> You will be definitely affected by these issues: https://github.com/reportportal/agent-java-testNG/issues/27 <br> https://github.com/cbeust/testng/issues/2157 |
+| --- |
 
 **[TestNG](http://testng.org)** provides support for attaching custom listeners, reporters, annotation transformers and method interceptors to your tests.
 Handling events

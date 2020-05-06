@@ -1,39 +1,33 @@
+/*
+ * Copyright 2020 EPAM Systems
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 apply plugin: 'java'
 
 project.ext.releaseMode = project.hasProperty('releaseMode')
 
 def branch = releaseMode ? '5.0.0' : 'develop'
-apply from: "https://raw.githubusercontent.com/reportportal/gradle-scripts/$branch/build-quality.gradle"
 apply from: "https://raw.githubusercontent.com/reportportal/gradle-scripts/$branch/release-commons.gradle"
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
+    mavenLocal()
     jcenter()
     mavenCentral()
     releaseMode ? maven { url "https://dl.bintray.com/epam/reportportal" } : maven { url "https://jitpack.io" }
-}
-
-dependencies {
-    if (releaseMode) {
-        compile 'com.epam.reportportal:client-java:5.0.0-BETA-9'
-        compile 'com.epam.reportportal:commons-model:5.0.0'
-    } else {
-        compile 'com.github.reportportal:client-java:51aef16'
-        compile 'com.github.reportportal:commons-model:5.0.0'
-    }
-
-    compile 'org.testng:testng:7.1.0'
-
-    testCompile 'org.hamcrest:hamcrest-all:1.3'
-    testCompile 'junit:junit:4.12'
-    testCompile 'org.mockito:mockito-all:2.0.2-beta'
-    testCompile 'com.google.inject:guice:4.2.2'
-}
-
-wrapper {
-    gradleVersion = '5.4.1'
 }
 
 processResources {
@@ -42,4 +36,55 @@ processResources {
     }
 }
 
+dependencies {
+    if (releaseMode) {
+        implementation 'com.epam.reportportal:client-java:5.0.0-BETA-16'
+        implementation 'com.epam.reportportal:commons-model:5.0.0'
+    } else {
+        implementation 'com.epam.reportportal:client-java:5.0.0-BETA-16'
+        implementation 'com.github.reportportal:commons-model:5.0.0'
+    }
+
+    implementation 'org.testng:testng:7.1.0'
+
+    testImplementation ('org.junit.platform:junit-platform-runner:1.6.2') {
+        exclude module: 'junit'
+    }
+    testImplementation 'org.junit.platform:junit-platform-launcher:1.6.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.6.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.2'
+
+    testImplementation 'org.hamcrest:hamcrest-core:2.2'
+    testImplementation 'org.mockito:mockito-core:3.3.3'
+    testImplementation 'org.mockito:mockito-junit-jupiter:3.3.3'
+    testImplementation 'ch.qos.logback:logback-classic:1.2.3'
+
+    testImplementation 'com.google.inject:guice:4.2.3'
+    testImplementation ('com.epam.reportportal:logger-java-logback:5.0.0-BETA-9') {
+        exclude module: 'client-java'
+    }
+
+    testImplementation 'org.apache.commons:commons-io:1.3.2'
+
+    testImplementation 'com.ibm.icu:icu4j:67.1'
+}
+
+test {
+    useJUnitPlatform()
+    outputs.upToDateWhen { false }
+    exclude("com/epam/reportportal/testng/integration/feature/**")
+    maxParallelForks(5) // it's forks - separate JVMs, should not interfere each other
+}
+
+wrapper {
+    gradleVersion = '5.4.1'
+}
+
 afterReleaseBuild.dependsOn bintrayUpload
+
+release {
+    git {
+        requireBranch = 'v5-testng6'
+    }
+}

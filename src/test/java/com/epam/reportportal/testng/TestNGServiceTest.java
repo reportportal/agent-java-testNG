@@ -19,26 +19,24 @@ package com.epam.reportportal.testng;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.step.StepReporter;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Matchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 import org.testng.ISuite;
 import org.testng.ITestContext;
 import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
 import org.testng.internal.ResultMap;
-import rp.com.google.common.base.Supplier;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
 /**
@@ -69,23 +67,15 @@ public class TestNGServiceTest {
 	@Mock
 	private Maybe<String> id;
 
-	@Before
+	@Mock
+	private Maybe<OperationCompletionRS> complete;
+
+	@Mock
+	private StepReporter stepReporter;
+
+	@BeforeEach
 	public void preconditions() {
-		MockitoAnnotations.initMocks(this);
-
-		testNGService = new TestNGService(new TestNGService.MemoizingSupplier<Launch>(new Supplier<Launch>() {
-			@Override
-			public Launch get() {
-				return launch;
-			}
-		}));
-
-		when(testResult.getTestContext()).thenReturn(testContext);
-		when(testResult.getMethod()).thenReturn(method);
-		when(testResult.getAttribute(RP_ID)).thenReturn(id);
-		when(method.getRetryAnalyzer(testResult)).thenReturn(result -> false);
-		when(testContext.getSuite()).thenReturn(suite);
-		when(testContext.getAttribute(RP_ID)).thenReturn(id);
+		testNGService = new TestNGService(new TestNGService.MemorizingSupplier<>(() -> launch));
 	}
 
 	@Test
@@ -102,6 +92,9 @@ public class TestNGServiceTest {
 
 	@Test
 	public void startTestSuite() {
+		when(launch.getParameters()).thenReturn(new ListenerParameters());
+		when(launch.startTestItem(any())).thenReturn(id);
+
 		testNGService.startTestSuite(suite);
 		verify(launch, times(1)).startTestItem(any(StartTestItemRQ.class));
 		verify(suite, times(1)).setAttribute(eq(RP_ID), any(Maybe.class));
@@ -109,7 +102,9 @@ public class TestNGServiceTest {
 
 	@Test
 	public void finishTestSuite() {
+		when(launch.getParameters()).thenReturn(new ListenerParameters());
 		when(suite.getAttribute(RP_ID)).thenReturn(id);
+
 		testNGService.finishTestSuite(suite);
 		verify(launch, times(1)).finishTestItem(eq(id), any(FinishTestItemRQ.class));
 		verify(suite, times(1)).removeAttribute(RP_ID);
@@ -117,12 +112,17 @@ public class TestNGServiceTest {
 
 	@Test
 	public void finishTestSuitNull() {
+		when(launch.getParameters()).thenReturn(new ListenerParameters());
+
 		testNGService.finishTestSuite(suite);
-		verifyZeroInteractions(launch);
+		verify(launch, times(1)).getParameters();
 	}
 
 	@Test
 	public void startTest() {
+		when(launch.getParameters()).thenReturn(new ListenerParameters());
+		when(launch.startTestItem(any(Maybe.class), any())).thenReturn(id);
+		when(testContext.getSuite()).thenReturn(suite);
 		when(testContext.getSuite()).thenReturn(suite);
 		ITestNGMethod[] methods = new ITestNGMethod[] { method };
 		when(testContext.getAllTestMethods()).thenReturn(methods);
@@ -130,20 +130,21 @@ public class TestNGServiceTest {
 		testNGService.startTest(testContext);
 
 		verify(launch, times(1)).startTestItem(eq(id), any(StartTestItemRQ.class));
-		verify(testContext, times(1)).setAttribute(eq(RP_ID), Matchers.any(Maybe.class));
+		verify(testContext, times(1)).setAttribute(eq(RP_ID), any(Maybe.class));
 	}
 
 	@Test
 	public void startTestWithoutMethods() {
 		testNGService.startTest(testContext);
 		verify(launch, never()).startTestItem(eq(id), any(StartTestItemRQ.class));
-		verify(testContext, never()).setAttribute(eq(RP_ID), Matchers.any(Maybe.class));
+		verify(testContext, never()).setAttribute(eq(RP_ID), any(Maybe.class));
 	}
 
 	@Test
 	public void finishTest() {
+		when(launch.getParameters()).thenReturn(new ListenerParameters());
+		when(testContext.getAttribute(RP_ID)).thenReturn(id);
 		ResultMap empty = new ResultMap();
-		when(testContext.getSuite()).thenReturn(suite);
 		ITestNGMethod[] methods = new ITestNGMethod[] { method };
 		when(testContext.getAllTestMethods()).thenReturn(methods);
 		when(testContext.getFailedTests()).thenReturn(empty);
@@ -163,6 +164,11 @@ public class TestNGServiceTest {
 
 	@Test
 	public void startTestMethod() {
+		when(launch.getParameters()).thenReturn(new ListenerParameters());
+		when(launch.startTestItem(any(Maybe.class), any())).thenReturn(id);
+		when(testResult.getTestContext()).thenReturn(testContext);
+		when(testResult.getMethod()).thenReturn(method);
+		when(testContext.getAttribute(RP_ID)).thenReturn(id);
 		when(method.isTest()).thenReturn(true);
 
 		testNGService.startTestMethod(testResult);
@@ -172,16 +178,27 @@ public class TestNGServiceTest {
 
 	@Test
 	public void finishTestMethod() {
+		when(launch.getParameters()).thenReturn(new ListenerParameters());
+		when(testResult.getAttribute(RP_ID)).thenReturn(id);
+		when(launch.getStepReporter()).thenReturn(stepReporter);
+
 		testNGService.finishTestMethod(Statuses.PASSED, testResult);
 		verify(launch, times(1)).finishTestItem(eq(id), any(FinishTestItemRQ.class));
 	}
 
 	@Test
 	public void finishTestMethodSkipped() {
+		when(launch.getParameters()).thenReturn(new ListenerParameters());
+		when(launch.startTestItem(any(Maybe.class), any())).thenReturn(id);
+		when(launch.finishTestItem(any(Maybe.class), any())).thenReturn(complete);
+		when(launch.getStepReporter()).thenReturn(stepReporter);
+		when(testResult.getTestContext()).thenReturn(testContext);
+		when(testResult.getMethod()).thenReturn(method);
+		when(testContext.getAttribute(RP_ID)).thenReturn(id);
 		ListenerParameters listenerParameters = new ListenerParameters();
 		listenerParameters.setSkippedAnIssue(true);
 		when(launch.getParameters()).thenReturn(listenerParameters);
-		when(testResult.getAttribute(RP_ID)).thenReturn(null);
+		when(testResult.getAttribute(RP_ID)).thenReturn(null).thenReturn(id);
 		when(method.isTest()).thenReturn(true);
 
 		testNGService.finishTestMethod(Statuses.SKIPPED, testResult);
@@ -193,6 +210,11 @@ public class TestNGServiceTest {
 
 	@Test
 	public void startConfiguration() {
+		when(launch.startTestItem(any(Maybe.class), any())).thenReturn(id);
+		when(testResult.getTestContext()).thenReturn(testContext);
+		when(testResult.getMethod()).thenReturn(method);
+		when(testContext.getAttribute(RP_ID)).thenReturn(id);
+
 		testNGService.startConfiguration(testResult);
 		verify(launch, times(1)).startTestItem(any(Maybe.class), any(StartTestItemRQ.class));
 		verify(testResult, times(1)).setAttribute(eq(RP_ID), any(Maybe.class));
@@ -200,15 +222,21 @@ public class TestNGServiceTest {
 
 	@Test
 	public void testParentConfigSuite() {
+		when(testResult.getTestContext()).thenReturn(testContext);
+		when(testContext.getSuite()).thenReturn(suite);
 		when(suite.getAttribute(RP_ID)).thenReturn(id);
+
 		Maybe<String> configParent = testNGService.getConfigParent(testResult, TestMethodType.BEFORE_SUITE);
-		Assert.assertThat("Incorrect id", configParent, is(id));
+		assertThat("Incorrect id", configParent, is(id));
 	}
 
 	@Test
 	public void testParentConfig() {
+		when(testResult.getTestContext()).thenReturn(testContext);
+		when(testContext.getAttribute(RP_ID)).thenReturn(id);
+
 		Maybe<String> configParent = testNGService.getConfigParent(testResult, TestMethodType.STEP);
-		Assert.assertThat("Incorrect id", configParent, is(id));
+		assertThat("Incorrect id", configParent, is(id));
 	}
 
 }

@@ -16,13 +16,13 @@
 
 package com.epam.reportportal.testng;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.testng.ITestNGMethod;
 
 import static com.epam.reportportal.testng.TestMethodType.*;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 /**
@@ -32,7 +32,7 @@ public class MethodTypeTest {
 
 	private ITestNGMethod testNGMethod;
 
-	@Before
+	@BeforeEach
 	public void init() {
 		testNGMethod = Mockito.mock(ITestNGMethod.class);
 	}

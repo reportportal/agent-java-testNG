@@ -17,14 +17,14 @@
 package com.epam.reportportal.testng;
 
 import com.epam.reportportal.listeners.Statuses;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.testng.ISuite;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
 /**
@@ -32,13 +32,21 @@ import static org.mockito.Mockito.*;
  */
 public class BaseTestNGListenerTest {
 
+	@Mock
 	private TestNGService testNGService;
+	@Mock
+	private ITestResult result;
+	@Mock
+	private ITestContext context;
+	@Mock
+	private ISuite suite;
 
 	private BaseTestNGListener listener;
 
-	@Before
+
+
+	@BeforeEach
 	public void init() {
-		testNGService = Mockito.mock(TestNGService.class);
 		listener = new BaseTestNGListener(testNGService);
 	}
 
@@ -56,90 +64,83 @@ public class BaseTestNGListenerTest {
 
 	@Test
 	public void testOnSuiteStart() {
-		listener.onStart(any(ISuite.class));
-		verify(testNGService, times(1)).startTestSuite(any(ISuite.class));
+		listener.onStart(suite);
+		verify(testNGService, times(1)).startTestSuite(eq(suite));
 	}
 
 	@Test
 	public void testOnSuiteFinish() {
-		listener.onFinish(any(ISuite.class));
-		verify(testNGService, times(1)).finishTestSuite(any(ISuite.class));
+		listener.onFinish(suite);
+		verify(testNGService, times(1)).finishTestSuite(eq(suite));
 	}
 
 	@Test
 	public void testOnStart() {
-		listener.onStart(any(ITestContext.class));
-		verify(testNGService, times(1)).startTest(any(ITestContext.class));
+		listener.onStart(context);
+		verify(testNGService, times(1)).startTest(eq(context));
 	}
 
 	@Test
 	public void testOnFinish() {
-		listener.onFinish(any(ITestContext.class));
-		verify(testNGService, times(1)).finishTest(any(ITestContext.class));
+		listener.onFinish(context);
+		verify(testNGService, times(1)).finishTest(eq(context));
 	}
 
 	@Test
 	public void testOnTestStart() {
-		listener.onTestStart(any(ITestResult.class));
-		verify(testNGService, times(1)).startTestMethod(any(ITestResult.class));
+		listener.onTestStart(result);
+		verify(testNGService, times(1)).startTestMethod(eq(result));
 	}
 
 	@Test
 	public void testOnTestSuccess() {
-		ITestResult testResult = mock(ITestResult.class);
-		listener.onTestSuccess(testResult);
-		verify(testNGService, times(1)).finishTestMethod(Statuses.PASSED, testResult);
+		listener.onTestSuccess(result);
+		verify(testNGService, times(1)).finishTestMethod(eq(Statuses.PASSED), eq(result));
 	}
 
 	@Test
 	public void testOnTestFailure() {
-		ITestResult testResult = mock(ITestResult.class);
-		listener.onTestFailure(testResult);
-		verify(testNGService, times(1)).sendReportPortalMsg(testResult);
-		verify(testNGService, times(1)).finishTestMethod(Statuses.FAILED, testResult);
+		listener.onTestFailure(result);
+		verify(testNGService, times(1)).sendReportPortalMsg(eq(result));
+		verify(testNGService, times(1)).finishTestMethod(eq(Statuses.FAILED), eq(result));
 	}
 
 	@Test
 	public void testOnTestSkipped() {
-		ITestResult testResult = mock(ITestResult.class);
-		listener.onTestSkipped(testResult);
-		verify(testNGService, times(1)).finishTestMethod(Statuses.SKIPPED, testResult);
+		listener.onTestSkipped(result);
+		verify(testNGService, times(1)).finishTestMethod(eq(Statuses.SKIPPED), eq(result));
 	}
 
 	@Test
 	public void testBeforeConfiguration() {
-		listener.beforeConfiguration(any(ITestResult.class));
-		verify(testNGService, times(1)).startConfiguration(any(ITestResult.class));
+		listener.beforeConfiguration(result);
+		verify(testNGService, times(1)).startConfiguration(eq(result));
 	}
 
 	@Test
 	public void testOnConfigurationFailure() {
-		ITestResult testResult = mock(ITestResult.class);
-		listener.onConfigurationFailure(testResult);
-		verify(testNGService, times(1)).sendReportPortalMsg(testResult);
-		verify(testNGService, times(1)).finishTestMethod(Statuses.FAILED, testResult);
+		listener.onConfigurationFailure(result);
+		verify(testNGService, times(1)).sendReportPortalMsg(eq(result));
+		verify(testNGService, times(1)).finishTestMethod(eq(Statuses.FAILED), eq(result));
 	}
 
 	@Test
 	public void testOnConfigurationSuccess() {
-		ITestResult testResult = mock(ITestResult.class);
-		listener.onConfigurationSuccess(testResult);
-		verify(testNGService, times(1)).finishTestMethod(Statuses.PASSED, testResult);
+		listener.onConfigurationSuccess(result);
+		verify(testNGService, times(1)).finishTestMethod(eq(Statuses.PASSED), eq(result));
 	}
 
 	@Test
 	public void testOnConfigurationSkip() {
-		ITestResult testResult = mock(ITestResult.class);
-		listener.onConfigurationSkip(testResult);
-		verify(testNGService, times(1)).startConfiguration(testResult);
-		verify(testNGService, times(1)).finishTestMethod(Statuses.SKIPPED, testResult);
+		listener.onConfigurationSkip(result);
+		verify(testNGService, times(1)).startConfiguration(eq(result));
+		verify(testNGService, times(1)).finishTestMethod(eq(Statuses.SKIPPED), eq(result));
 	}
 
 	@Test
 	public void testOnTestFailedButWithinSuccessPercentage() {
-		ITestResult testResult = mock(ITestResult.class);
-		listener.onTestFailedButWithinSuccessPercentage(testResult);
-		verify(testNGService, times(1)).finishTestMethod(Statuses.FAILED, testResult);
+		listener.onTestFailedButWithinSuccessPercentage(result);
+		verify(testNGService, times(1)).finishTestMethod(eq(Statuses.FAILED), eq(result));
 	}
 
 }

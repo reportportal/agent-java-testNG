@@ -20,25 +20,23 @@ import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.UniqueID;
 import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.aspect.StepAspect;
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
+import com.epam.reportportal.service.step.StepReporter;
+import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
-import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
-import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
-import com.epam.ta.reportportal.ws.model.ParameterResource;
-import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
-import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.testng.*;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -47,16 +45,24 @@ import org.testng.internal.ConstructorOrMethod;
 import org.testng.xml.XmlClass;
 import org.testng.xml.XmlTest;
 import rp.com.google.common.annotations.VisibleForTesting;
-import rp.com.google.common.base.Supplier;
 
+import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import static rp.com.google.common.base.Optional.fromNullable;
+import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
+import static java.util.Optional.ofNullable;
+import static org.testng.ITestResult.FAILURE;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -66,138 +72,381 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 public class TestNGService implements ITestNGService {
 
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
-	public static final String NOT_ISSUE = "NOT_ISSUE";
+	private static final Predicate<StackTraceElement> IS_RETRY_ELEMENT = e -> "org.testng.internal.TestInvoker".equals(e.getClassName())
+			&& "retryFailed".equals(e.getMethodName());
+	private static final Predicate<StackTraceElement[]> IS_RETRY = eList -> Arrays.stream(eList).anyMatch(IS_RETRY_ELEMENT);
+	private static final int MAXIMUM_HISTORY_SIZE = 1000;
+
+	private static class MaxSizeConcurrentHashMap<K, V> extends ConcurrentHashMap<K, V> {
+		private final int maxSize;
+		private final Queue<K> inputOrder = new ConcurrentLinkedQueue<>();
+
+		public MaxSizeConcurrentHashMap(final int maximumMapSize) {
+			maxSize = maximumMapSize;
+		}
+
+		@Override
+		public V put(@NotNull final K key, @NotNull final V value) {
+			if (size() > maxSize) {
+				K keyToRemove = inputOrder.poll();
+				if(keyToRemove != null){
+					remove(keyToRemove);
+				}
+			}
+			inputOrder.add(key);
+			return super.put(key, value);
+		}
+	}
+
 	public static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 	public static final String RP_ID = "rp_id";
+	public static final String RP_RETRY = "rp_retry";
+	public static final String RP_METHOD_TYPE = "rp_method_type";
 	public static final String ARGUMENT = "arg";
+	public static final String NULL_VALUE = "NULL";
+	public static final TestItemTree ITEM_TREE = new TestItemTree();
+
+	private static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
 
 	private final AtomicBoolean isLaunchFailed = new AtomicBoolean();
 
-	private MemoizingSupplier<Launch> launch;
+	private final Map<Object, Queue<Pair<Maybe<String>, FinishTestItemRQ>>> BEFORE_METHOD_TRACKER = new ConcurrentHashMap<>();
+
+	private final Map<Object, Boolean> RETRY_STATUS_TRACKER = new MaxSizeConcurrentHashMap<>(MAXIMUM_HISTORY_SIZE);
+
+	private final MemorizingSupplier<Launch> launch;
 
 	public TestNGService() {
-		this.launch = new MemoizingSupplier<Launch>(new Supplier<Launch>() {
-			@Override
-			public Launch get() {
-				//this reads property, so we want to
-				//init ReportPortal object each time Launch object is going to be created
-				final ReportPortal reportPortal = ReportPortal.builder().build();
-				StartLaunchRQ rq = buildStartLaunchRq(reportPortal.getParameters());
-				rq.setStartTime(Calendar.getInstance().getTime());
-				return reportPortal.newLaunch(rq);
-			}
+		this.launch = new MemorizingSupplier<>(() -> {
+			//this reads property, so we want to
+			//init ReportPortal object each time Launch object is going to be created
+
+			StartLaunchRQ rq = buildStartLaunchRq(REPORT_PORTAL.getParameters());
+			rq.setStartTime(Calendar.getInstance().getTime());
+			return REPORT_PORTAL.newLaunch(rq);
 		});
 	}
 
 	public TestNGService(Supplier<Launch> launch) {
-		this.launch = new MemoizingSupplier<Launch>(launch);
+		this.launch = new MemorizingSupplier<>(launch);
+	}
+
+	public static ReportPortal getReportPortal() {
+		return REPORT_PORTAL;
+	}
+
+	protected static void setReportPortal(ReportPortal reportPortal) {
+		REPORT_PORTAL = reportPortal;
 	}
 
 	@Override
 	public void startLaunch() {
-		this.launch.get().start();
+		Maybe<String> launchId = this.launch.get().start();
 		StepAspect.addLaunch("default", this.launch.get());
+		ITEM_TREE.setLaunchId(launchId);
 	}
 
 	@Override
 	public void finishLaunch() {
 		FinishExecutionRQ rq = new FinishExecutionRQ();
 		rq.setEndTime(Calendar.getInstance().getTime());
-		rq.setStatus(isLaunchFailed.get() ? Statuses.FAILED : Statuses.PASSED);
+		rq.setStatus(isLaunchFailed.get() ? ItemStatus.FAILED.name() : ItemStatus.PASSED.name());
 		launch.get().finish(rq);
-
 		this.launch.reset();
+	}
 
+	private void addToTree(ISuite suite, Maybe<String> item) {
+		ITEM_TREE.getTestItems().put(createKey(suite), TestItemTree.createTestItemLeaf(item, suite.getXmlSuite().getTests().size()));
 	}
 
 	@Override
-	public synchronized void startTestSuite(ISuite suite) {
+	public void startTestSuite(ISuite suite) {
 		StartTestItemRQ rq = buildStartSuiteRq(suite);
 		final Maybe<String> item = launch.get().startTestItem(rq);
+		if (launch.get().getParameters().isCallbackReportingEnabled()) {
+			addToTree(suite, item);
+		}
 		suite.setAttribute(RP_ID, item);
 		StepAspect.setParentId(item);
 	}
 
+	@SuppressWarnings("unchecked")
+	protected <T> T getAttribute(IAttributes attributes, String attribute) {
+		return (T) attributes.getAttribute(attribute);
+	}
+
 	@Override
-	public synchronized void finishTestSuite(ISuite suite) {
-		if (null != suite.getAttribute(RP_ID)) {
+	public void finishTestSuite(ISuite suite) {
+		Maybe<String> rpId = getAttribute(suite, RP_ID);
+		if (null != rpId) {
 			FinishTestItemRQ rq = buildFinishTestSuiteRq(suite);
-			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(suite, RP_ID), rq);
+			launch.get().finishTestItem(rpId, rq);
 			suite.removeAttribute(RP_ID);
 		}
+		if (launch.get().getParameters().isCallbackReportingEnabled()) {
+			removeFromTree(suite);
+		}
+	}
+
+	private void removeFromTree(ISuite suite) {
+		ITEM_TREE.getTestItems().remove(createKey(suite));
 	}
 
 	@Override
 	public void startTest(ITestContext testContext) {
 		if (hasMethodsToRun(testContext)) {
 			StartTestItemRQ rq = buildStartTestItemRq(testContext);
-			final Maybe<String> testID = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testContext.getSuite(), RP_ID), rq);
+			final Maybe<String> testID = launch.get().startTestItem(this.getAttribute(testContext.getSuite(), RP_ID), rq);
+			if (launch.get().getParameters().isCallbackReportingEnabled()) {
+				addToTree(testContext, testID);
+			}
 			testContext.setAttribute(RP_ID, testID);
 			StepAspect.setParentId(testID);
 		}
+	}
+
+	private void addToTree(ITestContext testContext, Maybe<String> testId) {
+		ofNullable(ITEM_TREE.getTestItems().get(createKey(testContext.getSuite()))).ifPresent(suiteLeaf -> {
+			List<XmlClass> testClasses = testContext.getCurrentXmlTest().getClasses();
+			ConcurrentHashMap<TestItemTree.ItemTreeKey, TestItemTree.TestItemLeaf> testClassesMapping = new ConcurrentHashMap<>(testClasses.size());
+			for (XmlClass testClass : testClasses) {
+				TestItemTree.TestItemLeaf testClassLeaf = TestItemTree.createTestItemLeaf(testId, new ConcurrentHashMap<>());
+				testClassesMapping.put(createKey(testClass), testClassLeaf);
+			}
+			suiteLeaf.getChildItems().put(createKey(testContext), TestItemTree.createTestItemLeaf(testId, testClassesMapping));
+		});
 	}
 
 	@Override
 	public void finishTest(ITestContext testContext) {
 		if (hasMethodsToRun(testContext)) {
 			FinishTestItemRQ rq = buildFinishTestRq(testContext);
-			launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testContext, RP_ID), rq);
+			launch.get().finishTestItem(this.getAttribute(testContext, RP_ID), rq);
+			if (launch.get().getParameters().isCallbackReportingEnabled()) {
+				removeFromTree(testContext);
+			}
 		}
 	}
 
-	@Override
-	public void startTestMethod(ITestResult testResult) {
-		StartTestItemRQ rq = buildStartStepRq(testResult);
-		if (rq == null) {
-			return;
-		}
-
-		Maybe<String> stepMaybe = launch.get().startTestItem(this.<Maybe<String>>getAttribute(testResult.getTestContext(), RP_ID), rq);
-		testResult.setAttribute(RP_ID, stepMaybe);
-		StepAspect.setParentId(stepMaybe);
+	private void removeFromTree(ITestContext testContext) {
+		ofNullable(ITEM_TREE.getTestItems().get(createKey(testContext.getSuite()))).ifPresent(suiteLeaf -> suiteLeaf.getChildItems()
+				.remove(createKey(testContext)));
 	}
 
-	@Override
-	public void finishTestMethod(String status, ITestResult testResult) {
-		if (Statuses.SKIPPED.equals(status) && !isRetry(testResult) && null == testResult.getAttribute(RP_ID)) {
-			startTestMethod(testResult);
+	private boolean getRetry(ITestResult testResult) {
+		if (testResult.wasRetried()) {
+			return true;
 		}
+		Object instance = testResult.getInstance();
+		if (instance != null && RETRY_STATUS_TRACKER.containsKey(instance)) {
+			return true;
+		}
+		return IS_RETRY.test(Thread.currentThread().getStackTrace());
+	}
 
-		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
-		launch.get().finishTestItem(this.<Maybe<String>>getAttribute(testResult, RP_ID), rq);
+	/**
+	 * Extension point to customize beforeXXX creation event/request
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @param type       Type of method
+	 * @return Request to ReportPortal
+	 */
+	protected StartTestItemRQ buildStartConfigurationRq(ITestResult testResult, TestMethodType type) {
+		StartTestItemRQ rq = new StartTestItemRQ();
+		rq.setName(testResult.getMethod().getMethodName());
+		rq.setCodeRef(testResult.getMethod().getQualifiedName());
+		rq.setDescription(testResult.getMethod().getDescription());
+		rq.setStartTime(new Date(testResult.getStartMillis()));
+		rq.setType(type == null ? null : type.toString());
+		boolean retry = getRetry(testResult);
+		if (retry) {
+			rq.setRetry(Boolean.TRUE);
+		}
+		return rq;
 	}
 
 	@Override
 	public void startConfiguration(ITestResult testResult) {
 		TestMethodType type = TestMethodType.getStepType(testResult.getMethod());
+		testResult.setAttribute(RP_METHOD_TYPE, type);
 		StartTestItemRQ rq = buildStartConfigurationRq(testResult, type);
-
+		if (Boolean.TRUE == rq.isRetry()) {
+			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
+		}
 		Maybe<String> parentId = getConfigParent(testResult, type);
-		final Maybe<String> itemID = launch.get().startTestItem(parentId, rq);
+		Maybe<String> itemID = launch.get().startTestItem(parentId, rq);
 		testResult.setAttribute(RP_ID, itemID);
 		StepAspect.setParentId(itemID);
 	}
 
+	/**
+	 * Extension point to customize test step creation event/request
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Request to ReportPortal
+	 */
+	protected StartTestItemRQ buildStartStepRq(final @NotNull ITestResult testResult) {
+		return buildStartStepRq(testResult, ofNullable(TestMethodType.getStepType(testResult.getMethod())).orElse(TestMethodType.STEP));
+	}
+
+	/**
+	 * Extension point to customize test step creation event/request
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @param type       method type
+	 * @return Request to ReportPortal
+	 */
+	protected StartTestItemRQ buildStartStepRq(final @NotNull ITestResult testResult, final @NotNull TestMethodType type) {
+		StartTestItemRQ rq = new StartTestItemRQ();
+		String testStepName;
+		if (testResult.getTestName() != null) {
+			testStepName = testResult.getTestName();
+		} else {
+			testStepName = testResult.getMethod().getMethodName();
+		}
+		rq.setName(testStepName);
+		String codeRef = testResult.getMethod().getQualifiedName();
+		rq.setCodeRef(codeRef);
+		rq.setTestCaseId(getTestCaseId(codeRef, testResult).getId());
+		rq.setAttributes(createStepAttributes(testResult));
+		rq.setDescription(createStepDescription(testResult));
+		rq.setParameters(createStepParameters(testResult));
+		rq.setUniqueId(extractUniqueID(testResult));
+		rq.setStartTime(new Date(testResult.getStartMillis()));
+		rq.setType(type.toString());
+		boolean retry = getRetry(testResult);
+		if (retry) {
+			rq.setRetry(Boolean.TRUE);
+		}
+		return rq;
+	}
+
+	private void addToTree(ITestResult testResult, Maybe<String> stepMaybe) {
+		ITestContext testContext = testResult.getTestContext();
+
+		ofNullable(ITEM_TREE.getTestItems()
+				.get(createKey(testContext.getSuite()))).flatMap(suiteLeaf -> ofNullable(suiteLeaf.getChildItems()
+				.get(createKey(testContext))).flatMap(testLeaf -> ofNullable(testLeaf.getChildItems()
+				.get(createKey(testResult.getTestClass())))))
+				.ifPresent(testClassLeaf -> testClassLeaf.getChildItems()
+						.put(createKey(testResult), TestItemTree.createTestItemLeaf(stepMaybe, 0)));
+	}
+
+	@Override
+	public void startTestMethod(ITestResult testResult) {
+		TestMethodType methodType = ofNullable(TestMethodType.getStepType(testResult.getMethod())).orElse(TestMethodType.STEP);
+		testResult.setAttribute(RP_METHOD_TYPE, methodType);
+		StartTestItemRQ rq = buildStartStepRq(testResult, methodType);
+		if (Boolean.TRUE == rq.isRetry()) {
+			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
+		}
+
+		Maybe<String> stepMaybe = launch.get().startTestItem(getAttribute(testResult.getTestContext(), RP_ID), rq);
+		testResult.setAttribute(RP_ID, stepMaybe);
+		StepAspect.setParentId(stepMaybe);
+		if (launch.get().getParameters().isCallbackReportingEnabled()) {
+			addToTree(testResult, stepMaybe);
+		}
+	}
+
+	/**
+	 * Extension point to customize test method on it's finish
+	 *
+	 * @param status     item execution status
+	 * @param testResult TestNG's testResult context
+	 * @return Request to ReportPortal
+	 */
+	protected FinishTestItemRQ buildFinishTestMethodRq(ItemStatus status, ITestResult testResult) {
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		rq.setEndTime(new Date(testResult.getEndMillis()));
+		rq.setStatus(status.name());
+		return rq;
+	}
+
+	private void updateTestItemTree(Maybe<OperationCompletionRS> finishItemResponse, ITestResult testResult) {
+		ITestContext testContext = testResult.getTestContext();
+		TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE.getTestItems().get(createKey(testContext.getSuite()));
+		if (suiteLeaf != null) {
+			TestItemTree.TestItemLeaf testLeaf = suiteLeaf.getChildItems().get(createKey(testContext));
+			if (testLeaf != null) {
+				TestItemTree.TestItemLeaf testClassLeaf = testLeaf.getChildItems().get(createKey(testResult.getTestClass()));
+				if (testClassLeaf != null) {
+					TestItemTree.TestItemLeaf testItemLeaf = testClassLeaf.getChildItems().get(createKey(testResult));
+					if (testItemLeaf != null) {
+						testItemLeaf.setFinishResponse(finishItemResponse);
+					}
+				}
+			}
+		}
+	}
+
+	private void processFinishRetryFlag(ITestResult testResult, FinishTestItemRQ rq) {
+		boolean isRetried = testResult.wasRetried();
+		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
+
+		if (TestMethodType.STEP == type && getAttribute(testResult, RP_RETRY) == null && isRetried) {
+			RETRY_STATUS_TRACKER.put(testResult.getInstance(), Boolean.TRUE);
+			rq.setRetry(Boolean.TRUE);
+		}
+
+		Object instance = testResult.getInstance();
+		// Save before method finish requests to update them with a retry flag in case of main test method failed
+		if (instance != null) {
+			if (TestMethodType.BEFORE_METHOD == type && getAttribute(testResult, RP_RETRY) == null) {
+				Maybe<String> itemId = getAttribute(testResult, RP_ID);
+				BEFORE_METHOD_TRACKER.computeIfAbsent(instance, i -> new ConcurrentLinkedQueue<>()).add(Pair.of(itemId, rq));
+			} else {
+				Queue<Pair<Maybe<String>, FinishTestItemRQ>> beforeFinish = BEFORE_METHOD_TRACKER.remove(instance);
+				if (beforeFinish != null && isRetried) {
+					beforeFinish.stream().filter(e -> e.getValue().isRetry() == null || !e.getValue().isRetry()).forEach(e -> {
+						FinishTestItemRQ f = e.getValue();
+						f.setRetry(true);
+						launch.get().finishTestItem(e.getKey(), f);
+					});
+				}
+			}
+		}
+	}
+
+	@Override
+	public void finishTestMethod(String statusStr, ITestResult testResult) {
+		ItemStatus status = ItemStatus.valueOf(statusStr);
+		if (ItemStatus.SKIPPED == status && !testResult.wasRetried() && null == getAttribute(testResult, RP_ID)) {
+			startTestMethod(testResult);
+		}
+		Maybe<String> itemId = getAttribute(testResult, RP_ID); // if we started new test method we need to get new item ID
+
+		StepReporter sr = launch.get().getStepReporter();
+		sr.finishPreviousStep();
+		if (sr.isFailed(itemId)) {
+			testResult.setStatus(FAILURE);
+		}
+		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
+
+		processFinishRetryFlag(testResult, rq);
+
+		Maybe<OperationCompletionRS> finishItemResponse = launch.get().finishTestItem(itemId, rq);
+		if (launch.get().getParameters().isCallbackReportingEnabled()) {
+			updateTestItemTree(finishItemResponse, testResult);
+		}
+	}
+
 	@Override
 	public void sendReportPortalMsg(final ITestResult result) {
-		ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String itemUuid) {
-				SaveLogRQ rq = new SaveLogRQ();
-				rq.setItemUuid(itemUuid);
-				rq.setLevel("ERROR");
-				rq.setLogTime(Calendar.getInstance().getTime());
-				if (result.getThrowable() != null) {
-					rq.setMessage(getStackTraceAsString(result.getThrowable()));
-				} else {
-					rq.setMessage("Test has failed without exception");
-				}
-				rq.setLogTime(Calendar.getInstance().getTime());
-
-				return rq;
+		ReportPortal.emitLog(itemUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setItemUuid(itemUuid);
+			rq.setLevel("ERROR");
+			rq.setLogTime(Calendar.getInstance().getTime());
+			if (result.getThrowable() != null) {
+				rq.setMessage(getStackTraceAsString(result.getThrowable()));
+			} else {
+				rq.setMessage("Test has failed without exception");
 			}
-		});
+			rq.setLogTime(Calendar.getInstance().getTime());
 
+			return rq;
+		});
 	}
 
 	/**
@@ -269,60 +518,6 @@ public class TestNGService implements ITestNGService {
 	}
 
 	/**
-	 * Extension point to customize beforeXXX creation event/request
-	 *
-	 * @param testResult TestNG's testResult context
-	 * @param type       Type of method
-	 * @return Request to ReportPortal
-	 */
-	protected StartTestItemRQ buildStartConfigurationRq(ITestResult testResult, TestMethodType type) {
-		StartTestItemRQ rq = new StartTestItemRQ();
-		String configName = testResult.getMethod().getMethodName();
-		rq.setName(configName);
-
-		rq.setDescription(testResult.getMethod().getDescription());
-		rq.setStartTime(new Date(testResult.getStartMillis()));
-		rq.setType(type == null ? null : type.toString());
-		return rq;
-	}
-
-	/**
-	 * Extension point to customize test step creation event/request
-	 *
-	 * @param testResult TestNG's testResult context
-	 * @return Request to ReportPortal
-	 */
-	protected StartTestItemRQ buildStartStepRq(ITestResult testResult) {
-		//		if (testResult.getAttribute(RP_ID) != null) {
-		//			return null;
-		//		}
-		StartTestItemRQ rq = new StartTestItemRQ();
-		String testStepName;
-		if (testResult.getTestName() != null) {
-			testStepName = testResult.getTestName();
-		} else {
-			testStepName = testResult.getMethod().getMethodName();
-		}
-		rq.setName(testStepName);
-		String codeRef = testResult.getMethod().getQualifiedName();
-		rq.setCodeRef(codeRef);
-		TestCaseIdEntry testCaseIdEntry = getTestCaseId(codeRef, testResult);
-		if (testCaseIdEntry != null) {
-			rq.setTestCaseId(testCaseIdEntry.getId());
-			rq.setTestCaseHash(testCaseIdEntry.getHash());
-		}
-		rq.setAttributes(createStepAttributes(testResult));
-		rq.setDescription(createStepDescription(testResult));
-		rq.setParameters(createStepParameters(testResult));
-		rq.setUniqueId(extractUniqueID(testResult));
-		rq.setStartTime(new Date(testResult.getStartMillis()));
-		rq.setType(TestMethodType.getStepType(testResult.getMethod()).toString());
-
-		rq.setRetry(isRetry(testResult));
-		return rq;
-	}
-
-	/**
 	 * Extension point to customize test suite on it's finish
 	 *
 	 * @param suite TestNG's suite context
@@ -346,31 +541,8 @@ public class TestNGService implements ITestNGService {
 	protected FinishTestItemRQ buildFinishTestRq(ITestContext testContext) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(testContext.getEndDate());
-		String status = isTestPassed(testContext) ? Statuses.PASSED : Statuses.FAILED;
+		String status = isTestPassed(testContext) ? ItemStatus.PASSED.name() : ItemStatus.FAILED.name();
 		rq.setStatus(status);
-		return rq;
-	}
-
-	/**
-	 * Extension point to customize test method on it's finish
-	 *
-	 * @param testResult TestNG's testResult context
-	 * @return Request to ReportPortal
-	 */
-	protected FinishTestItemRQ buildFinishTestMethodRq(String status, ITestResult testResult) {
-		return buildFinishTestMethodRq(status, new Date(testResult.getEndMillis()));
-	}
-
-	private FinishTestItemRQ buildFinishTestMethodRq(String status, Date endTime) {
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(endTime);
-		rq.setStatus(status);
-		// Allows indicate that SKIPPED is not to investigate items for WS
-		if (Statuses.SKIPPED.equals(status) && !fromNullable(launch.get().getParameters().getSkippedAnIssue()).or(false)) {
-			Issue issue = new Issue();
-			issue.setIssueType(NOT_ISSUE);
-			rq.setIssue(issue);
-		}
 		return rq;
 	}
 
@@ -382,37 +554,34 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected List<ParameterResource> createStepParameters(ITestResult testResult) {
 		List<ParameterResource> parameters = Lists.newArrayList();
-		Test testAnnotation = getMethodAnnotation(Test.class, testResult);
-		Parameters parametersAnnotation = getMethodAnnotation(Parameters.class, testResult);
-		if (null != testAnnotation && !isNullOrEmpty(testAnnotation.dataProvider())) {
-			parameters = createDataProviderParameters(testResult);
-		} else if (null != parametersAnnotation) {
-			parameters = createAnnotationParameters(testResult, parametersAnnotation);
-		}
+		parameters.addAll(createDataProviderParameters(testResult));
+		parameters.addAll(createAnnotationParameters(testResult));
+		parameters.addAll(crateFactoryParameters(testResult));
 		return parameters.isEmpty() ? null : parameters;
 	}
 
 	/**
 	 * Process testResult to create parameters provided via {@link Parameters}
 	 *
-	 * @param testResult           TestNG's testResult context
-	 * @param parametersAnnotation Annotation with parameters
+	 * @param testResult TestNG's testResult context
 	 * @return Step Parameters being sent to Report Portal
 	 */
-	private List<ParameterResource> createAnnotationParameters(ITestResult testResult, Parameters parametersAnnotation) {
-		List<ParameterResource> params = Lists.newArrayList();
+	private List<ParameterResource> createAnnotationParameters(ITestResult testResult) {
+		Parameters parametersAnnotation = getMethodAnnotation(Parameters.class, testResult);
+		if (parametersAnnotation == null) {
+			return Collections.emptyList();
+		}
 		String[] keys = parametersAnnotation.value();
 		Object[] parameters = testResult.getParameters();
-		if (parameters.length != keys.length) {
-			return params;
+		if (parameters.length != keys.length || keys.length <= 0) {
+			return Collections.emptyList();
 		}
-		for (int i = 0; i < keys.length; i++) {
+		return IntStream.range(0, keys.length).mapToObj(i -> {
 			ParameterResource parameter = new ParameterResource();
 			parameter.setKey(keys[i]);
-			parameter.setValue(parameters[i] != null ? parameters[i].toString() : "");
-			params.add(parameter);
-		}
-		return params;
+			parameter.setValue(parameters[i] == null ? NULL_VALUE : parameters[i].toString());
+			return parameter;
+		}).collect(Collectors.toList());
 	}
 
 	/**
@@ -425,6 +594,10 @@ public class TestNGService implements ITestNGService {
 	 */
 
 	private List<ParameterResource> createDataProviderParameters(ITestResult testResult) {
+		Test testAnnotation = getMethodAnnotation(Test.class, testResult);
+		if (null == testAnnotation || isNullOrEmpty(testAnnotation.dataProvider())) {
+			return Collections.emptyList();
+		}
 		List<ParameterResource> result = Lists.newArrayList();
 		Annotation[][] parameterAnnotations = testResult.getMethod().getConstructorOrMethod().getMethod().getParameterAnnotations();
 		Object[] values = testResult.getParameters();
@@ -432,23 +605,44 @@ public class TestNGService implements ITestNGService {
 		if (length != values.length) {
 			return result;
 		}
-		for (int i = 0; i < length; i++) {
+
+		return IntStream.range(0, length).mapToObj(i -> {
+			Object p = values[i];
 			ParameterResource parameter = new ParameterResource();
-			String key = ARGUMENT + i;
-			String value = values[i] != null ? values[i].toString() : null;
-			if (parameterAnnotations[i].length > 0) {
-				for (int j = 0; j < parameterAnnotations[i].length; j++) {
-					Annotation annotation = parameterAnnotations[i][j];
-					if (annotation.annotationType().equals(ParameterKey.class)) {
-						key = ((ParameterKey) annotation).value();
-					}
-				}
+			if (p == null) {
+				parameter.setKey(ARGUMENT + i);
+				parameter.setValue(NULL_VALUE);
+			} else {
+				String key = Arrays.stream(parameterAnnotations[i])
+						.filter(a -> ParameterKey.class.equals(a.annotationType()))
+						.map(a -> ((ParameterKey) a).value())
+						.findFirst()
+						.orElseGet(() -> p.getClass().getCanonicalName());
+				parameter.setKey(key);
+				parameter.setValue(p.toString());
 			}
-			parameter.setKey(key);
-			parameter.setValue(value != null ? value : "");
-			result.add(parameter);
+			return parameter;
+		}).collect(Collectors.toList());
+	}
+
+	private List<ParameterResource> crateFactoryParameters(ITestResult testResult) {
+		Object[] parameters = testResult.getFactoryParameters();
+		if (parameters == null || parameters.length <= 0) {
+			return Collections.emptyList();
 		}
-		return result;
+
+		return IntStream.range(0, parameters.length).mapToObj(i -> {
+			Object p = parameters[i];
+			ParameterResource parameter = new ParameterResource();
+			if (p == null) {
+				parameter.setKey(ARGUMENT + i);
+				parameter.setValue(NULL_VALUE);
+			} else {
+				parameter.setKey(p.getClass().getCanonicalName());
+				parameter.setValue(p.toString());
+			}
+			return parameter;
+		}).collect(Collectors.toList());
 	}
 
 	/**
@@ -473,16 +667,16 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected String getSuiteStatus(ISuite suite) {
 		Collection<ISuiteResult> suiteResults = suite.getResults().values();
-		String suiteStatus = Statuses.PASSED;
+		ItemStatus suiteStatus = ItemStatus.PASSED;
 		for (ISuiteResult suiteResult : suiteResults) {
 			if (!(isTestPassed(suiteResult.getTestContext()))) {
-				suiteStatus = Statuses.FAILED;
+				suiteStatus = ItemStatus.FAILED;
 				break;
 			}
 		}
 		// if at least one suite failed launch should be failed
-		isLaunchFailed.compareAndSet(false, suiteStatus.equals(Statuses.FAILED));
-		return suiteStatus;
+		isLaunchFailed.compareAndSet(false, suiteStatus == ItemStatus.FAILED);
+		return suiteStatus.name();
 	}
 
 	/**
@@ -495,11 +689,6 @@ public class TestNGService implements ITestNGService {
 	protected boolean isTestPassed(ITestContext testContext) {
 		return testContext.getFailedTests().size() == 0 && testContext.getFailedConfigurations().size() == 0
 				&& testContext.getSkippedConfigurations().size() == 0 && testContext.getSkippedTests().size() == 0;
-	}
-
-	@SuppressWarnings("unchecked")
-	protected <T> T getAttribute(IAttributes attributes, String attribute) {
-		return (T) attributes.getAttribute(attribute);
 	}
 
 	/**
@@ -518,10 +707,17 @@ public class TestNGService implements ITestNGService {
 		TestCaseId testCaseId = getMethodAnnotation(TestCaseId.class, testResult);
 		return testCaseId != null ?
 				getTestCaseId(testCaseId, testResult) :
-				new TestCaseIdEntry(StringUtils.join(codeRef, Arrays.toString(testResult.getParameters())),
-						Arrays.deepHashCode(new Object[] { codeRef, testResult.getParameters() })
-				);
+				new TestCaseIdEntry(testCaseIdFromCodeRefAndParams(codeRef, testResult.getParameters()));
 	}
+
+	private String testCaseIdFromCodeRefAndParams(String codeRef, Object[] parameters) {
+		boolean isParametersPresent = Objects.nonNull(parameters) && parameters.length > 0;
+		return isParametersPresent ? codeRef + TRANSFORM_PARAMETERS.apply(parameters) : codeRef;
+	}
+
+	private static final Function<Object[], String> TRANSFORM_PARAMETERS = it -> "[" + Arrays.stream(it)
+			.map(String::valueOf)
+			.collect(Collectors.joining(",")) + "]";
 
 	@Nullable
 	private TestCaseIdEntry getTestCaseId(TestCaseId testCaseId, ITestResult testResult) {
@@ -530,7 +726,7 @@ public class TestNGService implements ITestNGService {
 					testResult.getParameters()
 			);
 		}
-		return new TestCaseIdEntry(testCaseId.value(), testCaseId.value().hashCode());
+		return new TestCaseIdEntry(testCaseId.value());
 	}
 
 	protected Set<ItemAttributesRQ> createStepAttributes(ITestResult testResult) {
@@ -543,7 +739,7 @@ public class TestNGService implements ITestNGService {
 
 	/**
 	 * Returns method annotation by specified annotation class from
-	 * from TestNG Method or null if the method does not contain
+	 * TestNG Method or null if the method does not contain
 	 * such annotation.
 	 *
 	 * @param annotation Annotation class to find
@@ -591,39 +787,29 @@ public class TestNGService implements ITestNGService {
 		return parentId;
 	}
 
-	private boolean isRetry(ITestResult result) {
-		IRetryAnalyzer retryAnalyzer = result.getMethod().getRetryAnalyzer(result);
-		return Objects.nonNull(retryAnalyzer) && retryAnalyzer.retry(result);
-	}
-
 	@VisibleForTesting
-	static class MemoizingSupplier<T> implements Supplier<T>, Serializable {
+	static class MemorizingSupplier<T> implements Supplier<T>, Serializable {
 		final Supplier<T> delegate;
-		transient volatile boolean initialized;
-		transient T value;
+		transient volatile T value;
 		private static final long serialVersionUID = 0L;
 
-		MemoizingSupplier(Supplier<T> delegate) {
+		MemorizingSupplier(Supplier<T> delegate) {
 			this.delegate = delegate;
 		}
 
 		public T get() {
-			if (!this.initialized) {
+			if (value == null) {
 				synchronized (this) {
-					if (!this.initialized) {
-						T t = this.delegate.get();
-						this.value = t;
-						this.initialized = true;
-						return t;
+					if (value == null) {
+						return (value = delegate.get());
 					}
 				}
 			}
-
-			return this.value;
+			return value;
 		}
 
-		public synchronized void reset() {
-			this.initialized = false;
+		public void reset() {
+			value = null;
 		}
 
 		public String toString() {
