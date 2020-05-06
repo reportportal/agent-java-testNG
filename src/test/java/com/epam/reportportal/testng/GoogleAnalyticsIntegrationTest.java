@@ -66,7 +66,7 @@ public class GoogleAnalyticsIntegrationTest {
 		assertEquals("event", type);
 		assertEquals("Start launch", eventAction);
 		assertTrue(eventCategory.contains("client-java"));
-		assertEquals("test-agent|test-version-1", eventLabel);
+		assertEquals("agent-java-testng|test-version-1", eventLabel);
 
 	}
 }
