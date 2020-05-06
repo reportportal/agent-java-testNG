@@ -94,7 +94,7 @@ public class TestNGService implements ITestNGService {
 
 	private final MemorizingSupplier<Launch> launch;
 
-	private final GoogleAnalytics googleAnalytics = getGoogleAnalytics();
+	private final GoogleAnalytics googleAnalytics = new GoogleAnalytics(Schedulers.from(REPORT_PORTAL.getExecutor()), "UA-96321031-1");
 	private final List<AnalyticsItem> analyticsItems = new CopyOnWriteArrayList<>();
 	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
 
@@ -104,8 +104,8 @@ public class TestNGService implements ITestNGService {
 			//init ReportPortal object each time Launch object is going to be created
 
 			StartLaunchRQ rq = buildStartLaunchRq(REPORT_PORTAL.getParameters());
-			addStartLaunchEvent(rq);
 			rq.setStartTime(Calendar.getInstance().getTime());
+			addStartLaunchEvent(rq);
 			return REPORT_PORTAL.newLaunch(rq);
 		});
 	}
@@ -123,7 +123,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	protected GoogleAnalytics getGoogleAnalytics() {
-		return new GoogleAnalytics(Schedulers.from(REPORT_PORTAL.getExecutor()), "UA-96321031-1");
+		return googleAnalytics;
 	}
 
 	@Override
@@ -132,7 +132,7 @@ public class TestNGService implements ITestNGService {
 		StepAspect.addLaunch("default", this.launch.get());
 		ITEM_TREE.setLaunchId(launchId);
 		dependencies.addAll(analyticsItems.stream()
-				.map(it -> launchId.flatMap(l -> googleAnalytics.send(it)))
+				.map(it -> launchId.flatMap(l -> getGoogleAnalytics().send(it)))
 				.map(Maybe::ignoreElement)
 				.collect(toList()));
 	}
