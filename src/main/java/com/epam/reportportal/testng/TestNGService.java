@@ -366,9 +366,20 @@ public class TestNGService implements ITestNGService {
 	 * @return Request to ReportPortal
 	 */
 	protected FinishTestItemRQ buildFinishTestMethodRq(ItemStatus status, ITestResult testResult) {
+		return buildFinishTestMethodRq(status.name(), testResult);
+	}
+
+	/**
+	 * @deprecated use {@link #buildFinishTestMethodRq(ItemStatus, ITestResult)}
+	 * @param status     item execution status
+	 * @param testResult TestNG's testResult context
+	 * @return Request to ReportPortal
+	 */
+	@Deprecated
+	protected FinishTestItemRQ buildFinishTestMethodRq(String status, ITestResult testResult) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(new Date(testResult.getEndMillis()));
-		rq.setStatus(status.name());
+		rq.setStatus(status);
 		return rq;
 	}
 
