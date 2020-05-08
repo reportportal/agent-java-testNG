@@ -23,6 +23,7 @@ import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.LaunchImpl;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.service.step.StepReporter;
@@ -32,6 +33,7 @@ import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
+import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
@@ -89,7 +91,7 @@ public class TestNGService implements ITestNGService {
 		public V put(@NotNull final K key, @NotNull final V value) {
 			if (size() > maxSize) {
 				K keyToRemove = inputOrder.poll();
-				if(keyToRemove != null){
+				if (keyToRemove != null) {
 					remove(keyToRemove);
 				}
 			}
@@ -106,6 +108,12 @@ public class TestNGService implements ITestNGService {
 	public static final String ARGUMENT = "arg";
 	public static final String NULL_VALUE = "NULL";
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
+	public static final Issue NOT_ISSUE;
+
+	static {
+		NOT_ISSUE = new Issue();
+		NOT_ISSUE.setIssueType(LaunchImpl.NOT_ISSUE);
+	}
 
 	private static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
 
@@ -114,6 +122,7 @@ public class TestNGService implements ITestNGService {
 	private final Map<Object, Queue<Pair<Maybe<String>, FinishTestItemRQ>>> BEFORE_METHOD_TRACKER = new ConcurrentHashMap<>();
 
 	private final Map<Object, Boolean> RETRY_STATUS_TRACKER = new MaxSizeConcurrentHashMap<>(MAXIMUM_HISTORY_SIZE);
+	private final Map<Object, Boolean> SKIPPED_STATUS_TRACKER = new MaxSizeConcurrentHashMap<>(MAXIMUM_HISTORY_SIZE);
 
 	private final MemorizingSupplier<Launch> launch;
 
@@ -382,13 +391,14 @@ public class TestNGService implements ITestNGService {
 
 	private void processFinishRetryFlag(ITestResult testResult, FinishTestItemRQ rq) {
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
+
+		Object instance = testResult.getInstance();
 		if (TestMethodType.STEP == type && getAttribute(testResult, RP_RETRY) == Boolean.TRUE
 				&& getAttribute(testResult, RP_RETRY_SET) == null) {
-			RETRY_STATUS_TRACKER.put(testResult.getInstance(), Boolean.TRUE);
+			RETRY_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			rq.setRetry(Boolean.TRUE);
 		}
 
-		Object instance = testResult.getInstance();
 		// Save before method finish requests to update them with a retry flag in case of main test method failed
 		if (instance != null) {
 			if (TestMethodType.BEFORE_METHOD == type && getAttribute(testResult, RP_RETRY) == null) {
@@ -429,6 +439,18 @@ public class TestNGService implements ITestNGService {
 			testResult.setStatus(FAILURE);
 		}
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
+
+		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
+		Object instance = testResult.getInstance();
+		if (instance != null) {
+			if (ItemStatus.FAILED == status && TestMethodType.BEFORE_METHOD == type) {
+				SKIPPED_STATUS_TRACKER.put(instance, Boolean.TRUE);
+			}
+			if (ItemStatus.SKIPPED == status && (SKIPPED_STATUS_TRACKER.containsKey(instance) || (TestMethodType.BEFORE_METHOD == type
+					&& getAttribute(testResult, RP_RETRY) != null))) {
+				rq.setIssue(NOT_ISSUE);
+			}
+		}
 
 		processFinishRetryFlag(testResult, rq);
 

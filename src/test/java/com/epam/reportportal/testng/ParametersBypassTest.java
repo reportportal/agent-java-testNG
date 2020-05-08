@@ -1,11 +1,9 @@
-package com.epam.reportportal.testng.parameters;
+package com.epam.reportportal.testng;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
-import com.epam.reportportal.testng.BaseTestNGListener;
-import com.epam.reportportal.testng.TestNGServiceExtension;
 import com.epam.reportportal.testng.integration.feature.parameters.MethodDataProviderParameterTest;
 import com.epam.reportportal.testng.integration.feature.parameters.MethodDataProviderParameterTestNullValues;
 import com.epam.reportportal.testng.integration.util.TestUtils;
