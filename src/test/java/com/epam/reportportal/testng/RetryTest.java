@@ -1,8 +1,7 @@
-package com.epam.reportportal.testng.retries;
+package com.epam.reportportal.testng;
 
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.step.StepReporter;
-import com.epam.reportportal.testng.integration.RetryListener;
 import com.epam.reportportal.testng.integration.feature.retry.BasicRetryTest;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -30,6 +29,17 @@ import static org.mockito.Mockito.verify;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class RetryTest {
+	public static class RetryListener extends BaseTestNGListener {
+		static Launch LAUNCH;
+
+		public RetryListener() {
+			super(new TestNGService(() -> LAUNCH));
+		}
+
+		public static void initLaunch(Launch launch) {
+			LAUNCH = launch;
+		}
+	}
 
 	private final Maybe<String> suitedUuid = createMaybe(namedUuid("suite"));
 	private final Maybe<String> testClassUuid = createMaybe(namedUuid("class"));
