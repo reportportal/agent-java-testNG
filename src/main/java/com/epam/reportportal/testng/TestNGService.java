@@ -63,6 +63,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -184,8 +185,13 @@ public class TestNGService implements ITestNGService {
 		FinishExecutionRQ rq = new FinishExecutionRQ();
 		rq.setEndTime(Calendar.getInstance().getTime());
 		rq.setStatus(isLaunchFailed.get() ? ItemStatus.FAILED.name() : ItemStatus.PASSED.name());
-		launch.get().finish(rq, dependencies.stream().toArray(Completable[]::new));
-		this.launch.reset();
+		launch.get().finish(rq);
+		try {
+			Completable.concat(dependencies).timeout(launch.get().getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
+		} finally {
+			googleAnalytics.close();
+			this.launch.reset();
+		}
 	}
 
 	private void addToTree(ISuite suite, Maybe<String> item) {
@@ -394,10 +400,10 @@ public class TestNGService implements ITestNGService {
 	}
 
 	/**
-	 * @deprecated use {@link #buildFinishTestMethodRq(ItemStatus, ITestResult)}
 	 * @param status     item execution status
 	 * @param testResult TestNG's testResult context
 	 * @return Request to ReportPortal
+	 * @deprecated use {@link #buildFinishTestMethodRq(ItemStatus, ITestResult)}
 	 */
 	@Deprecated
 	protected FinishTestItemRQ buildFinishTestMethodRq(String status, ITestResult testResult) {

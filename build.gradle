@@ -41,7 +41,7 @@ dependencies {
         implementation 'com.epam.reportportal:client-java:5.0.0-BETA-17'
         implementation 'com.epam.reportportal:commons-model:5.0.0'
     } else {
-        implementation 'com.epam.reportportal:client-java:5.0.0-BETA-17'
+        implementation 'com.github.reportportal:client-java:71f257b'
         implementation 'com.github.reportportal:commons-model:5.0.0'
     }
 
