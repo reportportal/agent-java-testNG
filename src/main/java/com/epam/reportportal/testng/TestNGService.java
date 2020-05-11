@@ -60,10 +60,7 @@ import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -137,7 +134,8 @@ public class TestNGService implements ITestNGService {
 
 	private final MemorizingSupplier<Launch> launch;
 
-	private final GoogleAnalytics googleAnalytics = new GoogleAnalytics(Schedulers.from(REPORT_PORTAL.getExecutor()), "UA-96321031-1");
+	private final ExecutorService googleAnalyticsExecutor = Executors.newSingleThreadExecutor();
+	private final GoogleAnalytics googleAnalytics = new GoogleAnalytics(Schedulers.from(googleAnalyticsExecutor), "UA-96321031-1");
 	private final List<AnalyticsItem> analyticsItems = new CopyOnWriteArrayList<>();
 	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
 
@@ -190,7 +188,14 @@ public class TestNGService implements ITestNGService {
 			Completable.concat(dependencies).timeout(launch.get().getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
 		} finally {
 			googleAnalytics.close();
-			this.launch.reset();
+			googleAnalyticsExecutor.shutdown();
+			try {
+				this.googleAnalyticsExecutor.awaitTermination(launch.get().getParameters().getReportingTimeout(), TimeUnit.SECONDS);
+			} catch (InterruptedException exc) {
+				//do nothing
+			} finally {
+				this.launch.reset();
+			}
 		}
 	}
 
