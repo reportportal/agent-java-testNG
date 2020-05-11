@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.reportportal.testng.step;
+package com.epam.reportportal.testng;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortal;
