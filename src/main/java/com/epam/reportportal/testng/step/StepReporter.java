@@ -45,6 +45,10 @@ public class StepReporter {
 		stepReporter.sendStep(com.epam.reportportal.listeners.ItemStatus.valueOf(status.name()), name);
 	}
 
+	public void sendStep(@NotNull final ItemStatus status, final String name, String... logs) {
+		stepReporter.sendStep(com.epam.reportportal.listeners.ItemStatus.valueOf(status.name()), name, logs);
+	}
+
 	@Deprecated
 	public void sendStep(final String status, final String name, final Throwable throwable) {
 		stepReporter.sendStep(com.epam.reportportal.listeners.ItemStatus.valueOf(status), name, throwable);
