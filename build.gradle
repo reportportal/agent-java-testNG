@@ -38,10 +38,10 @@ processResources {
 
 dependencies {
     if (releaseMode) {
-        implementation 'com.epam.reportportal:client-java:5.0.0-BETA-18'
+        implementation 'com.epam.reportportal:client-java:5.0.0-BETA-19'
         implementation 'com.epam.reportportal:commons-model:5.0.0'
     } else {
-        implementation 'com.epam.reportportal:client-java:5.0.0-BETA-18'
+        implementation 'com.epam.reportportal:client-java:5.0.0-BETA-19'
         implementation 'com.github.reportportal:commons-model:5.0.0'
     }
 
