@@ -22,9 +22,6 @@
 - [Example and step-by-step instruction with Log4j](https://github.com/reportportal/examples-java/tree/master/example-testng-log4j)
 ---
 
-| WARNING: This is transitional version of agent for those who can't switch on TestNG 7 due to binary incompatibility! <br> You will be definitely affected by these issues: https://github.com/reportportal/agent-java-testNG/issues/27 <br> https://github.com/cbeust/testng/issues/2157 |
-| --- |
-
 **[TestNG](http://testng.org)** provides support for attaching custom listeners, reporters, annotation transformers and method interceptors to your tests.
 Handling events
 
@@ -88,18 +85,18 @@ Add to `POM.xml`
 <dependency>
   <groupId>com.epam.reportportal</groupId>
   <artifactId>agent-java-testng</artifactId>
-  <version>3.0.0</version>
+  <version>5.0.0-BETA-14</version>
 </dependency>
 <!-- TODO Leave only one dependency, depends on what logger you use: -->
 <dependency>
   <groupId>com.epam.reportportal</groupId>
   <artifactId>logger-java-logback</artifactId>
-  <version>3.0.0</version>
+  <version>5.0.0-BETA-9</version>
 </dependency>
 <dependency>
   <groupId>com.epam.reportportal</groupId>
   <artifactId>logger-java-log4j</artifactId>
-  <version>3.0.0</version>
+  <version>5.0.0-BETA-9</version>
 </dependency>
 ```
 
