@@ -22,5 +22,7 @@ public enum ItemStatus {
 	STOPPED,
 	SKIPPED,
 	RESETED,
-	CANCELLED
+	CANCELLED,
+	INFO,
+	WARN
 }
