@@ -28,6 +28,7 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.service.tree.TestItemTree;
+import com.epam.reportportal.testng.util.internal.LimitedSizeConcurrentHashMap;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
@@ -79,27 +80,6 @@ public class TestNGService implements ITestNGService {
 	private static final Predicate<StackTraceElement[]> IS_RETRY = eList -> Arrays.stream(eList).anyMatch(IS_RETRY_ELEMENT);
 	private static final int MAXIMUM_HISTORY_SIZE = 1000;
 
-	private static class MaxSizeConcurrentHashMap<K, V> extends ConcurrentHashMap<K, V> {
-		private final int maxSize;
-		private final Queue<K> inputOrder = new ConcurrentLinkedQueue<>();
-
-		public MaxSizeConcurrentHashMap(final int maximumMapSize) {
-			maxSize = maximumMapSize;
-		}
-
-		@Override
-		public V put(@NotNull final K key, @NotNull final V value) {
-			if (size() > maxSize) {
-				K keyToRemove = inputOrder.poll();
-				if (keyToRemove != null) {
-					remove(keyToRemove);
-				}
-			}
-			inputOrder.add(key);
-			return super.put(key, value);
-		}
-	}
-
 	public static final String SKIPPED_ISSUE_KEY = "skippedIssue";
 	public static final String RP_ID = "rp_id";
 	public static final String RP_RETRY = "rp_retry";
@@ -120,8 +100,8 @@ public class TestNGService implements ITestNGService {
 
 	private final Map<Object, Queue<Pair<Maybe<String>, FinishTestItemRQ>>> BEFORE_METHOD_TRACKER = new ConcurrentHashMap<>();
 
-	private final Map<Object, Boolean> RETRY_STATUS_TRACKER = new MaxSizeConcurrentHashMap<>(MAXIMUM_HISTORY_SIZE);
-	private final Map<Object, Boolean> SKIPPED_STATUS_TRACKER = new MaxSizeConcurrentHashMap<>(MAXIMUM_HISTORY_SIZE);
+	private final Map<Object, Boolean> RETRY_STATUS_TRACKER = new LimitedSizeConcurrentHashMap<>(MAXIMUM_HISTORY_SIZE);
+	private final Map<Object, Boolean> SKIPPED_STATUS_TRACKER = new LimitedSizeConcurrentHashMap<>(MAXIMUM_HISTORY_SIZE);
 
 	private final MemorizingSupplier<Launch> launch;
 
