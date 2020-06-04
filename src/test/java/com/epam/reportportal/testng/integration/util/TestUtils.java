@@ -12,15 +12,14 @@ import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import io.reactivex.Maybe;
+import org.apache.commons.lang3.tuple.Pair;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import org.testng.ITestNGListener;
 import org.testng.TestNG;
 
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -88,7 +87,8 @@ public class TestUtils {
 
 	public static void mockLaunch(Launch launch, StepReporter reporter, Maybe<String> launchUuid, Maybe<String> suiteUuid,
 			Maybe<String> testClassUuid, Collection<Maybe<String>> testMethodUuidList) {
-		mockLaunch(launch,
+		mockLaunch(
+				launch,
 				new ListenerParameters(PropertiesLoader.load()),
 				reporter,
 				launchUuid,
@@ -161,18 +161,26 @@ public class TestUtils {
 		when(client.log(any(MultiPartRequest.class))).thenReturn(TestUtils.createMaybe(new BatchSaveOperatingRS()));
 	}
 
-	public static List<String> mockNestedSteps(ReportPortalClient client, String testMethodUuid) {
-		List<String> nestedStepsUuids = new CopyOnWriteArrayList<>();
-		Supplier<Maybe<ItemCreatedRS>> maybeSupplier = () -> {
-			String uuid = UUID.randomUUID().toString();
-			nestedStepsUuids.add(uuid);
-			return TestUtils.createMaybe(new ItemCreatedRS(uuid, uuid));
-		};
+	public static void mockNestedSteps(ReportPortalClient client, Pair<String, String> parentNestedPair) {
+		mockNestedSteps(client, Collections.singletonList(parentNestedPair));
+	}
 
-		when(client.startTestItem(eq(testMethodUuid), any())).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> maybeSupplier.get());
-		when(client.finishTestItem(eq(testMethodUuid),
+	@SuppressWarnings("unchecked")
+	public static void mockNestedSteps(final ReportPortalClient client, final List<Pair<String, String>> parentNestedPairs) {
+		Map<String, List<String>> responseOrders = parentNestedPairs.stream()
+				.collect(Collectors.groupingBy(Pair::getKey, Collectors.mapping(Pair::getValue, Collectors.toList())));
+		responseOrders.forEach((k, v) -> {
+			List<Maybe<ItemCreatedRS>> responses = v.stream()
+					.map(uuid -> TestUtils.createMaybe(new ItemCreatedRS(uuid, uuid)))
+					.collect(Collectors.toList());
+
+			Maybe<ItemCreatedRS> first = responses.get(0);
+			Maybe<ItemCreatedRS>[] other = responses.subList(1, responses.size()).toArray(new Maybe[0]);
+			when(client.startTestItem(eq(k), any())).thenReturn(first, other);
+		});
+		parentNestedPairs.forEach(p -> when(client.finishTestItem(
+				same(p.getValue()),
 				any()
-		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> TestUtils.createMaybe(new OperationCompletionRS()));
-		return nestedStepsUuids;
+		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> TestUtils.createMaybe(new OperationCompletionRS())));
 	}
 }

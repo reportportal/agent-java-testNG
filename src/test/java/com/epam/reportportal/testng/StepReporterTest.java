@@ -22,9 +22,8 @@ import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.integration.ManualStepReportPortalListener;
 import com.epam.reportportal.testng.integration.feature.step.ManualStepReporterFeatureTest;
 import com.epam.reportportal.testng.integration.feature.step.ManualStepReporterSimpleTest;
-import com.epam.reportportal.testng.integration.util.TestUtils;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
-import org.junit.jupiter.api.AfterEach;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -33,7 +32,10 @@ import org.testng.TestNG;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static com.epam.reportportal.testng.integration.util.TestUtils.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.*;
@@ -44,42 +46,38 @@ import static org.mockito.Mockito.*;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class StepReporterTest {
 
-	private final String suitedUuid = TestUtils.namedUuid("suite");
-	private final String testClassUuid = TestUtils.namedUuid("class");
-	private final String testMethodUuid = TestUtils.namedUuid("test");
+	private final String suitedUuid = namedUuid("suite");
+	private final String testClassUuid = namedUuid("class");
+	private final String testMethodUuid = namedUuid("test");
+	private final List<String> stepUuidList = Stream.generate(() -> namedUuid("step")).limit(3).collect(Collectors.toList());
+	private final List<Pair<String, String>> testStepUuidOrder = stepUuidList.stream()
+			.map(u -> Pair.of(testMethodUuid, u))
+			.collect(Collectors.toList());
 
 	@Mock
 	private ReportPortalClient client;
 
-	private List<String> nestedStepsUuids;
-
 	@BeforeEach
 	public void initMocks() {
-		TestUtils.mockLaunch(client, "launchUuid", suitedUuid, testClassUuid, testMethodUuid);
-		nestedStepsUuids = TestUtils.mockNestedSteps(client, testMethodUuid);
-		final ReportPortal reportPortal = ReportPortal.create(client, new ListenerParameters(PropertiesLoader.load()));
+		mockLaunch(client, "launchUuid", suitedUuid, testClassUuid, testMethodUuid);
+		ReportPortal reportPortal = ReportPortal.create(client, new ListenerParameters(PropertiesLoader.load()));
 		ManualStepReportPortalListener.initReportPortal(reportPortal);
-	}
-
-	@AfterEach
-	public void cleanup() {
-		nestedStepsUuids.clear();
 	}
 
 	@Test
 	public void verify_failed_nested_step_fails_test_run() {
-		TestNG testNg = TestUtils.runTests(Collections.singletonList(ManualStepReportPortalListener.class),
-				ManualStepReporterFeatureTest.class
-		);
+		mockNestedSteps(client, testStepUuidOrder);
+		TestNG testNg = runTests(Collections.singletonList(ManualStepReportPortalListener.class), ManualStepReporterFeatureTest.class);
 
 		assertThat(testNg.hasFailure(), equalTo(Boolean.TRUE));
 	}
 
 	@Test
 	public void verify_listener_finishes_unfinished_step() {
-		TestUtils.runTests(Collections.singletonList(ManualStepReportPortalListener.class), ManualStepReporterSimpleTest.class);
+		mockNestedSteps(client, testStepUuidOrder.get(0));
+		runTests(Collections.singletonList(ManualStepReportPortalListener.class), ManualStepReporterSimpleTest.class);
 
-		verify(client, timeout(1000).times(1)).finishTestItem(eq(nestedStepsUuids.get(0)), any());
+		verify(client, timeout(1000).times(1)).finishTestItem(same(stepUuidList.get(0)), any());
 	}
 
 }

@@ -417,9 +417,15 @@ public class TestNGService implements ITestNGService {
 
 	private void processFinishRetryFlag(ITestResult testResult, FinishTestItemRQ rq) {
 		boolean isRetried = testResult.wasRetried();
+		Object instance = testResult.getInstance();
+		if (instance != null && ItemStatus.PASSED.name().equals(rq.getStatus())) {
+			// Remove retry flag if an item passed
+			RETRY_STATUS_TRACKER.remove(instance);
+			return;
+		}
+
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
 
-		Object instance = testResult.getInstance();
 		if (TestMethodType.STEP == type && getAttribute(testResult, RP_RETRY) == null && isRetried) {
 			RETRY_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			rq.setRetry(Boolean.TRUE);
@@ -753,7 +759,8 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected boolean isTestPassed(ITestContext testContext) {
 		return testContext.getFailedTests().size() == 0 && testContext.getFailedConfigurations().size() == 0
-				&& testContext.getSkippedConfigurations().size() == 0 && testContext.getSkippedTests().size() == 0;
+				&& testContext.getSkippedConfigurations().size() == 0 && (testContext.getSkippedTests().size() == 0
+				|| testContext.getSkippedTests().getAllResults().stream().allMatch(ITestResult::wasRetried));
 	}
 
 	/**
