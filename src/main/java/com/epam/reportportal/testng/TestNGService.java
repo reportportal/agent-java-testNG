@@ -241,6 +241,10 @@ public class TestNGService implements ITestNGService {
 		});
 	}
 
+	private static Set<ITestResult> getTestResults(IResultMap rm) {
+		return ofNullable(rm).map(IResultMap::getAllResults).orElse(Collections.emptySet());
+	}
+
 	@Override
 	public void finishTest(ITestContext testContext) {
 		if (hasMethodsToRun(testContext)) {
@@ -249,6 +253,19 @@ public class TestNGService implements ITestNGService {
 			if (launch.get().getParameters().isCallbackReportingEnabled()) {
 				removeFromTree(testContext);
 			}
+			// Cleanup
+			Set<ITestResult> results = new HashSet<>();
+			results.addAll(getTestResults(testContext.getFailedButWithinSuccessPercentageTests()));
+			results.addAll(getTestResults(testContext.getFailedConfigurations()));
+			results.addAll(getTestResults(testContext.getFailedTests()));
+			results.addAll(getTestResults(testContext.getSkippedTests()));
+			results.addAll(getTestResults(testContext.getSkippedConfigurations()));
+			results.addAll(getTestResults(testContext.getPassedConfigurations()));
+			results.addAll(getTestResults(testContext.getPassedTests()));
+			results.stream().map(ITestResult::getInstance).collect(Collectors.toSet()).forEach(i -> {
+				RETRY_STATUS_TRACKER.remove(i);
+				SKIPPED_STATUS_TRACKER.remove(i);
+			});
 		}
 	}
 
