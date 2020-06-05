@@ -43,7 +43,7 @@ public class RetryTest {
 
 	private final Maybe<String> suitedUuid = createMaybe(namedUuid("suite"));
 	private final Maybe<String> testClassUuid = createMaybe(namedUuid("class"));
-	List<Maybe<String>> testUuidList = Stream.concat(Stream.concat(
+	private final List<Maybe<String>> testUuidList = Stream.concat(Stream.concat(
 			Stream.generate(() -> createMaybe(namedUuid("before1"))).limit(3),
 			Stream.generate(() -> createMaybe(namedUuid("before2"))).limit(3)
 	), Stream.concat(
