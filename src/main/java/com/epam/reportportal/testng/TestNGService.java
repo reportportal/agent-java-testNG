@@ -84,7 +84,7 @@ public class TestNGService implements ITestNGService {
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
 	private static final String CLIENT_PROPERTIES_FILE = "client.properties";
 	private static final String START_LAUNCH_EVENT_ACTION = "Start launch";
-	private static final Predicate<StackTraceElement> IS_RETRY_ELEMENT = e -> "org.testng.internal.TestInvoker".equals(e.getClassName())
+	private static final Predicate<StackTraceElement> IS_RETRY_ELEMENT = e -> "org.testng.internal.Invoker".equals(e.getClassName())
 			&& "retryFailed".equals(e.getMethodName());
 	private static final Predicate<StackTraceElement[]> IS_RETRY = eList -> Arrays.stream(eList).anyMatch(IS_RETRY_ELEMENT);
 	private static final int MAXIMUM_HISTORY_SIZE = 1000;
@@ -472,7 +472,7 @@ public class TestNGService implements ITestNGService {
 		ItemStatus status = ItemStatus.valueOf(statusStr);
 		Maybe<String> itemId = getAttribute(testResult, RP_ID);
 		if (ItemStatus.SKIPPED == status) {
-			if(null == itemId) {
+			if (null == itemId) {
 				startTestMethod(testResult);
 				itemId = getAttribute(testResult, RP_ID); // if we started new test method we need to get new item ID
 			} else {
