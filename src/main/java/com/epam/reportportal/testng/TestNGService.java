@@ -263,7 +263,7 @@ public class TestNGService implements ITestNGService {
 			results.addAll(getTestResults(testContext.getSkippedConfigurations()));
 			results.addAll(getTestResults(testContext.getPassedConfigurations()));
 			results.addAll(getTestResults(testContext.getPassedTests()));
-			results.stream().map(ITestResult::getInstance).collect(Collectors.toSet()).forEach(i -> {
+			results.stream().map(ITestResult::getInstance).filter(Objects::nonNull).collect(Collectors.toSet()).forEach(i -> {
 				RETRY_STATUS_TRACKER.remove(i);
 				SKIPPED_STATUS_TRACKER.remove(i);
 			});
@@ -347,7 +347,7 @@ public class TestNGService implements ITestNGService {
 		rq.setName(testStepName);
 		String codeRef = testResult.getMethod().getQualifiedName();
 		rq.setCodeRef(codeRef);
-		rq.setTestCaseId(getTestCaseId(codeRef, testResult).getId());
+		rq.setTestCaseId(Objects.requireNonNull(getTestCaseId(codeRef, testResult)).getId());
 		rq.setAttributes(createStepAttributes(testResult));
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
@@ -445,6 +445,9 @@ public class TestNGService implements ITestNGService {
 				&& getAttribute(testResult, RP_RETRY_SET) == null) {
 			RETRY_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			rq.setRetry(Boolean.TRUE);
+		}
+		if (isRetried) {
+			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
 		}
 
 		// Save before method finish requests to update them with a retry flag in case of main test method failed
@@ -761,7 +764,10 @@ public class TestNGService implements ITestNGService {
 	protected boolean isTestPassed(ITestContext testContext) {
 		return testContext.getFailedTests().size() == 0 && testContext.getFailedConfigurations().size() == 0
 				&& testContext.getSkippedConfigurations().size() == 0 && (testContext.getSkippedTests().size() == 0
-				|| testContext.getSkippedTests().getAllResults().stream().allMatch(ITestResult::wasRetried));
+				|| testContext.getSkippedTests()
+				.getAllResults()
+				.stream()
+				.allMatch(e -> (boolean) ofNullable(getAttribute(e, RP_RETRY)).orElse(Boolean.FALSE)));
 	}
 
 	/**
