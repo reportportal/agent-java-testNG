@@ -221,8 +221,8 @@ public class FailedBeforeAfterTest {
 
 		ArgumentCaptor<Maybe<String>> finishUuidCapture = ArgumentCaptor.forClass(Maybe.class);
 		ArgumentCaptor<FinishTestItemRQ> finishItemCapture = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		// TestNG misbehaves in this situation, so 9 here is just to capture items
-		verify(launch, times(9)).finishTestItem(finishUuidCapture.capture(), finishItemCapture.capture());
+		// 1 before 1 test 1 after x 3 retries = 9, + 1 callback update in the first before to set 'retry' flag, + test end, + suite end = 12
+		verify(launch, times(12)).finishTestItem(finishUuidCapture.capture(), finishItemCapture.capture());
 
 		List<Maybe<String>> itemUuids = finishUuidCapture.getAllValues();
 		List<FinishTestItemRQ> finishItems = finishItemCapture.getAllValues();
@@ -253,7 +253,7 @@ public class FailedBeforeAfterTest {
 				.map(Pair::getValue)
 				.collect(Collectors.toList());
 
-		assertThat(tests, hasSize(2));
+		assertThat(tests, hasSize(3));
 
 		assertThat(tests.get(0).getStatus(), equalTo(ItemStatus.SKIPPED.name()));
 		assertThat(tests.get(0).isRetry(), equalTo(Boolean.TRUE));
@@ -262,5 +262,9 @@ public class FailedBeforeAfterTest {
 		assertThat(tests.get(1).getStatus(), equalTo(ItemStatus.SKIPPED.name()));
 		assertThat(tests.get(1).isRetry(), nullValue());
 		assertThat(tests.get(1).getIssue(), nullValue());
+
+		assertThat(tests.get(2).getStatus(), equalTo(ItemStatus.PASSED.name()));
+		assertThat(tests.get(2).isRetry(), nullValue());
+		assertThat(tests.get(2).getIssue(), nullValue());
 	}
 }

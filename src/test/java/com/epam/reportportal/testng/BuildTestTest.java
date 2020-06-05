@@ -29,10 +29,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.testng.IResultMap;
-import org.testng.ISuite;
-import org.testng.ISuiteResult;
-import org.testng.ITestContext;
+import org.testng.*;
 import org.testng.internal.ResultMap;
 
 import java.util.*;
@@ -213,6 +210,7 @@ public class BuildTestTest {
 		when(testContext.getSkippedConfigurations()).thenReturn(empty);
 
 		when(skippedTests.size()).thenReturn(1);
+		when(skippedTests.getAllResults()).thenReturn(Collections.singleton(mock(ITestResult.class)));
 		when(testContext.getSkippedTests()).thenReturn(skippedTests);
 
 		FinishTestItemRQ rq = testNGService.buildFinishTestRq(testContext);

@@ -6,6 +6,7 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.integration.feature.parameters.MethodDataProviderParameterTest;
 import com.epam.reportportal.testng.integration.feature.parameters.MethodDataProviderParameterTestNullValues;
+import com.epam.reportportal.testng.integration.feature.parameters.ParameterNamesTest;
 import com.epam.reportportal.testng.integration.util.TestUtils;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
@@ -123,5 +124,25 @@ public class ParametersBypassTest {
 		verify(client, timeout(1000).times(3)).startTestItem(startsWith("class"), testCaptor.capture());
 
 		verify_null_parameter(testCaptor.getAllValues());
+	}
+
+	@Test
+	public void verify_parameter_key_annotation_bypass() {
+		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), ParameterNamesTest.class);
+
+		ArgumentCaptor<StartTestItemRQ> testCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, timeout(1000).times(2)).startTestItem(startsWith("class"), testCaptor.capture());
+
+		List<StartTestItemRQ> methodStarts = testCaptor.getAllValues();
+
+		assertThat(methodStarts, hasSize(2));
+
+		methodStarts.stream().map(StartTestItemRQ::getParameters).peek(pl -> assertThat(pl, hasSize(2))).forEach(testParams -> {
+			assertThat(testParams, hasSize(2));
+			assertThat(testParams.get(0).getKey(), equalTo(ParameterNamesTest.FIRST_PARAMETER_NAME));
+			assertThat(testParams.get(1).getKey(), equalTo(ParameterNamesTest.SECOND_PARAMETER_NAME));
+
+			assertThat(testParams.get(0).getValue() + "-" + testParams.get(1).getValue(), anyOf(equalTo("1-one"), equalTo("2-two")));
+		});
 	}
 }
