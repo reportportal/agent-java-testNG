@@ -421,7 +421,6 @@ public class TestNGService implements ITestNGService {
 		if (instance != null && ItemStatus.PASSED.name().equals(rq.getStatus())) {
 			// Remove retry flag if an item passed
 			RETRY_STATUS_TRACKER.remove(instance);
-			return;
 		}
 
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
