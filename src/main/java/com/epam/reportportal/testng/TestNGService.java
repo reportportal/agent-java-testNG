@@ -446,9 +446,6 @@ public class TestNGService implements ITestNGService {
 			RETRY_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			rq.setRetry(Boolean.TRUE);
 		}
-		if (isRetried) {
-			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
-		}
 
 		// Save before method finish requests to update them with a retry flag in case of main test method failed
 		if (instance != null) {
