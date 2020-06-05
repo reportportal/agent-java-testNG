@@ -84,7 +84,7 @@ public class TestNGService implements ITestNGService {
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
 	private static final String CLIENT_PROPERTIES_FILE = "client.properties";
 	private static final String START_LAUNCH_EVENT_ACTION = "Start launch";
-	private static final Predicate<StackTraceElement> IS_RETRY_ELEMENT = e -> "org.testng.internal.TestInvoker".equals(e.getClassName())
+	private static final Predicate<StackTraceElement> IS_RETRY_ELEMENT = e -> "org.testng.internal.Invoker".equals(e.getClassName())
 			&& "retryFailed".equals(e.getMethodName());
 	private static final Predicate<StackTraceElement[]> IS_RETRY = eList -> Arrays.stream(eList).anyMatch(IS_RETRY_ELEMENT);
 	private static final int MAXIMUM_HISTORY_SIZE = 1000;
@@ -242,6 +242,10 @@ public class TestNGService implements ITestNGService {
 		});
 	}
 
+	private static Set<ITestResult> getTestResults(IResultMap rm) {
+		return ofNullable(rm).map(IResultMap::getAllResults).orElse(Collections.emptySet());
+	}
+
 	@Override
 	public void finishTest(ITestContext testContext) {
 		if (hasMethodsToRun(testContext)) {
@@ -250,6 +254,19 @@ public class TestNGService implements ITestNGService {
 			if (launch.get().getParameters().isCallbackReportingEnabled()) {
 				removeFromTree(testContext);
 			}
+			// Cleanup
+			Set<ITestResult> results = new HashSet<>();
+			results.addAll(getTestResults(testContext.getFailedButWithinSuccessPercentageTests()));
+			results.addAll(getTestResults(testContext.getFailedConfigurations()));
+			results.addAll(getTestResults(testContext.getFailedTests()));
+			results.addAll(getTestResults(testContext.getSkippedTests()));
+			results.addAll(getTestResults(testContext.getSkippedConfigurations()));
+			results.addAll(getTestResults(testContext.getPassedConfigurations()));
+			results.addAll(getTestResults(testContext.getPassedTests()));
+			results.stream().map(ITestResult::getInstance).filter(Objects::nonNull).collect(Collectors.toSet()).forEach(i -> {
+				RETRY_STATUS_TRACKER.remove(i);
+				SKIPPED_STATUS_TRACKER.remove(i);
+			});
 		}
 	}
 
@@ -330,7 +347,7 @@ public class TestNGService implements ITestNGService {
 		rq.setName(testStepName);
 		String codeRef = testResult.getMethod().getQualifiedName();
 		rq.setCodeRef(codeRef);
-		rq.setTestCaseId(getTestCaseId(codeRef, testResult).getId());
+		rq.setTestCaseId(Objects.requireNonNull(getTestCaseId(codeRef, testResult)).getId());
 		rq.setAttributes(createStepAttributes(testResult));
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
@@ -416,9 +433,14 @@ public class TestNGService implements ITestNGService {
 	}
 
 	private void processFinishRetryFlag(ITestResult testResult, FinishTestItemRQ rq) {
+		Object instance = testResult.getInstance();
+		if (instance != null && ItemStatus.PASSED.name().equals(rq.getStatus())) {
+			// Remove retry flag if an item passed
+			RETRY_STATUS_TRACKER.remove(instance);
+		}
+
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
 
-		Object instance = testResult.getInstance();
 		if (TestMethodType.STEP == type && getAttribute(testResult, RP_RETRY) == Boolean.TRUE
 				&& getAttribute(testResult, RP_RETRY_SET) == null) {
 			RETRY_STATUS_TRACKER.put(instance, Boolean.TRUE);
@@ -450,7 +472,7 @@ public class TestNGService implements ITestNGService {
 		ItemStatus status = ItemStatus.valueOf(statusStr);
 		Maybe<String> itemId = getAttribute(testResult, RP_ID);
 		if (ItemStatus.SKIPPED == status) {
-			if(null == itemId) {
+			if (null == itemId) {
 				startTestMethod(testResult);
 				itemId = getAttribute(testResult, RP_ID); // if we started new test method we need to get new item ID
 			} else {
@@ -738,7 +760,11 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected boolean isTestPassed(ITestContext testContext) {
 		return testContext.getFailedTests().size() == 0 && testContext.getFailedConfigurations().size() == 0
-				&& testContext.getSkippedConfigurations().size() == 0 && testContext.getSkippedTests().size() == 0;
+				&& testContext.getSkippedConfigurations().size() == 0 && (testContext.getSkippedTests().size() == 0
+				|| testContext.getSkippedTests()
+				.getAllResults()
+				.stream()
+				.allMatch(e -> (boolean) ofNullable(getAttribute(e, RP_RETRY)).orElse(Boolean.FALSE)));
 	}
 
 	/**

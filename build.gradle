@@ -61,7 +61,7 @@ dependencies {
     testImplementation 'ch.qos.logback:logback-classic:1.2.3'
 
     testImplementation 'com.google.inject:guice:4.2.3'
-    testImplementation ('com.epam.reportportal:logger-java-logback:5.0.0-BETA-9') {
+    testImplementation ('com.epam.reportportal:logger-java-logback:5.0.0-RC-2') {
         exclude module: 'client-java'
     }
 

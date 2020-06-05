@@ -221,7 +221,7 @@ public class FailedBeforeAfterTest {
 
 		ArgumentCaptor<Maybe<String>> finishUuidCapture = ArgumentCaptor.forClass(Maybe.class);
 		ArgumentCaptor<FinishTestItemRQ> finishItemCapture = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		// TestNG misbehaves in this situation, so 9 here is just to capture items
+		// 1 before 1 test 1 after, then skipped 1 before 1 test 1 after, + 1 callback update in the first before to set 'retry' flag, + test end, + suite end = 9
 		verify(launch, times(9)).finishTestItem(finishUuidCapture.capture(), finishItemCapture.capture());
 
 		List<Maybe<String>> itemUuids = finishUuidCapture.getAllValues();
