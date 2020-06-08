@@ -72,9 +72,9 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 	private final String suitedUuid = namedUuid("suite");
 	private final String testClassUuid = namedUuid("class");
 	private final List<String> testUuidList = Arrays.asList(namedUuid("test1"), namedUuid("test1"), namedUuid("test2"));
-	private final List<String> nestedStepUuidList = Arrays.asList(namedUuid("tst1-ns1-"), namedUuid("tst1-ns2-"), namedUuid("tst2-ns1-"));
+	private final List<String> nestedStepUuidList = Arrays.asList(namedUuid("tst1-ns1-"), namedUuid("tst1-ns2-"));
 
-	private final List<Pair<String, String>> testStepUuidOrder = IntStream.range(0, 3)
+	private final List<Pair<String, String>> testStepUuidOrder = IntStream.range(0, 2)
 			.mapToObj(i -> Pair.of(testUuidList.get(i), nestedStepUuidList.get(i)))
 			.collect(Collectors.toList());
 
@@ -82,7 +82,6 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 			testUuidList.get(0),
 			nestedStepUuidList.get(1),
 			testUuidList.get(1),
-//			nestedStepUuidList.get(2),
 			testUuidList.get(2),
 			testClassUuid,
 			suitedUuid
