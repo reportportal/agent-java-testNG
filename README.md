@@ -89,18 +89,18 @@ Add to `POM.xml`
 <dependency>
   <groupId>com.epam.reportportal</groupId>
   <artifactId>agent-java-testng</artifactId>
-  <version>5.0.0-RC-1</version>
+  <version>5.0.0</version>
 </dependency>
 <!-- TODO Leave only one dependency, depends on what logger you use: -->
 <dependency>
   <groupId>com.epam.reportportal</groupId>
   <artifactId>logger-java-logback</artifactId>
-  <version>5.0.0-RC-1</version>
+  <version>5.0.0</version>
 </dependency>
 <dependency>
   <groupId>com.epam.reportportal</groupId>
   <artifactId>logger-java-log4j</artifactId>
-  <version>5.0.0-RC-1</version>
+  <version>5.0.0</version>
 </dependency>
 ```
 
