@@ -38,10 +38,10 @@ processResources {
 
 dependencies {
     if (releaseMode) {
-        implementation 'com.epam.reportportal:client-java:5.0.0'
+        implementation 'com.epam.reportportal:client-java:5.0.1'
         implementation 'com.epam.reportportal:commons-model:5.0.0'
     } else {
-        implementation 'com.epam.reportportal:client-java:5.0.0'
+        implementation 'com.epam.reportportal:client-java:5.0.1'
         implementation 'com.github.reportportal:commons-model:5.0.0'
     }
 
@@ -61,7 +61,7 @@ dependencies {
     testImplementation 'ch.qos.logback:logback-classic:1.2.3'
 
     testImplementation 'com.google.inject:guice:4.2.3'
-    testImplementation ('com.epam.reportportal:logger-java-logback:5.0.0') {
+    testImplementation ('com.epam.reportportal:logger-java-logback:5.0.1') {
         exclude module: 'client-java'
     }
 
