@@ -64,12 +64,20 @@ public class StepReporterTest {
 		ManualStepReportPortalListener.initReportPortal(reportPortal);
 	}
 
+	/*
+	 * Failing test from nested steps causes more issues than solve, so strictly prohibited.
+	 * 1. If test is going to be retried, marking a test result as a failure makes TestNG skip dependent tests.
+	 * 2. If we want to retry a test which failed by a nested step, then we should set a 'wasRetried' flag and test result status as 'SKIP'.
+	 *    TestNG actually will not retry such test as it should, and mark all dependent tests as skipped.
+	 *
+	 * DO NOT DELETE OR MODIFY THIS TEST, SERIOUSLY!
+	 */
 	@Test
-	public void verify_failed_nested_step_fails_test_run() {
+	public void verify_failed_nested_step_not_fails_test_run() {
 		mockNestedSteps(client, testStepUuidOrder);
 		TestNG testNg = runTests(Collections.singletonList(ManualStepReportPortalListener.class), ManualStepReporterFeatureTest.class);
 
-		assertThat(testNg.hasFailure(), equalTo(Boolean.TRUE));
+		assertThat(testNg.hasFailure(), equalTo(Boolean.FALSE));
 	}
 
 	@Test
