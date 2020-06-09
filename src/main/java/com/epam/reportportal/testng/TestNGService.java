@@ -73,6 +73,7 @@ import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.testng.ITestResult.FAILURE;
+import static org.testng.ITestResult.SKIP;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -478,11 +479,7 @@ public class TestNGService implements ITestNGService {
 			itemId = getAttribute(testResult, RP_ID); // if we started new test method we need to get new item ID
 		}
 
-		StepReporter sr = launch.get().getStepReporter();
-		sr.finishPreviousStep();
-		if (sr.isFailed(itemId)) {
-			testResult.setStatus(FAILURE);
-		}
+		launch.get().getStepReporter().finishPreviousStep();
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
 
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
