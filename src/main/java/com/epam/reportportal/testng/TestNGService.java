@@ -29,7 +29,6 @@ import com.epam.reportportal.service.analytics.GoogleAnalytics;
 import com.epam.reportportal.service.analytics.item.AnalyticsEvent;
 import com.epam.reportportal.service.analytics.item.AnalyticsItem;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
-import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.testng.util.internal.LimitedSizeConcurrentHashMap;
 import com.epam.reportportal.utils.AttributeParser;
@@ -72,8 +71,6 @@ import java.util.stream.IntStream;
 import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
-import static org.testng.ITestResult.FAILURE;
-import static org.testng.ITestResult.SKIP;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -275,7 +272,7 @@ public class TestNGService implements ITestNGService {
 				.remove(createKey(testContext)));
 	}
 
-	private boolean getRetry(ITestResult testResult) {
+	private boolean isRetry(ITestResult testResult) {
 		if (testResult.wasRetried()) {
 			return true;
 		}
@@ -300,7 +297,7 @@ public class TestNGService implements ITestNGService {
 		rq.setDescription(testResult.getMethod().getDescription());
 		rq.setStartTime(new Date(testResult.getStartMillis()));
 		rq.setType(type == null ? null : type.toString());
-		boolean retry = getRetry(testResult);
+		boolean retry = isRetry(testResult);
 		if (retry) {
 			rq.setRetry(Boolean.TRUE);
 		}
@@ -356,7 +353,7 @@ public class TestNGService implements ITestNGService {
 		rq.setUniqueId(extractUniqueID(testResult));
 		rq.setStartTime(new Date(testResult.getStartMillis()));
 		rq.setType(type.toString());
-		boolean retry = getRetry(testResult);
+		boolean retry = isRetry(testResult);
 		if (retry) {
 			rq.setRetry(Boolean.TRUE);
 		}
@@ -436,7 +433,7 @@ public class TestNGService implements ITestNGService {
 	private void processFinishRetryFlag(ITestResult testResult, FinishTestItemRQ rq) {
 		boolean isRetried = testResult.wasRetried();
 		Object instance = testResult.getInstance();
-		if (instance != null && ItemStatus.PASSED.name().equals(rq.getStatus())) {
+		if (instance != null && !ItemStatus.SKIPPED.name().equals(rq.getStatus())) {
 			// Remove retry flag if an item passed
 			RETRY_STATUS_TRACKER.remove(instance);
 		}
