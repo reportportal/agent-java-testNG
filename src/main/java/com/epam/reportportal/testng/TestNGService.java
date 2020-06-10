@@ -337,13 +337,7 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected StartTestItemRQ buildStartStepRq(final @NotNull ITestResult testResult, final @NotNull TestMethodType type) {
 		StartTestItemRQ rq = new StartTestItemRQ();
-		String testStepName;
-		if (testResult.getTestName() != null) {
-			testStepName = testResult.getTestName();
-		} else {
-			testStepName = testResult.getMethod().getMethodName();
-		}
-		rq.setName(testStepName);
+		rq.setName(createStepName(testResult));
 		String codeRef = testResult.getMethod().getQualifiedName();
 		rq.setCodeRef(codeRef);
 		rq.setTestCaseId(Objects.requireNonNull(getTestCaseId(codeRef, testResult)).getId());
@@ -443,6 +437,7 @@ public class TestNGService implements ITestNGService {
 		if (TestMethodType.STEP == type && getAttribute(testResult, RP_RETRY) == null && isRetried) {
 			RETRY_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			rq.setRetry(Boolean.TRUE);
+			rq.setIssue(NOT_ISSUE);
 		}
 		if (isRetried) {
 			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
@@ -481,6 +476,9 @@ public class TestNGService implements ITestNGService {
 
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
 		Object instance = testResult.getInstance();
+
+		// TestNG does not repeat before methods if an after method fails during retries. But reports them as skipped.
+		// Mark before methods as not an issue if it is not a culprit.
 		if (instance != null) {
 			if (ItemStatus.FAILED == status && TestMethodType.BEFORE_METHOD == type) {
 				SKIPPED_STATUS_TRACKER.put(instance, Boolean.TRUE);
@@ -730,17 +728,23 @@ public class TestNGService implements ITestNGService {
 	}
 
 	/**
+	 * Extension point to customize test step name
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Test/Step Name being sent to ReportPortal
+	 */
+	protected String createStepName(ITestResult testResult) {
+		return testResult.getMethod().getMethodName();
+	}
+
+	/**
 	 * Extension point to customize test step description
 	 *
 	 * @param testResult TestNG's testResult context
 	 * @return Test/Step Description being sent to ReportPortal
 	 */
 	protected String createStepDescription(ITestResult testResult) {
-		StringBuilder stringBuffer = new StringBuilder();
-		if (testResult.getMethod().getDescription() != null) {
-			stringBuffer.append(testResult.getMethod().getDescription());
-		}
-		return stringBuffer.toString();
+		return testResult.getMethod().getDescription();
 	}
 
 	/**

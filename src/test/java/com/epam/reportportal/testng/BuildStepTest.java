@@ -71,16 +71,6 @@ public class BuildStepTest {
 	}
 
 	@Test
-	public void testTestName() {
-		when(testResult.getMethod()).thenReturn(testNGMethod);
-		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
-		when(testNGMethod.isTest()).thenReturn(true);
-		when(testResult.getTestName()).thenReturn(DEFAULT_NAME);
-		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
-		assertThat("Incorrect test item name", rq.getName(), is(DEFAULT_NAME));
-	}
-
-	@Test
 	public void testMethodName() {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);

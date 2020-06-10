@@ -30,8 +30,7 @@ import java.util.stream.IntStream;
 
 import static com.epam.reportportal.testng.integration.util.TestUtils.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.times;
@@ -74,7 +73,8 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 			.mapToObj(i -> Pair.of(testUuidList.get(i), nestedStepUuidList.get(i)))
 			.collect(Collectors.toList());
 
-	private final List<String> finishUuidOrder = Arrays.asList(nestedStepUuidList.get(0),
+	private final List<String> finishUuidOrder = Arrays.asList(
+			nestedStepUuidList.get(0),
 			testUuidList.get(0),
 			nestedStepUuidList.get(1),
 			testUuidList.get(1),
@@ -135,6 +135,7 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 		List<FinishTestItemRQ> finishItems = finishItemCapture.getAllValues();
 		assertThat(finishItems.get(1).isRetry(), equalTo(Boolean.TRUE));
 		assertThat(finishItems.get(1).getStatus(), equalTo(ItemStatus.SKIPPED.name()));
+		assertThat(finishItems.get(1).getIssue(), sameInstance(TestNGService.NOT_ISSUE));
 
 		verifyPositiveFinish(finishUuidOrder.subList(0, 1), finishItems.subList(0, 1));
 		verifyPositiveFinish(finishUuidOrder.subList(2, finishUuidOrder.size()), finishItems.subList(2, finishItems.size()));

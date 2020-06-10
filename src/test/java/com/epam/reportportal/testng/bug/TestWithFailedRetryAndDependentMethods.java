@@ -27,8 +27,7 @@ import java.util.stream.Stream;
 
 import static com.epam.reportportal.testng.integration.util.TestUtils.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.times;
@@ -111,6 +110,7 @@ public class TestWithFailedRetryAndDependentMethods {
 		List<FinishTestItemRQ> finishItems = finishItemCapture.getAllValues();
 		assertThat(finishItems.get(0).isRetry(), equalTo(Boolean.TRUE));
 		assertThat(finishItems.get(0).getStatus(), equalTo(ItemStatus.SKIPPED.name()));
+		assertThat(finishItems.get(0).getIssue(), sameInstance(TestNGService.NOT_ISSUE));
 
 		assertThat(finishItems.get(1).isRetry(), nullValue());
 		assertThat(finishItems.get(1).getStatus(), equalTo(ItemStatus.FAILED.name()));
