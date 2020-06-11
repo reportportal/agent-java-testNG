@@ -425,7 +425,6 @@ public class TestNGService implements ITestNGService {
 	}
 
 	private void processFinishRetryFlag(ITestResult testResult, FinishTestItemRQ rq) {
-		boolean isRetried = testResult.wasRetried();
 		Object instance = testResult.getInstance();
 		if (instance != null && !ItemStatus.SKIPPED.name().equals(rq.getStatus())) {
 			// Remove retry flag if an item passed
@@ -434,6 +433,7 @@ public class TestNGService implements ITestNGService {
 
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
 
+		boolean isRetried = testResult.wasRetried();
 		if (TestMethodType.STEP == type && getAttribute(testResult, RP_RETRY) == null && isRetried) {
 			RETRY_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			rq.setRetry(Boolean.TRUE);
