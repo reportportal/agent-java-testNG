@@ -459,6 +459,14 @@ public class TestNGService implements ITestNGService {
 		}
 	}
 
+	/**
+	 * Extension point to customize skipped test insides
+	 *
+	 * @param testResult TestNG's testResult context
+	 */
+	protected void createSkippedSteps(ITestResult testResult) {
+	}
+
 	@Override
 	public void finishTestMethod(String statusStr, ITestResult testResult) {
 		ItemStatus status = ItemStatus.valueOf(statusStr);
@@ -471,6 +479,7 @@ public class TestNGService implements ITestNGService {
 				// skipped but has start method, assume it's a retry
 				testResult.setAttribute(RP_RETRY, Boolean.TRUE);
 			}
+			createSkippedSteps(testResult);
 		}
 
 		launch.get().getStepReporter().finishPreviousStep();
