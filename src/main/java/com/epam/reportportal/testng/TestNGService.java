@@ -29,7 +29,6 @@ import com.epam.reportportal.service.analytics.GoogleAnalytics;
 import com.epam.reportportal.service.analytics.item.AnalyticsEvent;
 import com.epam.reportportal.service.analytics.item.AnalyticsItem;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
-import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.testng.util.internal.LimitedSizeConcurrentHashMap;
 import com.epam.reportportal.utils.AttributeParser;
@@ -72,8 +71,6 @@ import java.util.stream.IntStream;
 import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
-import static org.testng.ITestResult.FAILURE;
-import static org.testng.ITestResult.SKIP;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -276,7 +273,7 @@ public class TestNGService implements ITestNGService {
 				.remove(createKey(testContext)));
 	}
 
-	private boolean getRetry(ITestResult testResult) {
+	private boolean isRetry(ITestResult testResult) {
 		Object instance = testResult.getInstance();
 		if (instance != null && RETRY_STATUS_TRACKER.containsKey(instance)) {
 			return true;
@@ -298,7 +295,7 @@ public class TestNGService implements ITestNGService {
 		rq.setDescription(testResult.getMethod().getDescription());
 		rq.setStartTime(new Date(testResult.getStartMillis()));
 		rq.setType(type == null ? null : type.toString());
-		boolean retry = getRetry(testResult);
+		boolean retry = isRetry(testResult);
 		if (retry) {
 			rq.setRetry(Boolean.TRUE);
 		}
@@ -339,13 +336,7 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected StartTestItemRQ buildStartStepRq(final @NotNull ITestResult testResult, final @NotNull TestMethodType type) {
 		StartTestItemRQ rq = new StartTestItemRQ();
-		String testStepName;
-		if (testResult.getTestName() != null) {
-			testStepName = testResult.getTestName();
-		} else {
-			testStepName = testResult.getMethod().getMethodName();
-		}
-		rq.setName(testStepName);
+		rq.setName(createStepName(testResult));
 		String codeRef = testResult.getMethod().getQualifiedName();
 		rq.setCodeRef(codeRef);
 		rq.setTestCaseId(Objects.requireNonNull(getTestCaseId(codeRef, testResult)).getId());
@@ -355,7 +346,7 @@ public class TestNGService implements ITestNGService {
 		rq.setUniqueId(extractUniqueID(testResult));
 		rq.setStartTime(new Date(testResult.getStartMillis()));
 		rq.setType(type.toString());
-		boolean retry = getRetry(testResult);
+		boolean retry = isRetry(testResult);
 		if (retry) {
 			rq.setRetry(Boolean.TRUE);
 		}
@@ -435,17 +426,18 @@ public class TestNGService implements ITestNGService {
 
 	private void processFinishRetryFlag(ITestResult testResult, FinishTestItemRQ rq) {
 		Object instance = testResult.getInstance();
-		if (instance != null && ItemStatus.PASSED.name().equals(rq.getStatus())) {
+		if (instance != null && !ItemStatus.SKIPPED.name().equals(rq.getStatus())) {
 			// Remove retry flag if an item passed
 			RETRY_STATUS_TRACKER.remove(instance);
 		}
 
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
 
-		if (TestMethodType.STEP == type && getAttribute(testResult, RP_RETRY) == Boolean.TRUE
-				&& getAttribute(testResult, RP_RETRY_SET) == null) {
+		boolean isRetried = getAttribute(testResult, RP_RETRY) == Boolean.TRUE;
+		if (TestMethodType.STEP == type && isRetried && getAttribute(testResult, RP_RETRY_SET) == null) {
 			RETRY_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			rq.setRetry(Boolean.TRUE);
+			rq.setIssue(NOT_ISSUE);
 		}
 
 		// Save before method finish requests to update them with a retry flag in case of main test method failed
@@ -455,8 +447,7 @@ public class TestNGService implements ITestNGService {
 				BEFORE_METHOD_TRACKER.computeIfAbsent(instance, i -> new ConcurrentLinkedQueue<>()).add(Pair.of(itemId, rq));
 			} else {
 				Queue<Pair<Maybe<String>, FinishTestItemRQ>> beforeFinish = BEFORE_METHOD_TRACKER.remove(instance);
-				if (beforeFinish != null && getAttribute(testResult, RP_RETRY) == Boolean.TRUE
-						&& getAttribute(testResult, RP_RETRY_SET) == null) {
+				if (beforeFinish != null && isRetried && getAttribute(testResult, RP_RETRY_SET) == null) {
 					testResult.setAttribute(RP_RETRY_SET, Boolean.TRUE);
 					beforeFinish.stream().filter(e -> e.getValue().isRetry() == null || !e.getValue().isRetry()).forEach(e -> {
 						FinishTestItemRQ f = e.getValue();
@@ -487,6 +478,9 @@ public class TestNGService implements ITestNGService {
 
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
 		Object instance = testResult.getInstance();
+
+		// TestNG does not repeat before methods if an after method fails during retries. But reports them as skipped.
+		// Mark before methods as not an issue if it is not a culprit.
 		if (instance != null) {
 			if (ItemStatus.FAILED == status && TestMethodType.BEFORE_METHOD == type) {
 				SKIPPED_STATUS_TRACKER.put(instance, Boolean.TRUE);
@@ -715,17 +709,23 @@ public class TestNGService implements ITestNGService {
 	}
 
 	/**
+	 * Extension point to customize test step name
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Test/Step Name being sent to ReportPortal
+	 */
+	protected String createStepName(ITestResult testResult) {
+		return testResult.getMethod().getMethodName();
+	}
+
+	/**
 	 * Extension point to customize test step description
 	 *
 	 * @param testResult TestNG's testResult context
 	 * @return Test/Step Description being sent to ReportPortal
 	 */
 	protected String createStepDescription(ITestResult testResult) {
-		StringBuilder stringBuffer = new StringBuilder();
-		if (testResult.getMethod().getDescription() != null) {
-			stringBuffer.append(testResult.getMethod().getDescription());
-		}
-		return stringBuffer.toString();
+		return testResult.getMethod().getDescription();
 	}
 
 	/**

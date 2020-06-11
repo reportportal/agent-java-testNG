@@ -257,7 +257,7 @@ public class FailedBeforeAfterTest {
 
 		assertThat(tests.get(0).getStatus(), equalTo(ItemStatus.SKIPPED.name()));
 		assertThat(tests.get(0).isRetry(), equalTo(Boolean.TRUE));
-		assertThat(tests.get(0).getIssue(), nullValue());
+		assertThat(tests.get(0).getIssue(), sameInstance(TestNGService.NOT_ISSUE));
 
 		assertThat(tests.get(1).getStatus(), equalTo(ItemStatus.SKIPPED.name()));
 		assertThat(tests.get(1).isRetry(), nullValue());
