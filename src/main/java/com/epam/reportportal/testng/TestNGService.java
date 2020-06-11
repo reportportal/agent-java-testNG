@@ -461,14 +461,25 @@ public class TestNGService implements ITestNGService {
 		}
 	}
 
+	/**
+	 * Extension point to customize skipped test insides
+	 *
+	 * @param testResult TestNG's testResult context
+	 */
+	protected void createSkippedSteps(ITestResult testResult) {
+	}
+
 	@Override
 	public void finishTestMethod(String statusStr, ITestResult testResult) {
 		ItemStatus status = ItemStatus.valueOf(statusStr);
 		Maybe<String> itemId = getAttribute(testResult, RP_ID);
 
-		if (ItemStatus.SKIPPED == status && !testResult.wasRetried() && null == itemId) {
-			startTestMethod(testResult);
-			itemId = getAttribute(testResult, RP_ID); // if we started new test method we need to get new item ID
+		if (ItemStatus.SKIPPED == status) {
+			if (!testResult.wasRetried() && null == itemId) {
+				startTestMethod(testResult);
+				itemId = getAttribute(testResult, RP_ID); // if we started new test method we need to get new item ID
+			}
+			createSkippedSteps(testResult);
 		}
 
 		launch.get().getStepReporter().finishPreviousStep();
