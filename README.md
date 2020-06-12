@@ -73,6 +73,8 @@ TestItem – report portal specified object for representing:  suite, test, meth
 
 ## Dependencies
 
+> Minimum supported TestNG version: [6.9.13.3](https://search.maven.org/artifact/org.testng/testng/6.9.13.3/jar)
+
 Add to `POM.xml`
 
 **dependency**
@@ -92,7 +94,7 @@ Add to `POM.xml`
 <dependency>
   <groupId>com.epam.reportportal</groupId>
   <artifactId>agent-java-testng</artifactId>
-  <version>5.0.1-TESTNG6</version>
+  <version>5.0.2-TESTNG6</version>
 </dependency>
 <!-- TODO Leave only one dependency, depends on what logger you use: -->
 <dependency>
