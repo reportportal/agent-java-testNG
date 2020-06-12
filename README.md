@@ -69,6 +69,8 @@ TestNG agent can handle next events:
 TestItem – report portal specified object for representing:  suite, test, method objects in different test systems. Used as tree structure and can be recursively placed inside himself.
 
 ## Dependencies
+> Minimum supported TestNG version: [7.1.0](https://search.maven.org/artifact/org.testng/testng/7.1.0/jar)
+
 
 Add to `POM.xml`
 
@@ -89,7 +91,7 @@ Add to `POM.xml`
 <dependency>
   <groupId>com.epam.reportportal</groupId>
   <artifactId>agent-java-testng</artifactId>
-  <version>5.0.1</version>
+  <version>5.0.2</version>
 </dependency>
 <!-- TODO Leave only one dependency, depends on what logger you use: -->
 <dependency>
