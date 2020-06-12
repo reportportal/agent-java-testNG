@@ -32,6 +32,9 @@ public class TestUtils {
 
 	public static final String TEST_NAME = "TestContainer";
 
+	// 10 milliseconds is enough to separate one test from another
+	public static final long MINIMAL_TEST_PAUSE = 10L;
+
 	public static TestNG runTests(List<Class<? extends ITestNGListener>> listeners, Class<?>... classes) {
 		final TestNG testNG = new TestNG(true);
 		testNG.setListenerClasses(listeners);

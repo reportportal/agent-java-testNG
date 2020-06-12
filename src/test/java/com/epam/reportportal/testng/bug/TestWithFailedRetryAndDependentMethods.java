@@ -7,13 +7,11 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.BaseTestNGListener;
 import com.epam.reportportal.testng.TestNGService;
-import com.epam.reportportal.testng.integration.bug.RetryWithStepsAndDependentMethodTest;
-import com.epam.reportportal.testng.integration.util.TestUtils;
+import com.epam.reportportal.testng.integration.bug.FailedRetriesAndTwoDependentMethodsTest;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -25,8 +23,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static com.epam.reportportal.testng.integration.util.TestUtils.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,7 +34,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TestWithRetryWithStepsAndDependentMethodTest {
+public class TestWithFailedRetryAndDependentMethods {
 
 	public static class TestListener extends BaseTestNGListener {
 		public static final ThreadLocal<ReportPortal> REPORT_PORTAL_THREAD_LOCAL = new ThreadLocal<>();
@@ -66,20 +63,12 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 
 	private final String suitedUuid = namedUuid("suite");
 	private final String testClassUuid = namedUuid("class");
-	private final List<String> testUuidList = Arrays.asList(namedUuid("test1"), namedUuid("test1"), namedUuid("test2"));
-	private final List<String> nestedStepUuidList = Arrays.asList(namedUuid("tst1-ns1-"), namedUuid("tst1-ns2-"), namedUuid("tst2-ns1-"));
+	private final List<String> testUuidList = Arrays.asList(namedUuid("test1"), namedUuid("test1"), namedUuid("test2"), namedUuid("test3"));
 
-	private final List<Pair<String, String>> testStepUuidOrder = IntStream.range(0, 3)
-			.mapToObj(i -> Pair.of(testUuidList.get(i), nestedStepUuidList.get(i)))
-			.collect(Collectors.toList());
-
-	private final List<String> finishUuidOrder = Arrays.asList(
-			nestedStepUuidList.get(0),
-			testUuidList.get(0),
-			nestedStepUuidList.get(1),
+	private final List<String> finishUuidOrder = Arrays.asList(testUuidList.get(0),
 			testUuidList.get(1),
-			nestedStepUuidList.get(2),
 			testUuidList.get(2),
+			testUuidList.get(3),
 			testClassUuid,
 			suitedUuid
 	);
@@ -90,54 +79,50 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 	@BeforeEach
 	public void initMocks() {
 		mockLaunch(client, namedUuid("launchUuid"), suitedUuid, testClassUuid, testUuidList);
-		TestUtils.mockNestedSteps(client, testStepUuidOrder);
 		ReportPortal reportPortal = ReportPortal.create(client, new ListenerParameters(PropertiesLoader.load()));
 		TestListener.initReportPortal(reportPortal);
-	}
-
-	private static void verifyPositiveFinish(List<String> finishUuids, List<FinishTestItemRQ> finishItems) {
-		IntStream.range(0, finishItems.size()).forEach(i -> {
-			String uuid = finishUuids.get(i);
-			FinishTestItemRQ item = finishItems.get(i);
-			assertThat("FinishTestItemRQ for uuid '" + uuid + "' incorrect retry flag.", item.isRetry(), nullValue());
-			assertThat("FinishTestItemRQ for uuid '" + uuid + "' incorrect status.", item.getStatus(), equalTo(ItemStatus.PASSED.name()));
-		});
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
 	public void verify_second_test_passes_in_case_of_retry() {
-		runTests(Collections.singletonList(TestListener.class), RetryWithStepsAndDependentMethodTest.class);
+		runTests(Collections.singletonList(TestListener.class), FailedRetriesAndTwoDependentMethodsTest.class);
 
 		verify(client, times(1)).startLaunch(any()); // Start launch
 		verify(client, times(1)).startTestItem(any());  // Start parent suites
 		verify(client, times(1)).startTestItem(same(suitedUuid), any()); // Start test class
 
 		ArgumentCaptor<StartTestItemRQ> startTestCapture = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, times(3)).startTestItem(same(testClassUuid), startTestCapture.capture());
+		verify(client, times(4)).startTestItem(same(testClassUuid), startTestCapture.capture());
 		List<StartTestItemRQ> startItems = startTestCapture.getAllValues();
 
-		assertThat(startItems.get(0).isRetry(), nullValue());
 		assertThat(startItems.get(1).isRetry(), equalTo(Boolean.TRUE));
-		assertThat(startItems.get(2).isRetry(), nullValue());
-
-		ArgumentCaptor<StartTestItemRQ> startStepCapture = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, times(1)).startTestItem(same(testUuidList.get(0)), startStepCapture.capture());
-		verify(client, times(1)).startTestItem(same(testUuidList.get(1)), startStepCapture.capture());
-		verify(client, times(1)).startTestItem(same(testUuidList.get(2)), startStepCapture.capture());
+		Stream.concat(startItems.subList(0, 1).stream(), startItems.subList(2, startItems.size()).stream()).forEach(i -> {
+			assertThat(i.isRetry(), nullValue());
+		});
 
 		ArgumentCaptor<String> finishUuidCapture = ArgumentCaptor.forClass(String.class);
 		ArgumentCaptor<FinishTestItemRQ> finishItemCapture = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(client, times(8)).finishTestItem(finishUuidCapture.capture(), finishItemCapture.capture());
+		verify(client, times(finishUuidOrder.size())).finishTestItem(finishUuidCapture.capture(), finishItemCapture.capture());
 		List<String> finishUuids = finishUuidCapture.getAllValues();
 		assertThat(finishUuids, equalTo(finishUuidOrder));
 
 		List<FinishTestItemRQ> finishItems = finishItemCapture.getAllValues();
-		assertThat(finishItems.get(1).isRetry(), equalTo(Boolean.TRUE));
-		assertThat(finishItems.get(1).getStatus(), equalTo(ItemStatus.SKIPPED.name()));
-		assertThat(finishItems.get(1).getIssue(), sameInstance(TestNGService.NOT_ISSUE));
+		assertThat(finishItems.get(0).isRetry(), equalTo(Boolean.TRUE));
+		assertThat(finishItems.get(0).getStatus(), equalTo(ItemStatus.SKIPPED.name()));
+		assertThat(finishItems.get(0).getIssue(), sameInstance(TestNGService.NOT_ISSUE));
 
-		verifyPositiveFinish(finishUuidOrder.subList(0, 1), finishItems.subList(0, 1));
-		verifyPositiveFinish(finishUuidOrder.subList(2, finishUuidOrder.size()), finishItems.subList(2, finishItems.size()));
+		assertThat(finishItems.get(1).isRetry(), nullValue());
+		assertThat(finishItems.get(1).getStatus(), equalTo(ItemStatus.FAILED.name()));
+
+		finishItems.subList(2, 4).forEach(i -> {
+			assertThat(i.isRetry(), nullValue());
+			assertThat(i.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
+		});
+
+		finishItems.subList(4, finishItems.size()).forEach(i -> {
+			assertThat(i.isRetry(), nullValue());
+			assertThat(i.getStatus(), equalTo(ItemStatus.FAILED.name()));
+		});
 	}
 }

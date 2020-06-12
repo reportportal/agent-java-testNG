@@ -29,7 +29,6 @@ import com.epam.reportportal.service.analytics.GoogleAnalytics;
 import com.epam.reportportal.service.analytics.item.AnalyticsEvent;
 import com.epam.reportportal.service.analytics.item.AnalyticsItem;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
-import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.testng.util.internal.LimitedSizeConcurrentHashMap;
 import com.epam.reportportal.utils.AttributeParser;
@@ -72,8 +71,6 @@ import java.util.stream.IntStream;
 import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
-import static org.testng.ITestResult.FAILURE;
-import static org.testng.ITestResult.SKIP;
 import static rp.com.google.common.base.Strings.isNullOrEmpty;
 import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -275,7 +272,7 @@ public class TestNGService implements ITestNGService {
 				.remove(createKey(testContext)));
 	}
 
-	private boolean getRetry(ITestResult testResult) {
+	private boolean isRetry(ITestResult testResult) {
 		if (testResult.wasRetried()) {
 			return true;
 		}
@@ -300,7 +297,7 @@ public class TestNGService implements ITestNGService {
 		rq.setDescription(testResult.getMethod().getDescription());
 		rq.setStartTime(new Date(testResult.getStartMillis()));
 		rq.setType(type == null ? null : type.toString());
-		boolean retry = getRetry(testResult);
+		boolean retry = isRetry(testResult);
 		if (retry) {
 			rq.setRetry(Boolean.TRUE);
 		}
@@ -340,13 +337,7 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected StartTestItemRQ buildStartStepRq(final @NotNull ITestResult testResult, final @NotNull TestMethodType type) {
 		StartTestItemRQ rq = new StartTestItemRQ();
-		String testStepName;
-		if (testResult.getTestName() != null) {
-			testStepName = testResult.getTestName();
-		} else {
-			testStepName = testResult.getMethod().getMethodName();
-		}
-		rq.setName(testStepName);
+		rq.setName(createStepName(testResult));
 		String codeRef = testResult.getMethod().getQualifiedName();
 		rq.setCodeRef(codeRef);
 		rq.setTestCaseId(Objects.requireNonNull(getTestCaseId(codeRef, testResult)).getId());
@@ -356,7 +347,7 @@ public class TestNGService implements ITestNGService {
 		rq.setUniqueId(extractUniqueID(testResult));
 		rq.setStartTime(new Date(testResult.getStartMillis()));
 		rq.setType(type.toString());
-		boolean retry = getRetry(testResult);
+		boolean retry = isRetry(testResult);
 		if (retry) {
 			rq.setRetry(Boolean.TRUE);
 		}
@@ -434,18 +425,19 @@ public class TestNGService implements ITestNGService {
 	}
 
 	private void processFinishRetryFlag(ITestResult testResult, FinishTestItemRQ rq) {
-		boolean isRetried = testResult.wasRetried();
 		Object instance = testResult.getInstance();
-		if (instance != null && ItemStatus.PASSED.name().equals(rq.getStatus())) {
+		if (instance != null && !ItemStatus.SKIPPED.name().equals(rq.getStatus())) {
 			// Remove retry flag if an item passed
 			RETRY_STATUS_TRACKER.remove(instance);
 		}
 
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
 
+		boolean isRetried = testResult.wasRetried();
 		if (TestMethodType.STEP == type && getAttribute(testResult, RP_RETRY) == null && isRetried) {
 			RETRY_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			rq.setRetry(Boolean.TRUE);
+			rq.setIssue(NOT_ISSUE);
 		}
 		if (isRetried) {
 			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
@@ -469,14 +461,25 @@ public class TestNGService implements ITestNGService {
 		}
 	}
 
+	/**
+	 * Extension point to customize skipped test insides
+	 *
+	 * @param testResult TestNG's testResult context
+	 */
+	protected void createSkippedSteps(ITestResult testResult) {
+	}
+
 	@Override
 	public void finishTestMethod(String statusStr, ITestResult testResult) {
 		ItemStatus status = ItemStatus.valueOf(statusStr);
 		Maybe<String> itemId = getAttribute(testResult, RP_ID);
 
-		if (ItemStatus.SKIPPED == status && !testResult.wasRetried() && null == itemId) {
-			startTestMethod(testResult);
-			itemId = getAttribute(testResult, RP_ID); // if we started new test method we need to get new item ID
+		if (ItemStatus.SKIPPED == status) {
+			if (!testResult.wasRetried() && null == itemId) {
+				startTestMethod(testResult);
+				itemId = getAttribute(testResult, RP_ID); // if we started new test method we need to get new item ID
+			}
+			createSkippedSteps(testResult);
 		}
 
 		launch.get().getStepReporter().finishPreviousStep();
@@ -484,6 +487,9 @@ public class TestNGService implements ITestNGService {
 
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
 		Object instance = testResult.getInstance();
+
+		// TestNG does not repeat before methods if an after method fails during retries. But reports them as skipped.
+		// Mark before methods as not an issue if it is not a culprit.
 		if (instance != null) {
 			if (ItemStatus.FAILED == status && TestMethodType.BEFORE_METHOD == type) {
 				SKIPPED_STATUS_TRACKER.put(instance, Boolean.TRUE);
@@ -733,17 +739,23 @@ public class TestNGService implements ITestNGService {
 	}
 
 	/**
+	 * Extension point to customize test step name
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Test/Step Name being sent to ReportPortal
+	 */
+	protected String createStepName(ITestResult testResult) {
+		return testResult.getMethod().getMethodName();
+	}
+
+	/**
 	 * Extension point to customize test step description
 	 *
 	 * @param testResult TestNG's testResult context
 	 * @return Test/Step Description being sent to ReportPortal
 	 */
 	protected String createStepDescription(ITestResult testResult) {
-		StringBuilder stringBuffer = new StringBuilder();
-		if (testResult.getMethod().getDescription() != null) {
-			stringBuffer.append(testResult.getMethod().getDescription());
-		}
-		return stringBuffer.toString();
+		return testResult.getMethod().getDescription();
 	}
 
 	/**
