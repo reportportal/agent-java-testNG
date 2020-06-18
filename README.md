@@ -72,8 +72,8 @@ TestNG agent can handle next events:
 TestItem – report portal specified object for representing:  suite, test, method objects in different test systems. Used as tree structure and can be recursively placed inside himself.
 
 ## Dependencies
-
 > Minimum supported TestNG version: [6.9.13.3](https://search.maven.org/artifact/org.testng/testng/6.9.13.3/jar)
+
 
 Add to `POM.xml`
 
