@@ -16,9 +16,10 @@ name: CI Build
 on:
   push:
     branches:
-    - develop
-    - v4-hotfix
-    - v5-testng6
+    - '*'
+    - '!master'
+    - '!v4-hotfix'
+    - '!v5-testng6'
   pull_request:
     branches:
     - master
