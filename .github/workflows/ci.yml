@@ -23,7 +23,6 @@ on:
   pull_request:
     branches:
     - master
-    - develop
     - v4-hotfix
     - v5-testng6
 
