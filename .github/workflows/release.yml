@@ -34,7 +34,8 @@ jobs:
         id: getVersion
         run: |
           version=$(cat ${{env.versionFile}} | grep version)
-          echo "::set-env name=version::${version}";
+          echo "${version}"
+          echo "::set-env name=version::${version}"
 
   version-generate:
     needs: version-get
@@ -47,7 +48,8 @@ jobs:
         patch_version=$(echo "${{env.version}}" | grep -Eo '\.([0-9]+)-' | grep -Eo '[0-9]+')
         let "patch_version++"
         new_version=$(echo "${{env.version}}" | sed -E "s/\.[0-9]+-/.${patchVersion}-/")
-        echo "::set-env name=new_version::${new_version}";
+        echo "${new_version}"
+        echo "::set-env name=new_version::${new_version}"
 
   release:
     needs: version-generate
