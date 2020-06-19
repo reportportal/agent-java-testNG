@@ -55,6 +55,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Release with Gradle
-          run: |
-            ./gradlew build -PreleaseMode -Prelease.useAutomaticVersion=true -Prelease.newVersion=${{env.new_version}} \
-            -PbintrayUser=${{secrets.bintray_user}} -PbintrayApiKey=${{secrets.bintray_api_key}}
+        id: release
+        run: |
+          ./gradlew build -PreleaseMode -Prelease.useAutomaticVersion=true -Prelease.newVersion=${{env.new_version}} \
+          -PbintrayUser=${{secrets.bintray_user}} -PbintrayApiKey=${{secrets.bintray_api_key}}
