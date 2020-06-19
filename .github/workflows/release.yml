@@ -42,7 +42,7 @@ jobs:
         run: |
           patch_version=$(echo "${{env.version}}" | grep -Eo '\.([0-9]+)-' | grep -Eo '[0-9]+')
           let "patch_version++"
-          new_version=$(echo "${{env.version}}" | sed -e "s/\.[0-9]+-/.${patch_version}-/")
+          new_version=$(echo "${{env.version}}" | sed -E "s/\.[0-9]+-/.${patch_version}-/")
           echo "${new_version}"
           echo "::set-env name=new_version::${new_version}"
 
