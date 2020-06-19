@@ -117,6 +117,14 @@ public class TestNGService implements ITestNGService {
 	private final List<AnalyticsItem> analyticsItems = new CopyOnWriteArrayList<>();
 	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
 
+	private static Thread getShutdownHook(final Launch launch) {
+		return new Thread(() -> {
+			FinishExecutionRQ rq = new FinishExecutionRQ();
+			rq.setEndTime(Calendar.getInstance().getTime());
+			launch.finish(rq);
+		});
+	}
+
 	public TestNGService() {
 		this.launch = new MemorizingSupplier<>(() -> {
 			//this reads property, so we want to
@@ -125,7 +133,9 @@ public class TestNGService implements ITestNGService {
 			StartLaunchRQ rq = buildStartLaunchRq(REPORT_PORTAL.getParameters());
 			rq.setStartTime(Calendar.getInstance().getTime());
 			addStartLaunchEvent(rq);
-			return REPORT_PORTAL.newLaunch(rq);
+			Launch newLaunch = REPORT_PORTAL.newLaunch(rq);
+			Runtime.getRuntime().addShutdownHook(getShutdownHook(newLaunch));
+			return newLaunch;
 		});
 	}
 
