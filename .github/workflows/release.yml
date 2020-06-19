@@ -24,7 +24,6 @@ env:
   versionFile: gradle.properties
 
 jobs:
-
   version-get:
     runs-on: ubuntu-latest
     steps:
@@ -33,17 +32,18 @@ jobs:
 
       - name: Get version
         id: getVersion
-      - run: |
+        run: |
           set-env $(cat ${{env.versionFile}} | grep version)
           echo "Snapshot version: ${{env.version}}";
 
   version-generate:
     needs: version-get
     runs-on: ubuntu-latest
+
     steps:
     - name: Generate new version
       id: generateVersion
-    - run: |
+      run: |
         patch_version=$(echo "${{env.version}}" | grep -Eo '\.([0-9]+)-' | grep -Eo '[0-9]+')
         let "patch_version++"
         set-env new_version=$(echo "${{env.version}}" | sed -E "s/\.[0-9]+-/.${patchVersion}-/")
