@@ -24,7 +24,7 @@ env:
   versionFile: gradle.properties
 
 jobs:
-  version-get:
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -33,37 +33,28 @@ jobs:
       - name: Get version
         id: getVersion
         run: |
-          version=$(cat ${{env.versionFile}} | grep version)
+          version=$(cat ${{env.versionFile}} | grep version | sed -e 's/^version=//')
           echo "${version}"
           echo "::set-env name=version::${version}"
 
-  version-generate:
-    needs: version-get
-    runs-on: ubuntu-latest
+      - name: Generate new version
+          id: generateVersion
+          run: |
+            patch_version=$(echo "${{env.version}}" | grep -Eo '\.([0-9]+)-' | grep -Eo '[0-9]+')
+            let "patch_version++"
+            new_version=$(echo "${{env.version}}" | sed -E "s/\.[0-9]+-/.${patchVersion}-/")
+            echo "${new_version}"
+            echo "::set-env name=new_version::${new_version}"
 
-    steps:
-    - name: Generate new version
-      id: generateVersion
-      run: |
-        patch_version=$(echo "${{env.version}}" | grep -Eo '\.([0-9]+)-' | grep -Eo '[0-9]+')
-        let "patch_version++"
-        new_version=$(echo "${{env.version}}" | sed -E "s/\.[0-9]+-/.${patchVersion}-/")
-        echo "${new_version}"
-        echo "::set-env name=new_version::${new_version}"
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
 
-  release:
-    needs: version-generate
-    runs-on: ubuntu-latest
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 1.8
-      uses: actions/setup-java@v1
-      with:
-        java-version: 1.8
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
-    - name: Build with Gradle
-      run: |
-        ./gradlew build -PreleaseMode -Prelease.useAutomaticVersion=true -Prelease.newVersion=${{env.new_version}} \
-        -PbintrayUser=${{secrets.bintray_user}} -PbintrayApiKey=${{secrets.bintray_api_key}}
+      - name: Release with Gradle
+          run: |
+            ./gradlew build -PreleaseMode -Prelease.useAutomaticVersion=true -Prelease.newVersion=${{env.new_version}} \
+            -PbintrayUser=${{secrets.bintray_user}} -PbintrayApiKey=${{secrets.bintray_api_key}}
