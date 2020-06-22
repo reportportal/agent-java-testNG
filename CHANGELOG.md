@@ -1,9 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+* A launch finish shutdown hook 
 
 ## [5.0.11]
-* Added a launch finish shutdown hook 
+### Added
 
 ## [5.0.9]
 ### Added
