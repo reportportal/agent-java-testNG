@@ -94,11 +94,16 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Merge release tags into develop
+      - name: Checkout develop branch
+        if: ${{github.ref}} == 'master'
+        uses: actions/checkout@v2
+        with:
+          ref: 'develop'
+
+      - name: Merge release branch into develop
         id: mergeIntoDevelop
         if: ${{github.ref}} == 'master'
         run: |
-          git checkout develop
           git merge -m 'Merge master branch into develop after a release' master
           merge_errors=$(git status | grep 'both modified')
           [[ ! -z "$merge_errors" ]] && echo -e "::error::Unable to merge files: \n${$merge_errors}" && exit 1
