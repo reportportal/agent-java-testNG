@@ -1,10 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+* Added a launch finish shutdown hook 
 
 ## [5.0.9]
 ### Added
-* Added a launch finish shutdown hook 
 
 ## [4.0.2]
 ##### Released: 26 March 2018

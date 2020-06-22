@@ -24,6 +24,7 @@ env:
   VERSION_FILE: gradle.properties
   GH_USER_NAME: github.actor
   CHANGE_LOG_FILE: CHANGELOG.md
+  CHANGE_LOG_TMP_FILE: CHANGELOG_updated.md
   README_FILE: README.md
   README_TEMPLATE_FILE: README_TEMPLATE.md
   README_VERSION_PLACEHOLDER: '<artifact_version>'
@@ -84,6 +85,20 @@ jobs:
           sed 's/${{env.README_VERSION_PLACEHOLDER}}/${{env.RELEASE_VERSION}}/g' ${{env.README_TEMPLATE_FILE}} > ${{env.README_FILE}}
           git add ${{env.README_FILE}}
           git commit -m "Readme update"
+          git push
+
+      - name: Update CHANGELOG.md
+        id: changelogUpdate
+        run: |
+          sed '/\[Unreleased\]/q' ${{ env.CHANGE_LOG_FILE }} >> ${{ env.CHANGE_LOG_TMP_FILE }}
+          sed -E '1,/#?#\s*\[Unreleased\]/d' ${{ env.CHANGE_LOG_FILE }} | sed -E '/#?#\s*\[/q' | { echo -e '\n## [5.0.11]'; sed '$d'; } >> ${{ env.CHANGE_LOG_TMP_FILE }}
+          grep -E '#?#\s*\[[0-9]' ${{ env.CHANGE_LOG_FILE }} | head -n1 >> ${{ env.CHANGE_LOG_TMP_FILE }}
+          sed -E '1,/#?#\s*\[[0-9]/d' ${{ env.CHANGE_LOG_FILE }} >> ${{ env.CHANGE_LOG_TMP_FILE }}
+          rm ${{ env.CHANGE_LOG_FILE }}
+          mv ${{ env.CHANGE_LOG_TMP_FILE }} ${{ env.CHANGE_LOG_FILE }}
+          rm ${{ env.CHANGE_LOG_FILE }}
+          git add ${{ env.CHANGE_LOG_FILE }}
+          git commit -m "Changelog update"
           git push
 
       - name: Read changelog Entry
