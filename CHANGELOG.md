@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.0.3
+### Improvements and Bugfixes
+* Added a launch finish shutdown hook 
+
 ## 4.0.2
 ##### Released: 26 March 2018
 
