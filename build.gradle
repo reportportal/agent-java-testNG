@@ -92,10 +92,11 @@ wrapper {
     gradleVersion = '5.4.1'
 }
 
-//afterReleaseBuild.dependsOn bintrayUpload
-
 release {
     git {
         requireBranch = 'master'
     }
 }
+
+// afterReleaseBuild.dependsOn [bintrayUpload, publish]
+afterReleaseBuild.dependsOn publish
