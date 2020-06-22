@@ -22,7 +22,7 @@ on:
 
 env:
   VERSION_FILE: gradle.properties
-  GH_USER_NAME: reportportal
+  GH_USER_NAME: HardNorth
   CHANGE_LOG_FILE: 'CHANGELOG.md'
 
 jobs:
