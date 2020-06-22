@@ -54,7 +54,7 @@ processResources {
 
 dependencies {
     implementation 'com.epam.reportportal:client-java:5.0.1'
-    implementation 'com.github.reportportal:commons-model:5.0.0'
+    implementation 'com.epam.reportportal:commons-model:5.0.0'
 
     implementation 'org.testng:testng:7.1.0'
 
