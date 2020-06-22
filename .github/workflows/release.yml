@@ -91,7 +91,8 @@ jobs:
         id: changelogUpdate
         run: |
           sed '/\[Unreleased\]/q' ${{ env.CHANGE_LOG_FILE }} >> ${{ env.CHANGE_LOG_TMP_FILE }}
-          sed -E '1,/#?#\s*\[Unreleased\]/d' ${{ env.CHANGE_LOG_FILE }} | sed -E '/#?#\s*\[/q' | { echo -e '\n## [5.0.11]'; sed '$d'; } >> ${{ env.CHANGE_LOG_TMP_FILE }}
+          sed -E '1,/#?#\s*\[Unreleased\]/d' ${{ env.CHANGE_LOG_FILE }} | sed -E '/#?#\s*\[/q' | \
+          { echo -e '\n## [${{env.RELEASE_VERSION}}]'; sed '$d'; } >> ${{ env.CHANGE_LOG_TMP_FILE }}
           grep -E '#?#\s*\[[0-9]' ${{ env.CHANGE_LOG_FILE }} | head -n1 >> ${{ env.CHANGE_LOG_TMP_FILE }}
           sed -E '1,/#?#\s*\[[0-9]/d' ${{ env.CHANGE_LOG_FILE }} >> ${{ env.CHANGE_LOG_TMP_FILE }}
           rm ${{ env.CHANGE_LOG_FILE }}
