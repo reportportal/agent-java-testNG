@@ -42,7 +42,7 @@ jobs:
       - name: Generate release version
         id: generateReleaseVersion
         run: |
-          release_version=$(echo "${{env.VERSION}}" | sed -e "s/-SNAPSHOT//i')
+          release_version=$(echo "${{env.VERSION}}" | sed -e 's/-SNAPSHOT//i')
           echo "${release_version}"
           echo "::set-env name=RELEASE_VERSION::${release_version}"
 

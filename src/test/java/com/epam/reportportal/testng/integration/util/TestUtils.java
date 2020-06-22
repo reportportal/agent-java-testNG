@@ -160,7 +160,9 @@ public class TestUtils {
 		when(client.finishTestItem(eq(suiteUuid), any())).thenReturn(suiteFinishMaybe);
 
 		when(client.finishLaunch(eq(launchUuid), any())).thenReturn(TestUtils.createMaybe(new OperationCompletionRS()));
+	}
 
+	public static void mockLogging(ReportPortalClient client) {
 		when(client.log(any(MultiPartRequest.class))).thenReturn(TestUtils.createMaybe(new BatchSaveOperatingRS()));
 	}
 
