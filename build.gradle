@@ -37,7 +37,7 @@ publishing {
     repositories {
         maven {
             name = "TestNG GitHub Packages"
-            url = uri("https://maven.pkg.github.com/reportportal/agent-java-testNG")
+            url = uri("https://maven.pkg.github.com/hardnorth/agent-java-testNG")
             credentials {
                 username = githubUserName
                 password = githubToken
