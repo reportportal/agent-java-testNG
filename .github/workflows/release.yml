@@ -66,7 +66,7 @@ jobs:
       - name: Release with Gradle
         id: release
         uses: oleksiyrudenko/gha-git-credentials@v1
-          with:
+        with:
           token: '${{ secrets.GITHUB_TOKEN }}'
         run: |
           ./gradlew release -PreleaseMode -Prelease.useAutomaticVersion=true -Prelease.releaseVersion=${{env.RELEASE_VERSION}} \
