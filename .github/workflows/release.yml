@@ -107,5 +107,5 @@ jobs:
         run: |
           git merge -m 'Merge master branch into develop after a release' origin/master
           merge_errors=$(git status | grep 'both modified')
-          [[ ! -z "$merge_errors" ]] && echo -e "::error::Unable to merge files: \n${$merge_errors}" && exit 2
+          [[ ! -z "$merge_errors" ]] && echo -e "::error::Unable to merge files: \n${merge_errors}" && exit 2
           git push
