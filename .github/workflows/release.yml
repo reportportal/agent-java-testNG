@@ -63,11 +63,13 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Release with Gradle
-        id: release
+      - name: Setup git credentials
         uses: oleksiyrudenko/gha-git-credentials@v1
         with:
           token: '${{ secrets.GITHUB_TOKEN }}'
+
+      - name: Release with Gradle
+        id: release
         run: |
           ./gradlew release -PreleaseMode -Prelease.useAutomaticVersion=true -Prelease.releaseVersion=${{env.RELEASE_VERSION}} \
           -Prelease.newVersion=${{env.NEW_VERSION}} -PbintrayUser=${{secrets.BINTRAY_USER}} -PbintrayApiKey=${{secrets.BINTRAY_API_KEY}} \
