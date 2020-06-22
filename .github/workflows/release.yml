@@ -22,7 +22,7 @@ on:
 
 env:
   VERSION_FILE: gradle.properties
-  GH_USER_NAME: HardNorth
+  GH_USER_NAME: github.actor
   CHANGE_LOG_FILE: 'CHANGELOG.md'
 
 jobs:
@@ -66,14 +66,22 @@ jobs:
       - name: Setup git credentials
         uses: oleksiyrudenko/gha-git-credentials@v1
         with:
-          token: '${{ secrets.GITHUB_TOKEN }}'
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release with Gradle
         id: release
         run: |
           ./gradlew release -PreleaseMode -Prelease.useAutomaticVersion=true -Prelease.releaseVersion=${{env.RELEASE_VERSION}} \
           -Prelease.newVersion=${{env.NEW_VERSION}} -PbintrayUser=${{secrets.BINTRAY_USER}} -PbintrayApiKey=${{secrets.BINTRAY_API_KEY}} \
-          -PgithubUserName=${{env.GH_USER_NAME}} -PgithubToken=${{secrets.GH_TOKEN}}
+          -PgithubUserName=${{env.GH_USER_NAME}} -PgithubToken=${{secrets.GITHUB_TOKEN}}
+
+      - name: Merge by labeled
+        uses: devmasx/merge-branch@v1.1.0
+        with:
+          label_name: 'merged in develop'
+          target_branch: 'develop'
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Read changelog Entry
         id: readChangelogEntry
