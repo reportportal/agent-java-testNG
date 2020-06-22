@@ -106,4 +106,6 @@ jobs:
         if: ${{github.ref}} == 'master'
         run: |
           git merge -m 'Merge master branch into develop after a release' origin/master
+          git status | (! grep -Fq 'both modified:') || git status | grep -F 'both modified:' \
+          | { echo -e 'Unable to merge master into develop, merge conflicts:'; (! grep -Eo '[^ ]+$') }
           git push origin develop
