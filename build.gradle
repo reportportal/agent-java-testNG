@@ -92,7 +92,7 @@ wrapper {
     gradleVersion = '5.4.1'
 }
 
-afterReleaseBuild.dependsOn bintrayUpload
+//afterReleaseBuild.dependsOn bintrayUpload
 
 release {
     git {
