@@ -68,7 +68,7 @@ jobs:
         run: |
           ./gradlew release -PreleaseMode -Prelease.useAutomaticVersion=true -Prelease.releaseVersion=${{env.RELEASE_VERSION}} \
           -Prelease.newVersion=${{env.NEW_VERSION}} -PbintrayUser=${{secrets.BINTRAY_USER}} -PbintrayApiKey=${{secrets.BINTRAY_API_KEY}} \
-          -PgithubUserName=${{env.GH_USER_NAME}} -githubToken=${{secrets.GH_TOKEN}}
+          -PgithubUserName=${{env.GH_USER_NAME}} -PgithubToken=${{secrets.GH_TOKEN}}
 
       - name: Read changelog Entry
         id: readChangelogEntry
