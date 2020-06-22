@@ -23,7 +23,10 @@ on:
 env:
   VERSION_FILE: gradle.properties
   GH_USER_NAME: github.actor
-  CHANGE_LOG_FILE: 'CHANGELOG.md'
+  CHANGE_LOG_FILE: CHANGELOG.md
+  README_FILE: README.md
+  README_TEMPLATE_FILE: README_TEMPLATE.md
+  README_VERSION_PLACEHOLDER: '<artifact_version>'
 
 jobs:
   release:
@@ -74,6 +77,14 @@ jobs:
           ./gradlew release -PreleaseMode -Prelease.useAutomaticVersion=true -Prelease.releaseVersion=${{env.RELEASE_VERSION}} \
           -Prelease.newVersion=${{env.NEW_VERSION}} -PbintrayUser=${{secrets.BINTRAY_USER}} -PbintrayApiKey=${{secrets.BINTRAY_API_KEY}} \
           -PgithubUserName=${{env.GH_USER_NAME}} -PgithubToken=${{secrets.GITHUB_TOKEN}}
+
+      - name: Update README.md
+        id: readmeUpdate
+        run: |
+          sed 's/${{env.README_VERSION_PLACEHOLDER}}/${{env.RELEASE_VERSION}}/g' ${{env.README_TEMPLATE_FILE}} > ${{env.README_FILE}}
+          git add ${{env.README_FILE}}
+          git commit -m "Readme update"
+          git push
 
       - name: Read changelog Entry
         id: readChangelogEntry
