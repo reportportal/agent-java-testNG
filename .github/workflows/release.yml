@@ -75,14 +75,6 @@ jobs:
           -Prelease.newVersion=${{env.NEW_VERSION}} -PbintrayUser=${{secrets.BINTRAY_USER}} -PbintrayApiKey=${{secrets.BINTRAY_API_KEY}} \
           -PgithubUserName=${{env.GH_USER_NAME}} -PgithubToken=${{secrets.GITHUB_TOKEN}}
 
-      - name: Merge by labeled
-        uses: devmasx/merge-branch@v1.1.0
-        with:
-          label_name: 'merged in develop'
-          target_branch: 'develop'
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
       - name: Read changelog Entry
         id: readChangelogEntry
         uses: mindsers/changelog-reader-action@v1.1.0
@@ -101,3 +93,13 @@ jobs:
           body: ${{ steps.readChangelogEntry.outputs.log_entry }}
           draft: false
           prerelease: false
+
+      - name: Merge release tags into develop
+        id: mergeIntoDevelop
+        if: ${{github.ref == 'master'}}
+        run: |
+          git checkout develop
+          git merge -m 'Merge master branch into develop after a release' master
+          merge_errors=$(git status | grep 'both modified')
+          [[ ! -z "$merge_errors" ]] && echo -e "::error::Unable to merge files: \n${$merge_errors}" && exit 1
+          git push
