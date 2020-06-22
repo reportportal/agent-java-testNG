@@ -96,7 +96,6 @@ jobs:
           sed -E '1,/#?#\s*\[[0-9]/d' ${{ env.CHANGE_LOG_FILE }} >> ${{ env.CHANGE_LOG_TMP_FILE }}
           rm ${{ env.CHANGE_LOG_FILE }}
           mv ${{ env.CHANGE_LOG_TMP_FILE }} ${{ env.CHANGE_LOG_FILE }}
-          rm ${{ env.CHANGE_LOG_TMP_FILE }}
           git add ${{ env.CHANGE_LOG_FILE }}
           git commit -m "Changelog update"
           git push
