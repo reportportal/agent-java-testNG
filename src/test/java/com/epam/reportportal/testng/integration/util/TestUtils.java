@@ -33,7 +33,7 @@ public class TestUtils {
 	public static final String TEST_NAME = "TestContainer";
 
 	// 10 milliseconds is enough to separate one test from another
-	public static final long MINIMAL_TEST_PAUSE = 10L;
+	public static final long MINIMAL_TEST_PAUSE = 20L;
 
 	public static TestNG runTests(List<Class<? extends ITestNGListener>> listeners, Class<?>... classes) {
 		final TestNG testNG = new TestNG(true);
@@ -160,7 +160,9 @@ public class TestUtils {
 		when(client.finishTestItem(eq(suiteUuid), any())).thenReturn(suiteFinishMaybe);
 
 		when(client.finishLaunch(eq(launchUuid), any())).thenReturn(TestUtils.createMaybe(new OperationCompletionRS()));
+	}
 
+	public static void mockLogging(ReportPortalClient client) {
 		when(client.log(any(MultiPartRequest.class))).thenReturn(TestUtils.createMaybe(new BatchSaveOperatingRS()));
 	}
 
