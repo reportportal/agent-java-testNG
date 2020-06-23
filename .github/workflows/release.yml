@@ -27,7 +27,8 @@ env:
   CHANGE_LOG_TMP_FILE: CHANGELOG_updated.md
   README_FILE: README.md
   README_TEMPLATE_FILE: README_TEMPLATE.md
-  README_VERSION_PLACEHOLDER: '<artifact_version>'
+  README_VERSION_PLACEHOLDER: <artifact_version>
+  VERSION_EXTRACT_PATTERN: (?<=\.)[0-9]+(?=\-)(?!(?:[^\-]*\-)*(?:ALPHA|BETA|RC))|(?<=\-ALPHA)[0-9]+(?=\-)|(?<=\-BETA)[0-9]+(?=\-)|(?<=\-RC)[0-9]+(?=\-)
 
 jobs:
   release:
@@ -46,16 +47,16 @@ jobs:
       - name: Generate release version
         id: generateReleaseVersion
         run: |
-          release_version=$(echo "${{env.VERSION}}" | sed -e 's/-SNAPSHOT//i')
+          release_version=$(echo "${{ env.VERSION }}" | sed -e 's/-SNAPSHOT//i')
           echo "${release_version}"
           echo "::set-env name=RELEASE_VERSION::${release_version}"
 
       - name: Generate new version
         id: generateNewVersion
         run: |
-          patch_version=$(echo "${{env.VERSION}}" | grep -Eo '\.([0-9]+)-' | grep -Eo '[0-9]+')
+          patch_version=$(echo "${{ env.VERSION }}" | grep -Eo '${{ env.VERSION_EXTRACT_PATTERN }}'
           let "patch_version++"
-          new_version=$(echo "${{env.VERSION}}" | sed -E "s/\.[0-9]+-/.${patch_version}-/")
+          new_version=$(echo "${{env.VERSION}}" | sed -E "s/${{ env.VERSION_EXTRACT_PATTERN }}/${patch_version}/")
           echo "${new_version}"
           echo "::set-env name=NEW_VERSION::${new_version}"
 
