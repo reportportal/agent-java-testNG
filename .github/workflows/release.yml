@@ -28,7 +28,7 @@ env:
   README_FILE: README.md
   README_TEMPLATE_FILE: README_TEMPLATE.md
   README_VERSION_PLACEHOLDER: <artifact_version>
-  VERSION_EXTRACT_PATTERN: (?<=\.)[0-9]+(?=\-)(?!(?:[^\-]*\-)*(?:ALPHA|BETA|RC))|(?<=\-ALPHA)[0-9]+(?=\-)|(?<=\-BETA)[0-9]+(?=\-)|(?<=\-RC)[0-9]+(?=\-)
+  VERSION_EXTRACT_PATTERN: (?<=\.)[0-9]+(?=-)(?!(?:[^-]*-)*(?:ALPHA|BETA|RC))|(?<=-ALPHA)[0-9]+(?=-)|(?<=-BETA)[0-9]+(?=-)|(?<=-RC)[0-9]+(?=-)
 
 jobs:
   release:
@@ -54,9 +54,9 @@ jobs:
       - name: Generate new version
         id: generateNewVersion
         run: |
-          patch_version=$(echo "${{ env.VERSION }}" | grep -Eo '${{ env.VERSION_EXTRACT_PATTERN }}'
+          patch_version=$(python -c 'import re;import sys;print(re.search(r"${{ env.VERSION_EXTRACT_PATTERN }}", sys.argv[1]).group(0))' ${{ env.VERSION }})
           let "patch_version++"
-          new_version=$(echo "${{env.VERSION}}" | sed -E "s/${{ env.VERSION_EXTRACT_PATTERN }}/${patch_version}/")
+          new_version=$(python -c 'import re;import sys;print(re.sub(r"${{ env.VERSION_EXTRACT_PATTERN }}", sys.argv[2], sys.argv[1]))' ${{ env.VERSION }} ${patch_version})
           echo "${new_version}"
           echo "::set-env name=NEW_VERSION::${new_version}"
 
