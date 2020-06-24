@@ -5,11 +5,13 @@ import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.service.step.StepReporter;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
+import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.tuple.Pair;
@@ -187,5 +189,22 @@ public class TestUtils {
 				same(p.getValue()),
 				any()
 		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> TestUtils.createMaybe(new OperationCompletionRS())));
+	}
+
+	public static ListenerParameters standardParameters() {
+		ListenerParameters result = new ListenerParameters();
+		result.setClientJoin(false);
+		result.setBatchLogsSize(1);
+		result.setLaunchName("My-test-launch" + CommonUtils.generateUniqueId());
+		result.setProjectName("test-project");
+		result.setEnable(true);
+		return result;
+	}
+
+	public static StartLaunchRQ launchRQ(ListenerParameters parameters) {
+		StartLaunchRQ result = new StartLaunchRQ();
+		result.setName(parameters.getLaunchName());
+		result.setStartTime(Calendar.getInstance().getTime());
+		return result;
 	}
 }
