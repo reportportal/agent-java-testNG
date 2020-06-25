@@ -71,7 +71,9 @@ jobs:
       - name: Setup git credentials
         uses: oleksiyrudenko/gha-git-credentials@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          name: 'reportportal.io'
+          email: 'support@reportportal.io'
+          token: ${{ secrets.GH_TOKEN }}
 
       - name: Release with Gradle
         id: release
