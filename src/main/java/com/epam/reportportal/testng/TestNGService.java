@@ -101,7 +101,7 @@ public class TestNGService implements ITestNGService {
 		NOT_ISSUE.setIssueType(LaunchImpl.NOT_ISSUE);
 	}
 
-	private static ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
+	private static volatile ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
 
 	private final AtomicBoolean isLaunchFailed = new AtomicBoolean();
 
@@ -117,15 +117,25 @@ public class TestNGService implements ITestNGService {
 	private final List<AnalyticsItem> analyticsItems = new CopyOnWriteArrayList<>();
 	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
 
+	private static Thread getShutdownHook(final Launch launch) {
+		return new Thread(() -> {
+			FinishExecutionRQ rq = new FinishExecutionRQ();
+			rq.setEndTime(Calendar.getInstance().getTime());
+			launch.finish(rq);
+		});
+	}
+
 	public TestNGService() {
 		this.launch = new MemorizingSupplier<>(() -> {
 			//this reads property, so we want to
 			//init ReportPortal object each time Launch object is going to be created
 
-			StartLaunchRQ rq = buildStartLaunchRq(REPORT_PORTAL.getParameters());
+			StartLaunchRQ rq = buildStartLaunchRq(getReportPortal().getParameters());
 			rq.setStartTime(Calendar.getInstance().getTime());
 			addStartLaunchEvent(rq);
-			return REPORT_PORTAL.newLaunch(rq);
+			Launch newLaunch = getReportPortal().newLaunch(rq);
+			Runtime.getRuntime().addShutdownHook(getShutdownHook(newLaunch));
+			return newLaunch;
 		});
 	}
 
