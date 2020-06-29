@@ -25,9 +25,26 @@ targetCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
     mavenLocal()
-    jcenter()
     mavenCentral()
-    releaseMode ? maven { url "https://dl.bintray.com/epam/reportportal" } : maven { url "https://jitpack.io" }
+    maven { url "https://dl.bintray.com/epam/reportportal" }
+    jcenter()
+    maven { url "https://jitpack.io" }
+}
+
+project.ext.githubUserName = project.hasProperty('githubUserName') ? githubUserName : ""
+project.ext.githubToken = project.hasProperty('githubToken') ? githubToken : ""
+
+publishing {
+    repositories {
+        maven {
+            name = "TestNG GitHub Packages"
+            url = uri("https://maven.pkg.github.com/reportportal/agent-java-testNG")
+            credentials {
+                username = githubUserName
+                password = githubToken
+            }
+        }
+    }
 }
 
 processResources {
@@ -37,15 +54,12 @@ processResources {
 }
 
 dependencies {
-    if (releaseMode) {
-        implementation 'com.epam.reportportal:client-java:5.0.1'
-        implementation 'com.epam.reportportal:commons-model:5.0.0'
-    } else {
-        implementation 'com.epam.reportportal:client-java:5.0.1'
-        implementation 'com.github.reportportal:commons-model:5.0.0'
-    }
+    implementation 'com.epam.reportportal:client-java:5.0.1'
+    implementation 'com.epam.reportportal:commons-model:5.0.0'
 
     implementation 'org.testng:testng:6.14.3'
+
+    testImplementation('com.github.reportportal:agent-java-test-utils:ddcf50ee20')
 
     testImplementation ('org.junit.platform:junit-platform-runner:1.6.2') {
         exclude module: 'junit'
@@ -66,7 +80,6 @@ dependencies {
     }
 
     testImplementation 'org.apache.commons:commons-io:1.3.2'
-
     testImplementation 'com.ibm.icu:icu4j:67.1'
 }
 
@@ -81,10 +94,12 @@ wrapper {
     gradleVersion = '5.4.1'
 }
 
-afterReleaseBuild.dependsOn bintrayUpload
-
 release {
     git {
         requireBranch = 'v5-testng6'
     }
 }
+
+def releaseDependencies = [bintrayUpload, publish]
+releaseDependencies.addAll(afterReleaseBuild.getDependsOn())
+afterReleaseBuild.setDependsOn(releaseDependencies)
