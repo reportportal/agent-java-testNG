@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- A version anchor in README_TEMPLATE.md file
 
 ## [5.0.3]
 ### Added
