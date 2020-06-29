@@ -3,22 +3,26 @@ package com.epam.reportportal.testng;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
-import com.epam.reportportal.service.analytics.GoogleAnalytics;
-import com.epam.reportportal.service.analytics.item.AnalyticsItem;
+import com.epam.reportportal.service.analytics.AnalyticsService;
 import com.epam.reportportal.testng.integration.GoogleAnalyticsListener;
 import com.epam.reportportal.testng.integration.feature.analytics.AnalyticsTest;
 import com.epam.reportportal.testng.integration.util.TestUtils;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
+import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
+import io.reactivex.Maybe;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 
 import java.util.Collections;
-import java.util.Map;
+import java.util.List;
+import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -27,23 +31,23 @@ import static org.mockito.Mockito.*;
  */
 public class GoogleAnalyticsIntegrationTest {
 
+	@Mock
+	private ReportPortalClient reportPortalClient;
+
+	@Mock
+	private AnalyticsService analyticsService;
+
 	@BeforeEach
 	public void initMocks() {
-		ReportPortalClient reportPortalClient = mock(ReportPortalClient.class);
-
 		when(reportPortalClient.startLaunch(any())).thenReturn(TestUtils.createMaybe(new StartLaunchRS("launchUuid", 1L)));
 
-		final ReportPortal reportPortal = ReportPortal.create(reportPortalClient, new ListenerParameters(PropertiesLoader.load()));
-
-		GoogleAnalytics googleAnalytics = mock(GoogleAnalytics.class);
+		ReportPortal reportPortal = ReportPortal.create(reportPortalClient, new ListenerParameters(PropertiesLoader.load()));
 		GoogleAnalyticsListener.initReportPortal(reportPortal);
-		GoogleAnalyticsListener.initGoogleAnalytics(googleAnalytics);
+		GoogleAnalyticsListener.initAnalyticsService(analyticsService);
 	}
 
 	@Test
 	public void googleAnalyticsEventTest() {
-		GoogleAnalytics googleAnalytics = GoogleAnalyticsListener.getGoogleAnalytics();
-
 		try {
 			TestUtils.runTests(Collections.singletonList(GoogleAnalyticsListener.class), AnalyticsTest.class);
 		} catch (Exception ex) {
@@ -51,22 +55,16 @@ public class GoogleAnalyticsIntegrationTest {
 			ex.printStackTrace();
 		}
 
-		ArgumentCaptor<AnalyticsItem> argumentCaptor = ArgumentCaptor.forClass(AnalyticsItem.class);
-		verify(googleAnalytics, times(1)).send(argumentCaptor.capture());
+		ArgumentCaptor<StartLaunchRQ> startLaunchCaptor = ArgumentCaptor.forClass(StartLaunchRQ.class);
+		verify(analyticsService, times(1)).sendEvent(any(Maybe.class), startLaunchCaptor.capture());
 
-		AnalyticsItem value = argumentCaptor.getValue();
+		StartLaunchRQ startRq = startLaunchCaptor.getValue();
 
-		Map<String, String> params = value.getParams();
-
-		String type = params.get("t");
-		String eventAction = params.get("ea");
-		String eventCategory = params.get("ec");
-		String eventLabel = params.get("el");
-
-		assertEquals("event", type);
-		assertEquals("Start launch", eventAction);
-		assertTrue(eventCategory.contains("client-java"));
-		assertEquals("agent-java-testng|test-version-1", eventLabel);
-
+		List<String> attributes = startRq.getAttributes()
+				.stream()
+				.filter(ItemAttributesRQ::isSystem)
+				.map(e -> e.getKey() + ":" + e.getValue())
+				.collect(Collectors.toList());
+		assertThat(attributes, hasItem("agent:agent-java-testng|test-version-1"));
 	}
 }
