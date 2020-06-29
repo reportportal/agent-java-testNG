@@ -26,6 +26,9 @@ A TestNG reporter that uploads the results to a ReportPortal server.
 - [Example and step-by-step instruction with Log4j](https://github.com/reportportal/examples-java/tree/master/example-testng-log4j)
 ---
 
+| WARNING: This is transitional version of agent for those who can't switch on TestNG 7 due to binary incompatibility! <br> You will be definitely affected by these issues: https://github.com/reportportal/agent-java-testNG/issues/27 <br> https://github.com/cbeust/testng/issues/2157 |
+| --- |
+
 **[TestNG](http://testng.org)** provides support for attaching custom listeners, reporters, annotation transformers and method interceptors to your tests.
 Handling events
 
@@ -69,7 +72,7 @@ TestNG agent can handle next events:
 TestItem – report portal specified object for representing:  suite, test, method objects in different test systems. Used as tree structure and can be recursively placed inside himself.
 
 ## Dependencies
-> Minimum supported TestNG version: [7.1.0](https://search.maven.org/artifact/org.testng/testng/7.1.0/jar)
+> Minimum supported TestNG version: [6.9.13.3](https://search.maven.org/artifact/org.testng/testng/6.9.13.3/jar)
 
 
 Add to `POM.xml`
