@@ -1,8 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- A version anchor in README_TEMPLATE.md file
 ### Added
-* A launch finish shutdown hook 
+* A launch finish shutdown hook
 
 ## [4.0.2]
 ##### Released: 26 March 2018

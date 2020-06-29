@@ -27,7 +27,7 @@ env:
   CHANGE_LOG_TMP_FILE: CHANGELOG_updated.md
   README_FILE: README.md
   README_TEMPLATE_FILE: README_TEMPLATE.md
-  README_VERSION_PLACEHOLDER: <artifact_version>
+  README_VERSION_PLACEHOLDER: $LATEST_VERSION
   VERSION_EXTRACT_PATTERN: (?<=\.)[0-9]+(?=-)(?!(?:[^-]*-)*(?:ALPHA|BETA|RC))|(?<=-ALPHA-)[0-9]+(?=-)|(?<=-BETA-)[0-9]+(?=-)|(?<=-RC-)[0-9]+(?=-)
 
 jobs:
