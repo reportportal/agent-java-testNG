@@ -83,7 +83,7 @@ public class ParametersBypassTest {
 
 		methodStarts.stream().map(StartTestItemRQ::getParameters).peek(pl -> assertThat(pl, hasSize(2))).forEach(testParams -> {
 			assertThat(testParams, hasSize(2));
-			assertThat(testParams.get(0).getKey(), equalTo(Integer.class.getCanonicalName()));
+			assertThat(testParams.get(0).getKey(), equalTo(Integer.TYPE.getCanonicalName()));
 			assertThat(testParams.get(1).getKey(), equalTo(String.class.getCanonicalName()));
 
 			assertThat(testParams.get(0).getValue() + "-" + testParams.get(1).getValue(), anyOf(equalTo("1-one"), equalTo("2-two")));
@@ -92,7 +92,8 @@ public class ParametersBypassTest {
 
 	private static void verify_null_parameter(List<StartTestItemRQ> methodStarts) {
 		assertThat(methodStarts, hasSize(3));
-		List<String> expectedKeys = Arrays.asList(String.class.getCanonicalName(), String.class.getCanonicalName(), "arg0");
+		String strClassName = String.class.getCanonicalName();
+		List<String> expectedKeys = Collections.nCopies(3, strClassName);
 		List<String> expectedValues = Arrays.asList("one", "two", "NULL");
 		List<String> expectedResult = IntStream.range(0, 3)
 				.mapToObj(i -> expectedKeys.get(i) + "-" + expectedValues.get(i))
@@ -127,8 +128,28 @@ public class ParametersBypassTest {
 	}
 
 	@Test
-	public void verify_parameter_key_annotation_bypass() {
+	public void verify_parameter_key_annotation_bypass_for_test_method() {
 		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), ParameterNamesTest.class);
+
+		ArgumentCaptor<StartTestItemRQ> testCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, timeout(1000).times(2)).startTestItem(startsWith("class"), testCaptor.capture());
+
+		List<StartTestItemRQ> methodStarts = testCaptor.getAllValues();
+
+		assertThat(methodStarts, hasSize(2));
+
+		methodStarts.stream().map(StartTestItemRQ::getParameters).peek(pl -> assertThat(pl, hasSize(2))).forEach(testParams -> {
+			assertThat(testParams, hasSize(2));
+			assertThat(testParams.get(0).getKey(), equalTo(ParameterNamesTest.FIRST_PARAMETER_NAME));
+			assertThat(testParams.get(1).getKey(), equalTo(ParameterNamesTest.SECOND_PARAMETER_NAME));
+
+			assertThat(testParams.get(0).getValue() + "-" + testParams.get(1).getValue(), anyOf(equalTo("1-one"), equalTo("2-two")));
+		});
+	}
+
+	@Test
+	public void verify_parameter_key_annotation_bypass_for_constructor() {
+		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), ConstructorParameterNamesTest.class);
 
 		ArgumentCaptor<StartTestItemRQ> testCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, timeout(1000).times(2)).startTestItem(startsWith("class"), testCaptor.capture());

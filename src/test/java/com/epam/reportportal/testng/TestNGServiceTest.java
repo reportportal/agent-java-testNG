@@ -86,7 +86,6 @@ public class TestNGServiceTest {
 
 	@Test
 	public void finishLaunch() {
-		when(launch.getParameters()).thenReturn(new ListenerParameters());
 		testNGService.finishLaunch();
 		verify(launch, times(1)).finish(Mockito.any(FinishExecutionRQ.class));
 	}
