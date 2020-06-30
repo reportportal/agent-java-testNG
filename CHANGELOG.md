@@ -5,7 +5,7 @@
 ## [5.0.4-TESTNG6]
 ### Changed
 - `@NotNull` annotation replaced with `@Nonnull`
-- Test parameter processing logic was moved into the client and updated. Now it supports `@parameterKey` annotations for factory 
+- Test parameter processing logic was moved into the client and updated. Now it supports `@ParameterKey` annotations for factory 
 constructors.
 
 ### Removed
