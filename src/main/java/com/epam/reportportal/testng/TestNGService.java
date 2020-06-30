@@ -25,7 +25,6 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.LaunchImpl;
 import com.epam.reportportal.service.ReportPortal;
-import com.epam.reportportal.service.analytics.AnalyticsService;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.testng.util.internal.LimitedSizeConcurrentHashMap;
@@ -104,8 +103,6 @@ public class TestNGService implements ITestNGService {
 	private final Map<Object, Boolean> SKIPPED_STATUS_TRACKER = new LimitedSizeConcurrentHashMap<>(MAXIMUM_HISTORY_SIZE);
 
 	private final MemorizingSupplier<Launch> launch;
-	private final AnalyticsService analyticsService;
-	private StartLaunchRQ startRq;
 
 	private static Thread getShutdownHook(final Launch launch) {
 		return new Thread(() -> {
@@ -115,13 +112,11 @@ public class TestNGService implements ITestNGService {
 		});
 	}
 
-	TestNGService(AnalyticsService analyticsService) {
-		this.startRq = buildStartLaunchRq(getReportPortal().getParameters());
-		this.analyticsService = analyticsService;
+	public TestNGService() {
 		this.launch = new MemorizingSupplier<>(() -> {
 			//this reads property, so we want to
 			//init ReportPortal object each time Launch object is going to be created
-
+			StartLaunchRQ startRq = buildStartLaunchRq(getReportPortal().getParameters());
 			startRq.setStartTime(Calendar.getInstance().getTime());
 			Launch newLaunch = getReportPortal().newLaunch(startRq);
 			Runtime.getRuntime().addShutdownHook(getShutdownHook(newLaunch));
@@ -129,12 +124,7 @@ public class TestNGService implements ITestNGService {
 		});
 	}
 
-	public TestNGService() {
-		this(new AnalyticsService(getReportPortal().getParameters()));
-	}
-
 	public TestNGService(Supplier<Launch> launch) {
-		this.analyticsService = new AnalyticsService(getReportPortal().getParameters());
 		this.launch = new MemorizingSupplier<>(launch);
 	}
 
@@ -149,9 +139,6 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public void startLaunch() {
 		Maybe<String> launchId = launch.get().start();
-		if (startRq != null) {
-			analyticsService.sendEvent(launchId, startRq);
-		}
 		StepAspect.addLaunch("default", launch.get());
 		ITEM_TREE.setLaunchId(launchId);
 	}
@@ -162,11 +149,7 @@ public class TestNGService implements ITestNGService {
 		rq.setEndTime(Calendar.getInstance().getTime());
 		rq.setStatus(isLaunchFailed.get() ? ItemStatus.FAILED.name() : ItemStatus.PASSED.name());
 		launch.get().finish(rq);
-		try {
-			analyticsService.close();
-		} finally {
-			launch.reset();
-		}
+		launch.reset();
 	}
 
 	private void addToTree(ISuite suite, Maybe<String> item) {
