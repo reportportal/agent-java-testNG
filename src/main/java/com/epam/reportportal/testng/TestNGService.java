@@ -25,28 +25,23 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.LaunchImpl;
 import com.epam.reportportal.service.ReportPortal;
-import com.epam.reportportal.service.analytics.GoogleAnalytics;
-import com.epam.reportportal.service.analytics.item.AnalyticsEvent;
-import com.epam.reportportal.service.analytics.item.AnalyticsItem;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.testng.util.internal.LimitedSizeConcurrentHashMap;
 import com.epam.reportportal.utils.AttributeParser;
+import com.epam.reportportal.utils.ParameterUtils;
 import com.epam.reportportal.utils.TestCaseIdUtils;
-import com.epam.reportportal.utils.properties.ClientProperties;
-import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
-import io.reactivex.schedulers.Schedulers;
 import org.apache.commons.lang3.tuple.Pair;
 import org.testng.*;
+import org.testng.annotations.Factory;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 import org.testng.collections.Lists;
@@ -55,12 +50,14 @@ import org.testng.xml.XmlClass;
 import org.testng.xml.XmlTest;
 import rp.com.google.common.annotations.VisibleForTesting;
 
-import javax.validation.constraints.NotNull;
+import javax.annotation.Nonnull;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -80,8 +77,6 @@ import static rp.com.google.common.base.Throwables.getStackTraceAsString;
 public class TestNGService implements ITestNGService {
 
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
-	private static final String CLIENT_PROPERTIES_FILE = "client.properties";
-	private static final String START_LAUNCH_EVENT_ACTION = "Start launch";
 	private static final Predicate<StackTraceElement> IS_RETRY_ELEMENT = e -> "org.testng.internal.TestInvoker".equals(e.getClassName())
 			&& "retryFailed".equals(e.getMethodName());
 	private static final Predicate<StackTraceElement[]> IS_RETRY = eList -> Arrays.stream(eList).anyMatch(IS_RETRY_ELEMENT);
@@ -91,7 +86,6 @@ public class TestNGService implements ITestNGService {
 	public static final String RP_ID = "rp_id";
 	public static final String RP_RETRY = "rp_retry";
 	public static final String RP_METHOD_TYPE = "rp_method_type";
-	public static final String ARGUMENT = "arg";
 	public static final String NULL_VALUE = "NULL";
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
 	public static final Issue NOT_ISSUE;
@@ -112,11 +106,6 @@ public class TestNGService implements ITestNGService {
 
 	private final MemorizingSupplier<Launch> launch;
 
-	private final ExecutorService googleAnalyticsExecutor = Executors.newSingleThreadExecutor();
-	private final GoogleAnalytics googleAnalytics = new GoogleAnalytics(Schedulers.from(googleAnalyticsExecutor), "UA-96321031-1");
-	private final List<AnalyticsItem> analyticsItems = new CopyOnWriteArrayList<>();
-	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
-
 	private static Thread getShutdownHook(final Launch launch) {
 		return new Thread(() -> {
 			FinishExecutionRQ rq = new FinishExecutionRQ();
@@ -129,11 +118,9 @@ public class TestNGService implements ITestNGService {
 		this.launch = new MemorizingSupplier<>(() -> {
 			//this reads property, so we want to
 			//init ReportPortal object each time Launch object is going to be created
-
-			StartLaunchRQ rq = buildStartLaunchRq(getReportPortal().getParameters());
-			rq.setStartTime(Calendar.getInstance().getTime());
-			addStartLaunchEvent(rq);
-			Launch newLaunch = getReportPortal().newLaunch(rq);
+			StartLaunchRQ startRq = buildStartLaunchRq(getReportPortal().getParameters());
+			startRq.setStartTime(Calendar.getInstance().getTime());
+			Launch newLaunch = getReportPortal().newLaunch(startRq);
 			Runtime.getRuntime().addShutdownHook(getShutdownHook(newLaunch));
 			return newLaunch;
 		});
@@ -151,19 +138,11 @@ public class TestNGService implements ITestNGService {
 		REPORT_PORTAL = reportPortal;
 	}
 
-	protected GoogleAnalytics getGoogleAnalytics() {
-		return googleAnalytics;
-	}
-
 	@Override
 	public void startLaunch() {
-		Maybe<String> launchId = this.launch.get().start();
-		StepAspect.addLaunch("default", this.launch.get());
+		Maybe<String> launchId = launch.get().start();
+		StepAspect.addLaunch("default", launch.get());
 		ITEM_TREE.setLaunchId(launchId);
-		dependencies.addAll(analyticsItems.stream()
-				.map(it -> launchId.flatMap(l -> getGoogleAnalytics().send(it)))
-				.map(Maybe::ignoreElement)
-				.collect(toList()));
 	}
 
 	@Override
@@ -172,19 +151,7 @@ public class TestNGService implements ITestNGService {
 		rq.setEndTime(Calendar.getInstance().getTime());
 		rq.setStatus(isLaunchFailed.get() ? ItemStatus.FAILED.name() : ItemStatus.PASSED.name());
 		launch.get().finish(rq);
-		try {
-			Completable.concat(dependencies).timeout(launch.get().getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
-		} finally {
-			googleAnalytics.close();
-			googleAnalyticsExecutor.shutdown();
-			try {
-				this.googleAnalyticsExecutor.awaitTermination(launch.get().getParameters().getReportingTimeout(), TimeUnit.SECONDS);
-			} catch (InterruptedException exc) {
-				//do nothing
-			} finally {
-				this.launch.reset();
-			}
-		}
+		launch.reset();
 	}
 
 	private void addToTree(ISuite suite, Maybe<String> item) {
@@ -334,7 +301,7 @@ public class TestNGService implements ITestNGService {
 	 * @param testResult TestNG's testResult context
 	 * @return Request to ReportPortal
 	 */
-	protected StartTestItemRQ buildStartStepRq(final @NotNull ITestResult testResult) {
+	protected StartTestItemRQ buildStartStepRq(final @Nonnull ITestResult testResult) {
 		return buildStartStepRq(testResult, ofNullable(TestMethodType.getStepType(testResult.getMethod())).orElse(TestMethodType.STEP));
 	}
 
@@ -345,7 +312,7 @@ public class TestNGService implements ITestNGService {
 	 * @param type       method type
 	 * @return Request to ReportPortal
 	 */
-	protected StartTestItemRQ buildStartStepRq(final @NotNull ITestResult testResult, final @NotNull TestMethodType type) {
+	protected StartTestItemRQ buildStartStepRq(final @Nonnull ITestResult testResult, final @Nonnull TestMethodType type) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setName(createStepName(testResult));
 		String codeRef = testResult.getMethod().getQualifiedName();
@@ -476,6 +443,7 @@ public class TestNGService implements ITestNGService {
 	 *
 	 * @param testResult TestNG's testResult context
 	 */
+	@SuppressWarnings("unused")
 	protected void createSkippedSteps(ITestResult testResult) {
 	}
 
@@ -647,22 +615,6 @@ public class TestNGService implements ITestNGService {
 		return parameters.isEmpty() ? null : parameters;
 	}
 
-	private void addStartLaunchEvent(StartLaunchRQ rq) {
-		AnalyticsEvent.AnalyticsEventBuilder analyticsEventBuilder = AnalyticsEvent.builder();
-		analyticsEventBuilder.withAction(START_LAUNCH_EVENT_ACTION);
-		SystemAttributesExtractor.extract(CLIENT_PROPERTIES_FILE, TestNGService.class.getClassLoader(), ClientProperties.CLIENT)
-				.stream()
-				.findFirst()
-				.ifPresent(clientAttribute -> analyticsEventBuilder.withCategory(clientAttribute.getValue()));
-
-		rq.getAttributes()
-				.stream()
-				.filter(attribute -> attribute.isSystem() && DefaultProperties.AGENT.getName().equalsIgnoreCase(attribute.getKey()))
-				.findFirst()
-				.ifPresent(agentAttribute -> analyticsEventBuilder.withLabel(agentAttribute.getValue()));
-		analyticsItems.add(analyticsEventBuilder.build());
-	}
-
 	/**
 	 * Process testResult to create parameters provided via {@link Parameters}
 	 *
@@ -695,57 +647,49 @@ public class TestNGService implements ITestNGService {
 	 * @param testResult TestNG's testResult context
 	 * @return Step Parameters being sent to ReportPortal
 	 */
-
 	private List<ParameterResource> createDataProviderParameters(ITestResult testResult) {
 		Test testAnnotation = getMethodAnnotation(Test.class, testResult);
-		if (null == testAnnotation || isNullOrEmpty(testAnnotation.dataProvider())) {
+		Method method = ofNullable(testResult.getMethod()).map(ITestNGMethod::getConstructorOrMethod)
+				.map(ConstructorOrMethod::getMethod)
+				.orElse(null);
+		Object[] parameters = testResult.getParameters();
+		if (method == null || testAnnotation == null || isNullOrEmpty(testAnnotation.dataProvider()) || parameters == null
+				|| parameters.length <= 0) {
 			return Collections.emptyList();
 		}
-		List<ParameterResource> result = Lists.newArrayList();
-		Annotation[][] parameterAnnotations = testResult.getMethod().getConstructorOrMethod().getMethod().getParameterAnnotations();
-		Object[] values = testResult.getParameters();
-		int length = parameterAnnotations.length;
-		if (length != values.length) {
-			return result;
-		}
-
-		return IntStream.range(0, length).mapToObj(i -> {
-			Object p = values[i];
-			ParameterResource parameter = new ParameterResource();
-			if (p == null) {
-				parameter.setKey(ARGUMENT + i);
-				parameter.setValue(NULL_VALUE);
-			} else {
-				String key = Arrays.stream(parameterAnnotations[i])
-						.filter(a -> ParameterKey.class.equals(a.annotationType()))
-						.map(a -> ((ParameterKey) a).value())
-						.findFirst()
-						.orElseGet(() -> p.getClass().getCanonicalName());
-				parameter.setKey(key);
-				parameter.setValue(p.toString());
-			}
-			return parameter;
-		}).collect(toList());
+		return ParameterUtils.getParameters(method, Arrays.asList(parameters));
 	}
 
 	private List<ParameterResource> crateFactoryParameters(ITestResult testResult) {
 		Object[] parameters = testResult.getFactoryParameters();
-		if (parameters == null || parameters.length <= 0) {
+
+		Constructor<?>[] constructors = ofNullable(testResult.getMethod()).map(ITestNGMethod::getConstructorOrMethod)
+				.map(ConstructorOrMethod::getMethod)
+				.map(Method::getDeclaringClass)
+				.map(Class::getConstructors)
+				.orElse(new Constructor<?>[0]);
+
+		Constructor<?> constructor = Arrays.stream(constructors).filter(c -> {
+			Factory factoryAnnotation = c.getAnnotation(Factory.class);
+			if (factoryAnnotation == null) {
+				return false;
+			}
+			if (c.getParameterCount() != parameters.length) {
+				return false;
+			}
+			Class<?>[] types = c.getParameterTypes();
+			return IntStream.range(0, types.length).mapToObj(i -> {
+				Class<?> type = types[i];
+				Class<?> boxedClass = ParameterUtils.toBoxedType(type);
+				// If value is null we can't get class, assume it suites.
+				return ofNullable(parameters[i]).map(p -> boxedClass == p.getClass()).orElse(true);
+			}).allMatch(b -> b == Boolean.TRUE);
+		}).findAny().orElse(null);
+		if (parameters == null || parameters.length <= 0 || constructor == null) {
 			return Collections.emptyList();
 		}
 
-		return IntStream.range(0, parameters.length).mapToObj(i -> {
-			Object p = parameters[i];
-			ParameterResource parameter = new ParameterResource();
-			if (p == null) {
-				parameter.setKey(ARGUMENT + i);
-				parameter.setValue(NULL_VALUE);
-			} else {
-				parameter.setKey(p.getClass().getCanonicalName());
-				parameter.setValue(p.toString());
-			}
-			return parameter;
-		}).collect(toList());
+		return ParameterUtils.getParameters(constructor, Arrays.asList(parameters));
 	}
 
 	/**

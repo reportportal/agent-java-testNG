@@ -54,7 +54,8 @@ processResources {
 }
 
 dependencies {
-    implementation 'com.epam.reportportal:client-java:5.0.1'
+    implementation 'com.epam.reportportal:client-java:5.0.2'
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'com.epam.reportportal:commons-model:5.0.0'
 
     implementation 'org.testng:testng:7.1.0'
