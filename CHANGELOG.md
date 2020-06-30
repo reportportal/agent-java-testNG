@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.4]
 ### Changed
 - A version anchor in README_TEMPLATE.md file
 - `@NotNull` annotation replaced with `@Nonnull`
