@@ -1,6 +1,6 @@
 package com.epam.reportportal.testng.util.internal;
 
-import javax.validation.constraints.NotNull;
+import javax.annotation.Nonnull;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -23,7 +23,7 @@ public class LimitedSizeConcurrentHashMap<K, V> extends ConcurrentHashMap<K, V> 
 	 * {@inheritDoc}
 	 */
 	@Override
-	public V put(@NotNull final K key, @NotNull final V value) {
+	public V put(@Nonnull final K key, @Nonnull final V value) {
 		if (size() >= maxSize) {
 			K keyToRemove = inputOrder.poll();
 			if (keyToRemove != null) {

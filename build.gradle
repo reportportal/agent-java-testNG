@@ -54,8 +54,8 @@ processResources {
 }
 
 dependencies {
-    implementation 'com.github.reportportal:client-java:4e8d1ca582'
-    implementation 'org.slf4j:slf4j-api:1.7.25'
+    implementation 'com.epam.reportportal:client-java:5.0.2'
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'com.epam.reportportal:commons-model:5.0.0'
 
     implementation 'org.testng:testng:7.1.0'

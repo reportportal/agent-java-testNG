@@ -3,6 +3,12 @@
 ## [Unreleased]
 ### Changed
 - A version anchor in README_TEMPLATE.md file
+- `@NotNull` annotation replaced with `@Nonnull`
+- Test parameter processing logic was moved into the client and updated. Now it supports `@parameterKey` annotations for factory 
+constructors.
+
+### Removed
+- Google analytics publishing code was removed from the agent, since it's now located in the client. 
 
 ## [5.0.3]
 ### Added

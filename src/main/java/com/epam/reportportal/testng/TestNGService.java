@@ -29,6 +29,7 @@ import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.testng.util.internal.LimitedSizeConcurrentHashMap;
 import com.epam.reportportal.utils.AttributeParser;
+import com.epam.reportportal.utils.ParameterUtils;
 import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.*;
@@ -40,6 +41,7 @@ import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.testng.*;
+import org.testng.annotations.Factory;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 import org.testng.collections.Lists;
@@ -48,9 +50,10 @@ import org.testng.xml.XmlClass;
 import org.testng.xml.XmlTest;
 import rp.com.google.common.annotations.VisibleForTesting;
 
-import javax.validation.constraints.NotNull;
+import javax.annotation.Nonnull;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -83,7 +86,6 @@ public class TestNGService implements ITestNGService {
 	public static final String RP_ID = "rp_id";
 	public static final String RP_RETRY = "rp_retry";
 	public static final String RP_METHOD_TYPE = "rp_method_type";
-	public static final String ARGUMENT = "arg";
 	public static final String NULL_VALUE = "NULL";
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
 	public static final Issue NOT_ISSUE;
@@ -299,7 +301,7 @@ public class TestNGService implements ITestNGService {
 	 * @param testResult TestNG's testResult context
 	 * @return Request to ReportPortal
 	 */
-	protected StartTestItemRQ buildStartStepRq(final @NotNull ITestResult testResult) {
+	protected StartTestItemRQ buildStartStepRq(final @Nonnull ITestResult testResult) {
 		return buildStartStepRq(testResult, ofNullable(TestMethodType.getStepType(testResult.getMethod())).orElse(TestMethodType.STEP));
 	}
 
@@ -310,7 +312,7 @@ public class TestNGService implements ITestNGService {
 	 * @param type       method type
 	 * @return Request to ReportPortal
 	 */
-	protected StartTestItemRQ buildStartStepRq(final @NotNull ITestResult testResult, final @NotNull TestMethodType type) {
+	protected StartTestItemRQ buildStartStepRq(final @Nonnull ITestResult testResult, final @Nonnull TestMethodType type) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setName(createStepName(testResult));
 		String codeRef = testResult.getMethod().getQualifiedName();
@@ -645,57 +647,49 @@ public class TestNGService implements ITestNGService {
 	 * @param testResult TestNG's testResult context
 	 * @return Step Parameters being sent to ReportPortal
 	 */
-
 	private List<ParameterResource> createDataProviderParameters(ITestResult testResult) {
 		Test testAnnotation = getMethodAnnotation(Test.class, testResult);
-		if (null == testAnnotation || isNullOrEmpty(testAnnotation.dataProvider())) {
+		Method method = ofNullable(testResult.getMethod()).map(ITestNGMethod::getConstructorOrMethod)
+				.map(ConstructorOrMethod::getMethod)
+				.orElse(null);
+		Object[] parameters = testResult.getParameters();
+		if (method == null || testAnnotation == null || isNullOrEmpty(testAnnotation.dataProvider()) || parameters == null
+				|| parameters.length <= 0) {
 			return Collections.emptyList();
 		}
-		List<ParameterResource> result = Lists.newArrayList();
-		Annotation[][] parameterAnnotations = testResult.getMethod().getConstructorOrMethod().getMethod().getParameterAnnotations();
-		Object[] values = testResult.getParameters();
-		int length = parameterAnnotations.length;
-		if (length != values.length) {
-			return result;
-		}
-
-		return IntStream.range(0, length).mapToObj(i -> {
-			Object p = values[i];
-			ParameterResource parameter = new ParameterResource();
-			if (p == null) {
-				parameter.setKey(ARGUMENT + i);
-				parameter.setValue(NULL_VALUE);
-			} else {
-				String key = Arrays.stream(parameterAnnotations[i])
-						.filter(a -> ParameterKey.class.equals(a.annotationType()))
-						.map(a -> ((ParameterKey) a).value())
-						.findFirst()
-						.orElseGet(() -> p.getClass().getCanonicalName());
-				parameter.setKey(key);
-				parameter.setValue(p.toString());
-			}
-			return parameter;
-		}).collect(toList());
+		return ParameterUtils.getParameters(method, Arrays.asList(parameters));
 	}
 
 	private List<ParameterResource> crateFactoryParameters(ITestResult testResult) {
 		Object[] parameters = testResult.getFactoryParameters();
-		if (parameters == null || parameters.length <= 0) {
+
+		Constructor<?>[] constructors = ofNullable(testResult.getMethod()).map(ITestNGMethod::getConstructorOrMethod)
+				.map(ConstructorOrMethod::getMethod)
+				.map(Method::getDeclaringClass)
+				.map(Class::getConstructors)
+				.orElse(new Constructor<?>[0]);
+
+		Constructor<?> constructor = Arrays.stream(constructors).filter(c -> {
+			Factory factoryAnnotation = c.getAnnotation(Factory.class);
+			if (factoryAnnotation == null) {
+				return false;
+			}
+			if (c.getParameterCount() != parameters.length) {
+				return false;
+			}
+			Class<?>[] types = c.getParameterTypes();
+			return IntStream.range(0, types.length).mapToObj(i -> {
+				Class<?> type = types[i];
+				Class<?> boxedClass = ParameterUtils.toBoxedType(type);
+				// If value is null we can't get class, assume it suites.
+				return ofNullable(parameters[i]).map(p -> boxedClass == p.getClass()).orElse(true);
+			}).allMatch(b -> b == Boolean.TRUE);
+		}).findAny().orElse(null);
+		if (parameters == null || parameters.length <= 0 || constructor == null) {
 			return Collections.emptyList();
 		}
 
-		return IntStream.range(0, parameters.length).mapToObj(i -> {
-			Object p = parameters[i];
-			ParameterResource parameter = new ParameterResource();
-			if (p == null) {
-				parameter.setKey(ARGUMENT + i);
-				parameter.setValue(NULL_VALUE);
-			} else {
-				parameter.setKey(p.getClass().getCanonicalName());
-				parameter.setValue(p.toString());
-			}
-			return parameter;
-		}).collect(toList());
+		return ParameterUtils.getParameters(constructor, Arrays.asList(parameters));
 	}
 
 	/**
