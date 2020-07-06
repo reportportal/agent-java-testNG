@@ -80,6 +80,13 @@ jobs:
           git commit -m "Readme update"
           git push
 
+      - name: Read changelog Entry
+        id: readChangelogEntry
+        uses: mindsers/changelog-reader-action@v1.2.0
+        with:
+          version: 'Unreleased'
+          path: ./${{ env.CHANGE_LOG_FILE }}
+
       - name: Update CHANGELOG.md
         id: changelogUpdate
         run: |
@@ -93,13 +100,6 @@ jobs:
           git add ${{ env.CHANGE_LOG_FILE }}
           git commit -m "Changelog update"
           git push
-
-      - name: Read changelog Entry
-        id: readChangelogEntry
-        uses: mindsers/changelog-reader-action@v1.1.0
-        with:
-          version: ${{ env.RELEASE_VERSION }}
-          path: ./${{ env.CHANGE_LOG_FILE }}
 
       - name: Create Release
         id: createRelease
