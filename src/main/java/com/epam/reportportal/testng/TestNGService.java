@@ -106,6 +106,8 @@ public class TestNGService implements ITestNGService {
 
 	private final MemorizingSupplier<Launch> launch;
 
+	private volatile Thread shutDownHook;
+
 	private static Thread getShutdownHook(final Launch launch) {
 		return new Thread(() -> {
 			FinishExecutionRQ rq = new FinishExecutionRQ();
@@ -121,7 +123,8 @@ public class TestNGService implements ITestNGService {
 			StartLaunchRQ startRq = buildStartLaunchRq(getReportPortal().getParameters());
 			startRq.setStartTime(Calendar.getInstance().getTime());
 			Launch newLaunch = getReportPortal().newLaunch(startRq);
-			Runtime.getRuntime().addShutdownHook(getShutdownHook(newLaunch));
+			shutDownHook = getShutdownHook(newLaunch);
+			Runtime.getRuntime().addShutdownHook(shutDownHook);
 			return newLaunch;
 		});
 	}
@@ -152,6 +155,7 @@ public class TestNGService implements ITestNGService {
 		rq.setStatus(isLaunchFailed.get() ? ItemStatus.FAILED.name() : ItemStatus.PASSED.name());
 		launch.get().finish(rq);
 		launch.reset();
+		Runtime.getRuntime().removeShutdownHook(shutDownHook);
 	}
 
 	private void addToTree(ISuite suite, Maybe<String> item) {
