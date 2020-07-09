@@ -108,11 +108,11 @@ public class TestNGService implements ITestNGService {
 
 	private volatile Thread shutDownHook;
 
-	private static Thread getShutdownHook(final Launch launch) {
+	private static Thread getShutdownHook(final Supplier<Launch> launch) {
 		return new Thread(() -> {
 			FinishExecutionRQ rq = new FinishExecutionRQ();
 			rq.setEndTime(Calendar.getInstance().getTime());
-			launch.finish(rq);
+			launch.get().finish(rq);
 		});
 	}
 
@@ -123,7 +123,7 @@ public class TestNGService implements ITestNGService {
 			StartLaunchRQ startRq = buildStartLaunchRq(getReportPortal().getParameters());
 			startRq.setStartTime(Calendar.getInstance().getTime());
 			Launch newLaunch = getReportPortal().newLaunch(startRq);
-			shutDownHook = getShutdownHook(newLaunch);
+			shutDownHook = getShutdownHook(() -> newLaunch);
 			Runtime.getRuntime().addShutdownHook(shutDownHook);
 			return newLaunch;
 		});
@@ -131,6 +131,8 @@ public class TestNGService implements ITestNGService {
 
 	public TestNGService(Supplier<Launch> launch) {
 		this.launch = new MemorizingSupplier<>(launch);
+		shutDownHook = getShutdownHook(launch);
+		Runtime.getRuntime().addShutdownHook(shutDownHook);
 	}
 
 	public static ReportPortal getReportPortal() {
