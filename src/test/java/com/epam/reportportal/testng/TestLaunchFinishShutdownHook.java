@@ -23,12 +23,12 @@ public class TestLaunchFinishShutdownHook {
 
 	@ParameterizedTest
 	@ValueSource(classes = { LaunchFinishShutdownHookTest.class, LaunchFinishShutdownHookRemoveTest.class })
-	public void test_shutdown_hook_finishes_launch_on_java_machine_exit() throws Exception {
+	public void test_shutdown_hook_finishes_launch_on_java_machine_exit(final Class<?> clazz) throws Exception {
 
 		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
 		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, Collections.emptyMap(), "files/socket_response.txt");
 		Callable<Process> clientCallable = () -> ProcessUtils.buildProcess(true,
-				LaunchFinishShutdownHookTest.class,
+				clazz,
 				String.valueOf(ss.getLocalPort())
 		);
 		Pair<String, Process> startResult = SocketUtils.executeServerCallable(serverCallable, clientCallable);
