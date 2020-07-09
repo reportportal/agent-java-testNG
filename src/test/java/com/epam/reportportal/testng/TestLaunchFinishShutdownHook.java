@@ -5,7 +5,6 @@ import com.epam.reportportal.testng.integration.feature.shutdown.LaunchFinishShu
 import com.epam.reportportal.util.test.ProcessUtils;
 import com.epam.reportportal.util.test.SocketUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -27,10 +26,7 @@ public class TestLaunchFinishShutdownHook {
 
 		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
 		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, Collections.emptyMap(), "files/socket_response.txt");
-		Callable<Process> clientCallable = () -> ProcessUtils.buildProcess(true,
-				clazz,
-				String.valueOf(ss.getLocalPort())
-		);
+		Callable<Process> clientCallable = () -> ProcessUtils.buildProcess(true, clazz, String.valueOf(ss.getLocalPort()));
 		Pair<String, Process> startResult = SocketUtils.executeServerCallable(serverCallable, clientCallable);
 		assertThat(startResult.getValue(), notNullValue());
 		assertThat("First request is a launch start", startResult.getKey(), startsWith("POST /api/v1/test-project/launch"));
