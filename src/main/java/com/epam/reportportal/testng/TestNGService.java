@@ -129,8 +129,8 @@ public class TestNGService implements ITestNGService {
 		});
 	}
 
-	public TestNGService(Supplier<Launch> launch) {
-		this.launch = new MemorizingSupplier<>(launch);
+	public TestNGService(Supplier<Launch> launchSupplier) {
+		launch = new MemorizingSupplier<>(launchSupplier);
 		shutDownHook = getShutdownHook(launch);
 		Runtime.getRuntime().addShutdownHook(shutDownHook);
 	}
