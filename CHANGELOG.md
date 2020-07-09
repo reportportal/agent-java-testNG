@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- 'Unable to finish launch in ReportPortal' exception on test execution shut down
 
 ## [5.0.4]
 ### Changed
@@ -8,8 +10,6 @@
 - `@NotNull` annotation replaced with `@Nonnull`
 - Test parameter processing logic was moved into the client and updated. Now it supports `@ParameterKey` annotations for factory 
 constructors.
-### Fixed
-- 'Unable to finish launch in ReportPortal' exception on test execution shut down
 
 ### Removed
 - Google analytics publishing code was removed from the agent, since it's now located in the client. 
