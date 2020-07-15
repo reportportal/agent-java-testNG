@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.6-TESTNG6]
 ### Added
 - 'createConfigurationName' and 'createConfigurationDescription' methods for those who wants to customize before/after method names
 
