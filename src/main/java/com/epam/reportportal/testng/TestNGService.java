@@ -106,11 +106,13 @@ public class TestNGService implements ITestNGService {
 
 	private final MemorizingSupplier<Launch> launch;
 
-	private static Thread getShutdownHook(final Launch launch) {
+	private volatile Thread shutDownHook;
+
+	private static Thread getShutdownHook(final Supplier<Launch> launch) {
 		return new Thread(() -> {
 			FinishExecutionRQ rq = new FinishExecutionRQ();
 			rq.setEndTime(Calendar.getInstance().getTime());
-			launch.finish(rq);
+			launch.get().finish(rq);
 		});
 	}
 
@@ -121,13 +123,16 @@ public class TestNGService implements ITestNGService {
 			StartLaunchRQ startRq = buildStartLaunchRq(getReportPortal().getParameters());
 			startRq.setStartTime(Calendar.getInstance().getTime());
 			Launch newLaunch = getReportPortal().newLaunch(startRq);
-			Runtime.getRuntime().addShutdownHook(getShutdownHook(newLaunch));
+			shutDownHook = getShutdownHook(() -> newLaunch);
+			Runtime.getRuntime().addShutdownHook(shutDownHook);
 			return newLaunch;
 		});
 	}
 
-	public TestNGService(Supplier<Launch> launch) {
-		this.launch = new MemorizingSupplier<>(launch);
+	public TestNGService(Supplier<Launch> launchSupplier) {
+		launch = new MemorizingSupplier<>(launchSupplier);
+		shutDownHook = getShutdownHook(launch);
+		Runtime.getRuntime().addShutdownHook(shutDownHook);
 	}
 
 	public static ReportPortal getReportPortal() {
@@ -152,6 +157,7 @@ public class TestNGService implements ITestNGService {
 		rq.setStatus(isLaunchFailed.get() ? ItemStatus.FAILED.name() : ItemStatus.PASSED.name());
 		launch.get().finish(rq);
 		launch.reset();
+		Runtime.getRuntime().removeShutdownHook(shutDownHook);
 	}
 
 	private void addToTree(ISuite suite, Maybe<String> item) {
@@ -266,9 +272,9 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected StartTestItemRQ buildStartConfigurationRq(ITestResult testResult, TestMethodType type) {
 		StartTestItemRQ rq = new StartTestItemRQ();
-		rq.setName(testResult.getMethod().getMethodName());
+		rq.setName(createConfigurationName(testResult));
 		rq.setCodeRef(testResult.getMethod().getQualifiedName());
-		rq.setDescription(testResult.getMethod().getDescription());
+		rq.setDescription(createConfigurationDescription(testResult));
 		rq.setStartTime(new Date(testResult.getStartMillis()));
 		rq.setType(type == null ? null : type.toString());
 		boolean retry = isRetry(testResult);
@@ -656,6 +662,26 @@ public class TestNGService implements ITestNGService {
 			return Collections.emptyList();
 		}
 		return ParameterUtils.getParameters(method, Arrays.asList(parameters));
+	}
+
+	/**
+	 * Extension point to customize beforeXXX step name
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Test/Step Name being sent to ReportPortal
+	 */
+	protected String createConfigurationName(ITestResult testResult) {
+		return testResult.getMethod().getMethodName();
+	}
+
+	/**
+	 * Extension point to customize beforeXXX step description
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Test/Step Description being sent to ReportPortal
+	 */
+	protected String createConfigurationDescription(ITestResult testResult) {
+		return testResult.getMethod().getDescription();
 	}
 
 	/**
