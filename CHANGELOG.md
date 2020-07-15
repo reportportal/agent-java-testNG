@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- 'createConfigurationName' and 'createConfigurationDescription' methods for those who wants to customize before/after method names
+
 ### Fixed
 - 'Unable to finish launch in ReportPortal' exception on test execution shut down
 
