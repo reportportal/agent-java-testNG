@@ -275,9 +275,9 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected StartTestItemRQ buildStartConfigurationRq(ITestResult testResult, TestMethodType type) {
 		StartTestItemRQ rq = new StartTestItemRQ();
-		rq.setName(testResult.getMethod().getMethodName());
+		rq.setName(createConfigurationName(testResult));
 		rq.setCodeRef(testResult.getMethod().getQualifiedName());
-		rq.setDescription(testResult.getMethod().getDescription());
+		rq.setDescription(createConfigurationDescription(testResult));
 		rq.setStartTime(new Date(testResult.getStartMillis()));
 		rq.setType(type == null ? null : type.toString());
 		boolean retry = isRetry(testResult);
@@ -696,6 +696,26 @@ public class TestNGService implements ITestNGService {
 		}
 
 		return ParameterUtils.getParameters(constructor, Arrays.asList(parameters));
+	}
+
+	/**
+	 * Extension point to customize beforeXXX step name
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Test/Step Name being sent to ReportPortal
+	 */
+	protected String createConfigurationName(ITestResult testResult) {
+		return testResult.getMethod().getMethodName();
+	}
+
+	/**
+	 * Extension point to customize beforeXXX step description
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Test/Step Description being sent to ReportPortal
+	 */
+	protected String createConfigurationDescription(ITestResult testResult) {
+		return testResult.getMethod().getDescription();
 	}
 
 	/**
