@@ -20,11 +20,17 @@ on:
     - '!master'
     - '!v4-hotfix'
     - '!v5-testng6'
+    paths-ignore:
+    - README.md
+    - README_TEMPLATE.md
+    - gradle.properties
+    - CHANGELOG.md
   pull_request:
     branches:
     - master
     - v4-hotfix
     - v5-testng6
+
 
 jobs:
   build:
