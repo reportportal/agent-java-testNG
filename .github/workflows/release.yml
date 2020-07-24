@@ -77,7 +77,6 @@ jobs:
           sed 's/${{env.README_VERSION_PLACEHOLDER}}/${{env.RELEASE_VERSION}}/g' ${{env.README_TEMPLATE_FILE}} > ${{env.README_FILE}}
           git add ${{env.README_FILE}}
           git commit -m "Readme update"
-          git push
 
       - name: Update CHANGELOG.md
         id: changelogUpdate
