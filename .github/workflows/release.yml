@@ -28,6 +28,7 @@ on:
 
 env:
   VERSION_FILE: gradle.properties
+  VERSION_EXTRACT_PATTERN: '(?<=version=).+'
   GH_USER_NAME: github.actor
   CHANGE_LOG_FILE: CHANGELOG.md
   CHANGE_LOG_TMP_FILE: CHANGELOG_updated.md
@@ -46,8 +47,8 @@ jobs:
         uses: HardNorth/github-version-generate@v1.0.1
         with:
           version-source: file
-          version-file: gradle.properties
-          version-file-extraction-pattern: '(?<=version=).+'
+          version-file: ${{ env.VERSION_FILE }}
+          version-file-extraction-pattern: ${{ env.VERSION_EXTRACT_PATTERN }}
 
       - name: Set up JDK 1.8
         uses: actions/setup-java@v1
