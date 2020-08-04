@@ -498,7 +498,6 @@ public class TestNGService implements ITestNGService {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			rq.setLevel("ERROR");
-			rq.setLogTime(Calendar.getInstance().getTime());
 			if (result.getThrowable() != null) {
 				rq.setMessage(getStackTraceAsString(result.getThrowable()));
 			} else {
