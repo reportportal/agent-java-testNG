@@ -322,7 +322,7 @@ public class TestNGService implements ITestNGService {
 		rq.setName(createStepName(testResult));
 		String codeRef = testResult.getMethod().getQualifiedName();
 		rq.setCodeRef(codeRef);
-		rq.setTestCaseId(getTestCaseId(codeRef, testResult).getId());
+		rq.setTestCaseId(ofNullable(getTestCaseId(codeRef, testResult)).map(TestCaseIdEntry::getId).orElse(null));
 		rq.setAttributes(createStepAttributes(testResult));
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
@@ -779,17 +779,16 @@ public class TestNGService implements ITestNGService {
 		return itemUniqueID != null ? itemUniqueID.value() : null;
 	}
 
-	@Nonnull
 	private TestCaseIdEntry getTestCaseId(@Nonnull String codeRef, @Nonnull ITestResult testResult) {
 		TestCaseId testCaseId = getMethodAnnotation(TestCaseId.class, testResult);
 		Method method = getMethod(testResult);
 		List<Object> parameters = ofNullable(testResult.getParameters()).map(Arrays::asList).orElse(null);
 		TestCaseIdEntry id = ofNullable(method).map(m -> TestCaseIdUtils.getTestCaseId(testCaseId, m, parameters))
 				.orElse(TestCaseIdUtils.getTestCaseId(codeRef, parameters));
-		if (id.getId().endsWith("[]")) {
-			return new TestCaseIdEntry(id.getId().substring(0, id.getId().length() - 2));
+		if (id == null) {
+			return null;
 		}
-		return id;
+		return id.getId().endsWith("[]") ? new TestCaseIdEntry(id.getId().substring(0, id.getId().length() - 2)) : id;
 	}
 
 	protected Set<ItemAttributesRQ> createStepAttributes(ITestResult testResult) {

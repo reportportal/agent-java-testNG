@@ -62,7 +62,7 @@ dependencies {
 
     testImplementation('com.github.reportportal:agent-java-test-utils:ddcf50ee20')
 
-    testImplementation ('org.junit.platform:junit-platform-runner:1.6.2') {
+    testImplementation('org.junit.platform:junit-platform-runner:1.6.2') {
         exclude module: 'junit'
     }
     testImplementation 'org.junit.platform:junit-platform-launcher:1.6.2'
@@ -76,7 +76,7 @@ dependencies {
     testImplementation 'ch.qos.logback:logback-classic:1.2.3'
 
     testImplementation 'com.google.inject:guice:4.2.3'
-    testImplementation ('com.epam.reportportal:logger-java-logback:5.0.1') {
+    testImplementation('com.epam.reportportal:logger-java-logback:5.0.1') {
         exclude module: 'client-java'
     }
 

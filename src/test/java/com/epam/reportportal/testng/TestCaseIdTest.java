@@ -140,7 +140,10 @@ public class TestCaseIdTest {
 
 	@Test
 	public void verify_test_case_id_parameterized_no_marked_parameters() {
-		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), TestCaseIdFromAnnotationValueParametrizedNoParam.class);
+		TestUtils.runTests(
+				Collections.singletonList(TestReportPortalListener.class),
+				TestCaseIdFromAnnotationValueParametrizedNoParam.class
+		);
 
 		verify(launch, times(1)).startTestItem(any());  // Start parent suites
 
