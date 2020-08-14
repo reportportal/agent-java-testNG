@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Test Case ID generation improved
 
 ## [5.0.6]
 ### Added

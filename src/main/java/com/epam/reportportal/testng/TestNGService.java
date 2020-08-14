@@ -38,7 +38,6 @@ import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
-import io.reactivex.annotations.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.testng.*;
 import org.testng.annotations.Factory;
@@ -51,6 +50,7 @@ import org.testng.xml.XmlTest;
 import rp.com.google.common.annotations.VisibleForTesting;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -59,7 +59,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -323,7 +322,7 @@ public class TestNGService implements ITestNGService {
 		rq.setName(createStepName(testResult));
 		String codeRef = testResult.getMethod().getQualifiedName();
 		rq.setCodeRef(codeRef);
-		rq.setTestCaseId(Objects.requireNonNull(getTestCaseId(codeRef, testResult)).getId());
+		rq.setTestCaseId(getTestCaseId(codeRef, testResult).getId());
 		rq.setAttributes(createStepAttributes(testResult));
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
@@ -654,9 +653,7 @@ public class TestNGService implements ITestNGService {
 	 */
 	private List<ParameterResource> createDataProviderParameters(ITestResult testResult) {
 		Test testAnnotation = getMethodAnnotation(Test.class, testResult);
-		Method method = ofNullable(testResult.getMethod()).map(ITestNGMethod::getConstructorOrMethod)
-				.map(ConstructorOrMethod::getMethod)
-				.orElse(null);
+		Method method = getMethod(testResult);
 		Object[] parameters = testResult.getParameters();
 		if (method == null || testAnnotation == null || isNullOrEmpty(testAnnotation.dataProvider()) || parameters == null
 				|| parameters.length <= 0) {
@@ -668,9 +665,7 @@ public class TestNGService implements ITestNGService {
 	private List<ParameterResource> crateFactoryParameters(ITestResult testResult) {
 		Object[] parameters = testResult.getFactoryParameters();
 
-		Constructor<?>[] constructors = ofNullable(testResult.getMethod()).map(ITestNGMethod::getConstructorOrMethod)
-				.map(ConstructorOrMethod::getMethod)
-				.map(Method::getDeclaringClass)
+		Constructor<?>[] constructors = ofNullable(getMethod(testResult)).map(Method::getDeclaringClass)
 				.map(Class::getConstructors)
 				.orElse(new Constructor<?>[0]);
 
@@ -784,31 +779,17 @@ public class TestNGService implements ITestNGService {
 		return itemUniqueID != null ? itemUniqueID.value() : null;
 	}
 
-	@Nullable
-	private TestCaseIdEntry getTestCaseId(String codeRef, ITestResult testResult) {
+	@Nonnull
+	private TestCaseIdEntry getTestCaseId(@Nonnull String codeRef, @Nonnull ITestResult testResult) {
 		TestCaseId testCaseId = getMethodAnnotation(TestCaseId.class, testResult);
-		return testCaseId != null ?
-				getTestCaseId(testCaseId, testResult) :
-				new TestCaseIdEntry(testCaseIdFromCodeRefAndParams(codeRef, testResult.getParameters()));
-	}
-
-	private String testCaseIdFromCodeRefAndParams(String codeRef, Object[] parameters) {
-		boolean isParametersPresent = Objects.nonNull(parameters) && parameters.length > 0;
-		return isParametersPresent ? codeRef + TRANSFORM_PARAMETERS.apply(parameters) : codeRef;
-	}
-
-	private static final Function<Object[], String> TRANSFORM_PARAMETERS = it -> "[" + Arrays.stream(it)
-			.map(String::valueOf)
-			.collect(Collectors.joining(",")) + "]";
-
-	@Nullable
-	private TestCaseIdEntry getTestCaseId(TestCaseId testCaseId, ITestResult testResult) {
-		if (testCaseId.parametrized()) {
-			return TestCaseIdUtils.getParameterizedTestCaseId(testResult.getMethod().getConstructorOrMethod().getMethod(),
-					testResult.getParameters()
-			);
+		Method method = getMethod(testResult);
+		List<Object> parameters = ofNullable(testResult.getParameters()).map(Arrays::asList).orElse(null);
+		TestCaseIdEntry id = ofNullable(method).map(m -> TestCaseIdUtils.getTestCaseId(testCaseId, m, parameters))
+				.orElse(TestCaseIdUtils.getTestCaseId(codeRef, parameters));
+		if (id.getId().endsWith("[]")) {
+			return new TestCaseIdEntry(id.getId().substring(0, id.getId().length() - 2));
 		}
-		return new TestCaseIdEntry(testCaseId.value());
+		return id;
 	}
 
 	protected Set<ItemAttributesRQ> createStepAttributes(ITestResult testResult) {
@@ -817,6 +798,13 @@ public class TestNGService implements ITestNGService {
 			return AttributeParser.retrieveAttributes(attributesAnnotation);
 		}
 		return null;
+	}
+
+	@Nullable
+	private Method getMethod(@Nonnull ITestResult testResult) {
+		return ofNullable(testResult.getMethod()).map(ITestNGMethod::getConstructorOrMethod)
+				.map(ConstructorOrMethod::getMethod)
+				.orElse(null);
 	}
 
 	/**
@@ -829,15 +817,9 @@ public class TestNGService implements ITestNGService {
 	 * @return {@link Annotation} or null if doesn't exists
 	 */
 	private <T extends Annotation> T getMethodAnnotation(Class<T> annotation, ITestResult testResult) {
-		ITestNGMethod testNGMethod = testResult.getMethod();
-		if (null != testNGMethod) {
-			ConstructorOrMethod constructorOrMethod = testNGMethod.getConstructorOrMethod();
-			if (null != constructorOrMethod) {
-				Method method = constructorOrMethod.getMethod();
-				if (null != method) {
-					return method.getAnnotation(annotation);
-				}
-			}
+		Method method = getMethod(testResult);
+		if (null != method) {
+			return method.getAnnotation(annotation);
 		}
 		return null;
 	}
