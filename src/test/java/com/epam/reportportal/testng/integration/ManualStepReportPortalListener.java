@@ -5,10 +5,8 @@ import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.testng.BaseTestNGListener;
 import com.epam.reportportal.testng.TestNGService;
-import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import com.epam.reportportal.testng.integration.util.TestUtils;
 import rp.com.google.common.base.Suppliers;
-
-import java.util.Calendar;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -26,15 +24,7 @@ public class ManualStepReportPortalListener extends BaseTestNGListener {
 	}
 
 	private static Launch getLaunch(ListenerParameters parameters) {
-
 		ReportPortal reportPortal = REPORT_PORTAL_THREAD_LOCAL.get();
-		StartLaunchRQ rq = new StartLaunchRQ();
-		rq.setName(parameters.getLaunchName());
-		rq.setStartTime(Calendar.getInstance().getTime());
-		rq.setMode(parameters.getLaunchRunningMode());
-		rq.setStartTime(Calendar.getInstance().getTime());
-
-		return reportPortal.newLaunch(rq);
-
+		return reportPortal.newLaunch(TestUtils.launchRQ(parameters));
 	}
 }

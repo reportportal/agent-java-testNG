@@ -145,7 +145,6 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public void startLaunch() {
 		Maybe<String> launchId = launch.get().start();
-		StepAspect.addLaunch("default", launch.get());
 		ITEM_TREE.setLaunchId(launchId);
 	}
 
@@ -166,12 +165,13 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public void startTestSuite(ISuite suite) {
 		StartTestItemRQ rq = buildStartSuiteRq(suite);
-		final Maybe<String> item = launch.get().startTestItem(rq);
-		if (launch.get().getParameters().isCallbackReportingEnabled()) {
+		Launch myLaunch = launch.get();
+		final Maybe<String> item = myLaunch.startTestItem(rq);
+		if (myLaunch.getParameters().isCallbackReportingEnabled()) {
 			addToTree(suite, item);
 		}
 		suite.setAttribute(RP_ID, item);
-		StepAspect.setParentId(item);
+		StepAspect.setParentId(myLaunch, item);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -182,12 +182,13 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public void finishTestSuite(ISuite suite) {
 		Maybe<String> rpId = getAttribute(suite, RP_ID);
+		Launch myLaunch = launch.get();
 		if (null != rpId) {
 			FinishTestItemRQ rq = buildFinishTestSuiteRq(suite);
-			launch.get().finishTestItem(rpId, rq);
+			myLaunch.finishTestItem(rpId, rq);
 			suite.removeAttribute(RP_ID);
 		}
-		if (launch.get().getParameters().isCallbackReportingEnabled()) {
+		if (myLaunch.getParameters().isCallbackReportingEnabled()) {
 			removeFromTree(suite);
 		}
 	}
@@ -200,12 +201,13 @@ public class TestNGService implements ITestNGService {
 	public void startTest(ITestContext testContext) {
 		if (hasMethodsToRun(testContext)) {
 			StartTestItemRQ rq = buildStartTestItemRq(testContext);
-			final Maybe<String> testID = launch.get().startTestItem(this.getAttribute(testContext.getSuite(), RP_ID), rq);
-			if (launch.get().getParameters().isCallbackReportingEnabled()) {
+			Launch myLaunch = launch.get();
+			final Maybe<String> testID = myLaunch.startTestItem(this.getAttribute(testContext.getSuite(), RP_ID), rq);
+			if (myLaunch.getParameters().isCallbackReportingEnabled()) {
 				addToTree(testContext, testID);
 			}
 			testContext.setAttribute(RP_ID, testID);
-			StepAspect.setParentId(testID);
+			StepAspect.setParentId(myLaunch, testID);
 		}
 	}
 
@@ -295,9 +297,10 @@ public class TestNGService implements ITestNGService {
 			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
 		}
 		Maybe<String> parentId = getConfigParent(testResult, type);
-		Maybe<String> itemID = launch.get().startTestItem(parentId, rq);
+		Launch myLaunch = launch.get();
+		Maybe<String> itemID = myLaunch.startTestItem(parentId, rq);
 		testResult.setAttribute(RP_ID, itemID);
-		StepAspect.setParentId(itemID);
+		StepAspect.setParentId(myLaunch, itemID);
 	}
 
 	/**
@@ -356,10 +359,11 @@ public class TestNGService implements ITestNGService {
 			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
 		}
 
-		Maybe<String> stepMaybe = launch.get().startTestItem(getAttribute(testResult.getTestContext(), RP_ID), rq);
+		Launch myLaunch = launch.get();
+		Maybe<String> stepMaybe = myLaunch.startTestItem(getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
-		StepAspect.setParentId(stepMaybe);
-		if (launch.get().getParameters().isCallbackReportingEnabled()) {
+		StepAspect.setParentId(myLaunch, stepMaybe);
+		if (myLaunch.getParameters().isCallbackReportingEnabled()) {
 			addToTree(testResult, stepMaybe);
 		}
 	}
@@ -453,8 +457,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	@Override
-	public void finishTestMethod(String statusStr, ITestResult testResult) {
-		ItemStatus status = ItemStatus.valueOf(statusStr);
+	public void finishTestMethod(ItemStatus status, ITestResult testResult) {
 		Maybe<String> itemId = getAttribute(testResult, RP_ID);
 
 		if (ItemStatus.SKIPPED == status) {
@@ -489,6 +492,13 @@ public class TestNGService implements ITestNGService {
 		if (launch.get().getParameters().isCallbackReportingEnabled()) {
 			updateTestItemTree(finishItemResponse, testResult);
 		}
+	}
+
+	@Override
+	@Deprecated
+	public void finishTestMethod(String statusStr, ITestResult testResult) {
+		ItemStatus status = ItemStatus.valueOf(statusStr);
+		finishTestMethod(status, testResult);
 	}
 
 	@Override

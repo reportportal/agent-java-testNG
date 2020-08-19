@@ -54,7 +54,7 @@ processResources {
 }
 
 dependencies {
-    implementation 'com.epam.reportportal:client-java:5.0.4'
+    implementation 'com.epam.reportportal:client-java:5.0.5'
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'com.epam.reportportal:commons-model:5.0.0'
 
@@ -69,6 +69,8 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-params:5.6.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.2'
+
+    testImplementation "org.aspectj:aspectjweaver:1.9.2"
 
     testImplementation 'org.hamcrest:hamcrest-core:2.2'
     testImplementation 'org.mockito:mockito-core:3.3.3'
@@ -89,6 +91,10 @@ test {
     outputs.upToDateWhen { false }
     exclude("com/epam/reportportal/testng/integration/feature/**")
     maxParallelForks(5) // it's forks - separate JVMs, should not interfere each other
+    doFirst {
+        def weaver = configurations.testRuntimeClasspath.find { it.name.contains("aspectjweaver") }
+        jvmArgs += "-javaagent:$weaver"
+    }
 }
 
 wrapper {
