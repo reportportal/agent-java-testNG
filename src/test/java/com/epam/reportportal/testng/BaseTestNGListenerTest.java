@@ -16,6 +16,7 @@
 
 package com.epam.reportportal.testng;
 
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.Statuses;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,8 +43,6 @@ public class BaseTestNGListenerTest {
 	private ISuite suite;
 
 	private BaseTestNGListener listener;
-
-
 
 	@BeforeEach
 	public void init() {
@@ -95,20 +94,20 @@ public class BaseTestNGListenerTest {
 	@Test
 	public void testOnTestSuccess() {
 		listener.onTestSuccess(result);
-		verify(testNGService, times(1)).finishTestMethod(eq(Statuses.PASSED), eq(result));
+		verify(testNGService, times(1)).finishTestMethod(same(ItemStatus.PASSED), eq(result));
 	}
 
 	@Test
 	public void testOnTestFailure() {
 		listener.onTestFailure(result);
 		verify(testNGService, times(1)).sendReportPortalMsg(eq(result));
-		verify(testNGService, times(1)).finishTestMethod(eq(Statuses.FAILED), eq(result));
+		verify(testNGService, times(1)).finishTestMethod(same(ItemStatus.FAILED), eq(result));
 	}
 
 	@Test
 	public void testOnTestSkipped() {
 		listener.onTestSkipped(result);
-		verify(testNGService, times(1)).finishTestMethod(eq(Statuses.SKIPPED), eq(result));
+		verify(testNGService, times(1)).finishTestMethod(same(ItemStatus.SKIPPED), eq(result));
 	}
 
 	@Test
@@ -121,26 +120,26 @@ public class BaseTestNGListenerTest {
 	public void testOnConfigurationFailure() {
 		listener.onConfigurationFailure(result);
 		verify(testNGService, times(1)).sendReportPortalMsg(eq(result));
-		verify(testNGService, times(1)).finishTestMethod(eq(Statuses.FAILED), eq(result));
+		verify(testNGService, times(1)).finishTestMethod(same(ItemStatus.FAILED), eq(result));
 	}
 
 	@Test
 	public void testOnConfigurationSuccess() {
 		listener.onConfigurationSuccess(result);
-		verify(testNGService, times(1)).finishTestMethod(eq(Statuses.PASSED), eq(result));
+		verify(testNGService, times(1)).finishTestMethod(same(ItemStatus.PASSED), eq(result));
 	}
 
 	@Test
 	public void testOnConfigurationSkip() {
 		listener.onConfigurationSkip(result);
 		verify(testNGService, times(1)).startConfiguration(eq(result));
-		verify(testNGService, times(1)).finishTestMethod(eq(Statuses.SKIPPED), eq(result));
+		verify(testNGService, times(1)).finishTestMethod(same(ItemStatus.SKIPPED), eq(result));
 	}
 
 	@Test
 	public void testOnTestFailedButWithinSuccessPercentage() {
 		listener.onTestFailedButWithinSuccessPercentage(result);
-		verify(testNGService, times(1)).finishTestMethod(eq(Statuses.FAILED), eq(result));
+		verify(testNGService, times(1)).finishTestMethod(same(ItemStatus.FAILED), eq(result));
 	}
 
 }

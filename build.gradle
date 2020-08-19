@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-apply plugin: 'java'
+apply plugin: 'java-library'
 
 project.ext.releaseMode = project.hasProperty('releaseMode')
 
@@ -54,15 +54,15 @@ processResources {
 }
 
 dependencies {
-    implementation 'com.epam.reportportal:client-java:5.0.2'
-    implementation 'com.google.code.findbugs:jsr305:3.0.2'
-    implementation 'com.epam.reportportal:commons-model:5.0.0'
+    api 'com.epam.reportportal:client-java:5.0.6'
+    api 'com.google.code.findbugs:jsr305:3.0.2'
+    api 'com.epam.reportportal:commons-model:5.0.0'
 
     implementation 'org.testng:testng:7.1.0'
 
     testImplementation('com.github.reportportal:agent-java-test-utils:ddcf50ee20')
 
-    testImplementation ('org.junit.platform:junit-platform-runner:1.6.2') {
+    testImplementation('org.junit.platform:junit-platform-runner:1.6.2') {
         exclude module: 'junit'
     }
     testImplementation 'org.junit.platform:junit-platform-launcher:1.6.2'
@@ -70,13 +70,15 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-params:5.6.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.2'
 
+    testImplementation "org.aspectj:aspectjweaver:1.9.2"
+
     testImplementation 'org.hamcrest:hamcrest-core:2.2'
     testImplementation 'org.mockito:mockito-core:3.3.3'
     testImplementation 'org.mockito:mockito-junit-jupiter:3.3.3'
     testImplementation 'ch.qos.logback:logback-classic:1.2.3'
 
     testImplementation 'com.google.inject:guice:4.2.3'
-    testImplementation ('com.epam.reportportal:logger-java-logback:5.0.1') {
+    testImplementation('com.epam.reportportal:logger-java-logback:5.0.1') {
         exclude module: 'client-java'
     }
 
@@ -89,6 +91,10 @@ test {
     outputs.upToDateWhen { false }
     exclude("com/epam/reportportal/testng/integration/feature/**")
     maxParallelForks(5) // it's forks - separate JVMs, should not interfere each other
+    doFirst {
+        def weaver = configurations.testRuntimeClasspath.find { it.name.contains("aspectjweaver") }
+        jvmArgs += "-javaagent:$weaver"
+    }
 }
 
 wrapper {

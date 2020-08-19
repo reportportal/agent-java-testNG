@@ -15,7 +15,7 @@
  */
 package com.epam.reportportal.testng;
 
-import com.epam.reportportal.listeners.Statuses;
+import com.epam.reportportal.listeners.ItemStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.*;
@@ -34,7 +34,7 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
 
 	private static final AtomicInteger INSTANCES = new AtomicInteger(0);
 
-	private ITestNGService testNGService;
+	private final ITestNGService testNGService;
 
 	public BaseTestNGListener(ITestNGService testNgService) {
 		this.testNGService = testNgService;
@@ -84,18 +84,18 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
 
 	@Override
 	public void onTestSuccess(ITestResult testResult) {
-		testNGService.finishTestMethod(Statuses.PASSED, testResult);
+		testNGService.finishTestMethod(ItemStatus.PASSED, testResult);
 	}
 
 	@Override
 	public void onTestFailure(ITestResult testResult) {
 		testNGService.sendReportPortalMsg(testResult);
-		testNGService.finishTestMethod(Statuses.FAILED, testResult);
+		testNGService.finishTestMethod(ItemStatus.FAILED, testResult);
 	}
 
 	@Override
 	public void onTestSkipped(ITestResult testResult) {
-		testNGService.finishTestMethod(Statuses.SKIPPED, testResult);
+		testNGService.finishTestMethod(ItemStatus.SKIPPED, testResult);
 	}
 
 	@Override
@@ -106,23 +106,23 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
 	@Override
 	public void onConfigurationFailure(ITestResult testResult) {
 		testNGService.sendReportPortalMsg(testResult);
-		testNGService.finishTestMethod(Statuses.FAILED, testResult);
+		testNGService.finishTestMethod(ItemStatus.FAILED, testResult);
 	}
 
 	@Override
 	public void onConfigurationSuccess(ITestResult testResult) {
-		testNGService.finishTestMethod(Statuses.PASSED, testResult);
+		testNGService.finishTestMethod(ItemStatus.PASSED, testResult);
 	}
 
 	@Override
 	public void onConfigurationSkip(ITestResult testResult) {
 		testNGService.startConfiguration(testResult);
-		testNGService.finishTestMethod(Statuses.SKIPPED, testResult);
+		testNGService.finishTestMethod(ItemStatus.SKIPPED, testResult);
 	}
 
 	// this action temporary doesn't supported by report portal
 	@Override
 	public void onTestFailedButWithinSuccessPercentage(ITestResult result) {
-		testNGService.finishTestMethod(Statuses.FAILED, result);
+		testNGService.finishTestMethod(ItemStatus.FAILED, result);
 	}
 }
