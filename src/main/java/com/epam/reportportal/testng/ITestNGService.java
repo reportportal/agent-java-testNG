@@ -15,6 +15,7 @@
  */
 package com.epam.reportportal.testng;
 
+import com.epam.reportportal.listeners.ItemStatus;
 import org.testng.ISuite;
 import org.testng.ITestContext;
 import org.testng.ITestResult;
@@ -76,8 +77,19 @@ public interface ITestNGService {
 	 * @param status     Status (PASSED/FAILED)
 	 * @param testResult TestNG's test result
 	 * @see com.epam.reportportal.listeners.Statuses
+	 * @deprecated
 	 */
+	@Deprecated
 	void finishTestMethod(String status, ITestResult testResult);
+
+	/**
+	 * Finish test method event handler
+	 *
+	 * @param status     Status (PASSED/FAILED)
+	 * @param testResult TestNG's test result
+	 * @see com.epam.reportportal.listeners.ItemStatus
+	 */
+	void finishTestMethod(ItemStatus status, ITestResult testResult);
 
 	/**
 	 * Start configuration method(any before of after method)

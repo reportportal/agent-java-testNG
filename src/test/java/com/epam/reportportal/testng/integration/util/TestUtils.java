@@ -183,7 +183,7 @@ public class TestUtils {
 
 			Maybe<ItemCreatedRS> first = responses.get(0);
 			Maybe<ItemCreatedRS>[] other = responses.subList(1, responses.size()).toArray(new Maybe[0]);
-			when(client.startTestItem(eq(k), any())).thenReturn(first, other);
+			when(client.startTestItem(same(k), any())).thenReturn(first, other);
 		});
 		parentNestedPairs.forEach(p -> when(client.finishTestItem(
 				same(p.getValue()),
@@ -205,6 +205,7 @@ public class TestUtils {
 		StartLaunchRQ result = new StartLaunchRQ();
 		result.setName(parameters.getLaunchName());
 		result.setStartTime(Calendar.getInstance().getTime());
+		result.setMode(parameters.getLaunchRunningMode());
 		return result;
 	}
 }

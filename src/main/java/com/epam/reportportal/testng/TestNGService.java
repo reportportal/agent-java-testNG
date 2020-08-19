@@ -38,7 +38,6 @@ import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
-import io.reactivex.annotations.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.testng.*;
 import org.testng.annotations.Parameters;
@@ -50,15 +49,14 @@ import org.testng.xml.XmlTest;
 import rp.com.google.common.annotations.VisibleForTesting;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -146,7 +144,6 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public void startLaunch() {
 		Maybe<String> launchId = launch.get().start();
-		StepAspect.addLaunch("default", launch.get());
 		ITEM_TREE.setLaunchId(launchId);
 	}
 
@@ -167,12 +164,12 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public void startTestSuite(ISuite suite) {
 		StartTestItemRQ rq = buildStartSuiteRq(suite);
-		final Maybe<String> item = launch.get().startTestItem(rq);
-		if (launch.get().getParameters().isCallbackReportingEnabled()) {
+		Launch myLaunch = launch.get();
+		final Maybe<String> item = myLaunch.startTestItem(rq);
+		if (myLaunch.getParameters().isCallbackReportingEnabled()) {
 			addToTree(suite, item);
 		}
 		suite.setAttribute(RP_ID, item);
-		StepAspect.setParentId(item);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -183,12 +180,13 @@ public class TestNGService implements ITestNGService {
 	@Override
 	public void finishTestSuite(ISuite suite) {
 		Maybe<String> rpId = getAttribute(suite, RP_ID);
+		Launch myLaunch = launch.get();
 		if (null != rpId) {
 			FinishTestItemRQ rq = buildFinishTestSuiteRq(suite);
-			launch.get().finishTestItem(rpId, rq);
+			myLaunch.finishTestItem(rpId, rq);
 			suite.removeAttribute(RP_ID);
 		}
-		if (launch.get().getParameters().isCallbackReportingEnabled()) {
+		if (myLaunch.getParameters().isCallbackReportingEnabled()) {
 			removeFromTree(suite);
 		}
 	}
@@ -201,8 +199,9 @@ public class TestNGService implements ITestNGService {
 	public void startTest(ITestContext testContext) {
 		if (hasMethodsToRun(testContext)) {
 			StartTestItemRQ rq = buildStartTestItemRq(testContext);
-			final Maybe<String> testID = launch.get().startTestItem(this.getAttribute(testContext.getSuite(), RP_ID), rq);
-			if (launch.get().getParameters().isCallbackReportingEnabled()) {
+			Launch myLaunch = launch.get();
+			final Maybe<String> testID = myLaunch.startTestItem(this.getAttribute(testContext.getSuite(), RP_ID), rq);
+			if (myLaunch.getParameters().isCallbackReportingEnabled()) {
 				addToTree(testContext, testID);
 			}
 			testContext.setAttribute(RP_ID, testID);
@@ -294,7 +293,8 @@ public class TestNGService implements ITestNGService {
 			testResult.setAttribute(RP_RETRY_SET, Boolean.TRUE);
 		}
 		Maybe<String> parentId = getConfigParent(testResult, type);
-		Maybe<String> itemID = launch.get().startTestItem(parentId, rq);
+		Launch myLaunch = launch.get();
+		Maybe<String> itemID = myLaunch.startTestItem(parentId, rq);
 		testResult.setAttribute(RP_ID, itemID);
 		StepAspect.setParentId(itemID);
 	}
@@ -321,7 +321,7 @@ public class TestNGService implements ITestNGService {
 		rq.setName(createStepName(testResult));
 		String codeRef = testResult.getMethod().getQualifiedName();
 		rq.setCodeRef(codeRef);
-		rq.setTestCaseId(Objects.requireNonNull(getTestCaseId(codeRef, testResult)).getId());
+		rq.setTestCaseId(ofNullable(getTestCaseId(codeRef, testResult)).map(TestCaseIdEntry::getId).orElse(null));
 		rq.setAttributes(createStepAttributes(testResult));
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
@@ -356,10 +356,11 @@ public class TestNGService implements ITestNGService {
 			testResult.setAttribute(RP_RETRY_SET, Boolean.TRUE);
 		}
 
-		Maybe<String> stepMaybe = launch.get().startTestItem(getAttribute(testResult.getTestContext(), RP_ID), rq);
+		Launch myLaunch = launch.get();
+		Maybe<String> stepMaybe = myLaunch.startTestItem(getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
 		StepAspect.setParentId(stepMaybe);
-		if (launch.get().getParameters().isCallbackReportingEnabled()) {
+		if (myLaunch.getParameters().isCallbackReportingEnabled()) {
 			addToTree(testResult, stepMaybe);
 		}
 	}
@@ -451,9 +452,9 @@ public class TestNGService implements ITestNGService {
 	}
 
 	@Override
-	public void finishTestMethod(String statusStr, ITestResult testResult) {
-		ItemStatus status = ItemStatus.valueOf(statusStr);
+	public void finishTestMethod(ItemStatus status, ITestResult testResult) {
 		Maybe<String> itemId = getAttribute(testResult, RP_ID);
+
 		if (ItemStatus.SKIPPED == status) {
 			if (null == itemId) {
 				startTestMethod(testResult);
@@ -492,12 +493,18 @@ public class TestNGService implements ITestNGService {
 	}
 
 	@Override
+	@Deprecated
+	public void finishTestMethod(String statusStr, ITestResult testResult) {
+		ItemStatus status = ItemStatus.valueOf(statusStr);
+		finishTestMethod(status, testResult);
+	}
+
+	@Override
 	public void sendReportPortalMsg(final ITestResult result) {
 		ReportPortal.emitLog(itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			rq.setLevel("ERROR");
-			rq.setLogTime(Calendar.getInstance().getTime());
 			if (result.getThrowable() != null) {
 				rq.setMessage(getStackTraceAsString(result.getThrowable()));
 			} else {
@@ -653,9 +660,7 @@ public class TestNGService implements ITestNGService {
 	 */
 	private List<ParameterResource> createDataProviderParameters(ITestResult testResult) {
 		Test testAnnotation = getMethodAnnotation(Test.class, testResult);
-		Method method = ofNullable(testResult.getMethod()).map(ITestNGMethod::getConstructorOrMethod)
-				.map(ConstructorOrMethod::getMethod)
-				.orElse(null);
+		Method method = getMethod(testResult);
 		Object[] parameters = testResult.getParameters();
 		if (method == null || testAnnotation == null || isNullOrEmpty(testAnnotation.dataProvider()) || parameters == null
 				|| parameters.length <= 0) {
@@ -751,31 +756,16 @@ public class TestNGService implements ITestNGService {
 		return itemUniqueID != null ? itemUniqueID.value() : null;
 	}
 
-	@Nullable
-	private TestCaseIdEntry getTestCaseId(String codeRef, ITestResult testResult) {
+	private TestCaseIdEntry getTestCaseId(@Nonnull String codeRef, @Nonnull ITestResult testResult) {
 		TestCaseId testCaseId = getMethodAnnotation(TestCaseId.class, testResult);
-		return testCaseId != null ?
-				getTestCaseId(testCaseId, testResult) :
-				new TestCaseIdEntry(testCaseIdFromCodeRefAndParams(codeRef, testResult.getParameters()));
-	}
-
-	private String testCaseIdFromCodeRefAndParams(String codeRef, Object[] parameters) {
-		boolean isParametersPresent = Objects.nonNull(parameters) && parameters.length > 0;
-		return isParametersPresent ? codeRef + TRANSFORM_PARAMETERS.apply(parameters) : codeRef;
-	}
-
-	private static final Function<Object[], String> TRANSFORM_PARAMETERS = it -> "[" + Arrays.stream(it)
-			.map(String::valueOf)
-			.collect(Collectors.joining(",")) + "]";
-
-	@Nullable
-	private TestCaseIdEntry getTestCaseId(TestCaseId testCaseId, ITestResult testResult) {
-		if (testCaseId.parametrized()) {
-			return TestCaseIdUtils.getParameterizedTestCaseId(testResult.getMethod().getConstructorOrMethod().getMethod(),
-					testResult.getParameters()
-			);
+		Method method = getMethod(testResult);
+		List<Object> parameters = ofNullable(testResult.getParameters()).map(Arrays::asList).orElse(null);
+		TestCaseIdEntry id = ofNullable(method).map(m -> TestCaseIdUtils.getTestCaseId(testCaseId, m, parameters))
+				.orElse(TestCaseIdUtils.getTestCaseId(codeRef, parameters));
+		if (id == null) {
+			return null;
 		}
-		return new TestCaseIdEntry(testCaseId.value());
+		return id.getId().endsWith("[]") ? new TestCaseIdEntry(id.getId().substring(0, id.getId().length() - 2)) : id;
 	}
 
 	protected Set<ItemAttributesRQ> createStepAttributes(ITestResult testResult) {
@@ -784,6 +774,13 @@ public class TestNGService implements ITestNGService {
 			return AttributeParser.retrieveAttributes(attributesAnnotation);
 		}
 		return null;
+	}
+
+	@Nullable
+	private Method getMethod(@Nonnull ITestResult testResult) {
+		return ofNullable(testResult.getMethod()).map(ITestNGMethod::getConstructorOrMethod)
+				.map(ConstructorOrMethod::getMethod)
+				.orElse(null);
 	}
 
 	/**
@@ -796,15 +793,9 @@ public class TestNGService implements ITestNGService {
 	 * @return {@link Annotation} or null if doesn't exists
 	 */
 	private <T extends Annotation> T getMethodAnnotation(Class<T> annotation, ITestResult testResult) {
-		ITestNGMethod testNGMethod = testResult.getMethod();
-		if (null != testNGMethod) {
-			ConstructorOrMethod constructorOrMethod = testNGMethod.getConstructorOrMethod();
-			if (null != constructorOrMethod) {
-				Method method = constructorOrMethod.getMethod();
-				if (null != method) {
-					return method.getAnnotation(annotation);
-				}
-			}
+		Method method = getMethod(testResult);
+		if (null != method) {
+			return method.getAnnotation(annotation);
 		}
 		return null;
 	}

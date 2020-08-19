@@ -3,11 +3,7 @@ package com.epam.reportportal.testng;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.step.StepReporter;
-import com.epam.reportportal.testng.integration.TestReportPortalListener;
-import com.epam.reportportal.testng.integration.feature.testcaseid.TestCaseIdFromAnnotationValue;
-import com.epam.reportportal.testng.integration.feature.testcaseid.TestCaseIdFromAnnotationValueParametrized;
-import com.epam.reportportal.testng.integration.feature.testcaseid.TestCaseIdFromCodeRefAndParams;
-import com.epam.reportportal.testng.integration.feature.testcaseid.TestCaseIdFromCodeReference;
+import com.epam.reportportal.testng.integration.feature.testcaseid.*;
 import com.epam.reportportal.testng.integration.util.TestUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
@@ -33,6 +29,22 @@ import static org.mockito.Mockito.*;
  * @author <a href="mailto:ihar_kahadouski@epam.com">Ihar Kahadouski</a>
  */
 public class TestCaseIdTest {
+
+	public static class TestReportPortalListener extends BaseTestNGListener {
+		public static final ThreadLocal<Launch> LAUNCH_THREAD_LOCAL = new ThreadLocal<>();
+
+		public TestReportPortalListener() {
+			super(new TestNGService(LAUNCH_THREAD_LOCAL::get));
+		}
+
+		public static void initLaunch(Launch launch) {
+			LAUNCH_THREAD_LOCAL.set(launch);
+		}
+
+		public static Launch getLaunch() {
+			return LAUNCH_THREAD_LOCAL.get();
+		}
+	}
 
 	@Mock
 	private Launch launch;
@@ -124,5 +136,25 @@ public class TestCaseIdTest {
 
 		assertThat(testRequest.getName(), equalTo(TestUtils.TEST_NAME));
 		assertThat(actualTestCaseIds, containsInAnyOrder("one", "two", "three"));
+	}
+
+	@Test
+	public void verify_test_case_id_parameterized_no_marked_parameters() {
+		TestUtils.runTests(
+				Collections.singletonList(TestReportPortalListener.class),
+				TestCaseIdFromAnnotationValueParametrizedNoParam.class
+		);
+
+		verify(launch, times(1)).startTestItem(any());  // Start parent suites
+
+		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(launch, times(4)).startTestItem(any(), captor.capture()); // Start test and step
+
+		StartTestItemRQ testRequest = extractRequest(captor, "test");
+		List<StartTestItemRQ> stepRequests = extractRequests(captor, "step");
+		List<String> actualTestCaseIds = stepRequests.stream().map(StartTestItemRQ::getTestCaseId).collect(Collectors.toList());
+
+		assertThat(testRequest.getName(), equalTo(TestUtils.TEST_NAME));
+		assertThat(actualTestCaseIds, containsInAnyOrder("[one,1]", "[two,2]", "[three,3]"));
 	}
 }
