@@ -171,7 +171,6 @@ public class TestNGService implements ITestNGService {
 			addToTree(suite, item);
 		}
 		suite.setAttribute(RP_ID, item);
-		StepAspect.setParentId(myLaunch, item);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -207,7 +206,7 @@ public class TestNGService implements ITestNGService {
 				addToTree(testContext, testID);
 			}
 			testContext.setAttribute(RP_ID, testID);
-			StepAspect.setParentId(myLaunch, testID);
+			StepAspect.setParentId(testID);
 		}
 	}
 
@@ -300,7 +299,7 @@ public class TestNGService implements ITestNGService {
 		Launch myLaunch = launch.get();
 		Maybe<String> itemID = myLaunch.startTestItem(parentId, rq);
 		testResult.setAttribute(RP_ID, itemID);
-		StepAspect.setParentId(myLaunch, itemID);
+		StepAspect.setParentId(itemID);
 	}
 
 	/**
@@ -362,7 +361,7 @@ public class TestNGService implements ITestNGService {
 		Launch myLaunch = launch.get();
 		Maybe<String> stepMaybe = myLaunch.startTestItem(getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
-		StepAspect.setParentId(myLaunch, stepMaybe);
+		StepAspect.setParentId(stepMaybe);
 		if (myLaunch.getParameters().isCallbackReportingEnabled()) {
 			addToTree(testResult, stepMaybe);
 		}
