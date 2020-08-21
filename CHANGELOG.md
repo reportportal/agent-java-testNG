@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- StepAspect now handled inside client
 
 ## [5.0.7]
 ### Changed
@@ -9,24 +11,17 @@
 
 ## [5.0.6]
 ### Added
+- A launch finish shutdown hook
 - 'createConfigurationName' and 'createConfigurationDescription' methods for those who wants to customize before/after method names
-
 ### Fixed
 - 'Unable to finish launch in ReportPortal' exception on test execution shut down
-
-## [5.0.4]
 ### Changed
 - A version anchor in README_TEMPLATE.md file
 - `@NotNull` annotation replaced with `@Nonnull`
 - Test parameter processing logic was moved into the client and updated. Now it supports `@ParameterKey` annotations for factory 
 constructors.
-
 ### Removed
 - Google analytics publishing code was removed from the agent, since it's now located in the client. 
-
-## [5.0.3]
-### Added
-* A launch finish shutdown hook 
 
 ## [4.0.2]
 ##### Released: 26 March 2018

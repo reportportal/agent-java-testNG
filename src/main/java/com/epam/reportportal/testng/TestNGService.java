@@ -19,7 +19,6 @@ import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.UniqueID;
 import com.epam.reportportal.annotations.attribute.Attributes;
-import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
@@ -206,7 +205,6 @@ public class TestNGService implements ITestNGService {
 				addToTree(testContext, testID);
 			}
 			testContext.setAttribute(RP_ID, testID);
-			StepAspect.setParentId(testID);
 		}
 	}
 
@@ -299,7 +297,6 @@ public class TestNGService implements ITestNGService {
 		Launch myLaunch = launch.get();
 		Maybe<String> itemID = myLaunch.startTestItem(parentId, rq);
 		testResult.setAttribute(RP_ID, itemID);
-		StepAspect.setParentId(itemID);
 	}
 
 	/**
@@ -361,7 +358,6 @@ public class TestNGService implements ITestNGService {
 		Launch myLaunch = launch.get();
 		Maybe<String> stepMaybe = myLaunch.startTestItem(getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
-		StepAspect.setParentId(stepMaybe);
 		if (myLaunch.getParameters().isCallbackReportingEnabled()) {
 			addToTree(testResult, stepMaybe);
 		}
