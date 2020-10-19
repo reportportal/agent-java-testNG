@@ -86,10 +86,9 @@ public class TestNGService implements ITestNGService {
 	public static final String RP_METHOD_TYPE = "rp_method_type";
 	public static final String NULL_VALUE = "NULL";
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
-	public static final Issue NOT_ISSUE;
 
+	public static final Issue NOT_ISSUE = new Issue();
 	static {
-		NOT_ISSUE = new Issue();
 		NOT_ISSUE.setIssueType(LaunchImpl.NOT_ISSUE);
 	}
 

@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Changed
 - StepAspect now handled inside client
+- Client version updated
 
 ## [5.0.7]
 ### Changed
