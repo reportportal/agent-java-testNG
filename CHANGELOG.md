@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ## [5.0.8-TESTNG6]
+### Changed
 - StepAspect now handled inside client
 - Client version updated
 
