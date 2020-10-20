@@ -97,12 +97,12 @@ Add to `POM.xml`
 <dependency>
   <groupId>com.epam.reportportal</groupId>
   <artifactId>logger-java-logback</artifactId>
-  <version>5.0.1</version>
+  <version>5.0.3</version>
 </dependency>
 <dependency>
   <groupId>com.epam.reportportal</groupId>
   <artifactId>logger-java-log4j</artifactId>
-  <version>5.0.1</version>
+  <version>5.0.3</version>
 </dependency>
 ```
 
