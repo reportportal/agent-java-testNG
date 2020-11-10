@@ -88,6 +88,7 @@ public class TestNGService implements ITestNGService {
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
 
 	public static final Issue NOT_ISSUE = new Issue();
+
 	static {
 		NOT_ISSUE.setIssueType(LaunchImpl.NOT_ISSUE);
 	}
@@ -157,7 +158,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	private void addToTree(ISuite suite, Maybe<String> item) {
-		ITEM_TREE.getTestItems().put(createKey(suite), TestItemTree.createTestItemLeaf(item, suite.getXmlSuite().getTests().size()));
+		ITEM_TREE.getTestItems().put(createKey(suite), TestItemTree.createTestItemLeaf(item));
 	}
 
 	@Override
@@ -342,7 +343,7 @@ public class TestNGService implements ITestNGService {
 				.get(createKey(testContext))).flatMap(testLeaf -> ofNullable(testLeaf.getChildItems()
 				.get(createKey(testResult.getTestClass())))))
 				.ifPresent(testClassLeaf -> testClassLeaf.getChildItems()
-						.put(createKey(testResult), TestItemTree.createTestItemLeaf(stepMaybe, 0)));
+						.put(createKey(testResult), TestItemTree.createTestItemLeaf(stepMaybe)));
 	}
 
 	@Override
