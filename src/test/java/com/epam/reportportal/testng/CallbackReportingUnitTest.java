@@ -9,18 +9,11 @@ import io.reactivex.Maybe;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.testng.ISuite;
-import org.testng.ITestContext;
-import org.testng.ITestNGMethod;
-import org.testng.ITestResult;
-import org.testng.xml.XmlSuite;
-
-import java.util.ArrayList;
 
 import static com.epam.reportportal.testng.TestNGService.ITEM_TREE;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,21 +22,10 @@ import static org.mockito.Mockito.when;
  */
 public class CallbackReportingUnitTest {
 
-	private static final String RP_ID = "rp_id";
-
 	private TestNGService testNGService;
 
 	@Mock
 	private Launch launch;
-
-	@Mock
-	private ITestContext testContext;
-
-	@Mock
-	private ITestResult testResult;
-
-	@Mock
-	private ITestNGMethod method;
 
 	@Mock
 	private ISuite suite;
@@ -73,11 +55,7 @@ public class CallbackReportingUnitTest {
 		when(launch.getParameters()).thenReturn(listenerParameters);
 		when(listenerParameters.isCallbackReportingEnabled()).thenReturn(true);
 		when(launch.startTestItem(any(StartTestItemRQ.class))).thenReturn(id);
-
-		XmlSuite xmlSuiteMock = mock(XmlSuite.class);
 		when(suite.getName()).thenReturn(suiteName);
-		when(suite.getXmlSuite()).thenReturn(xmlSuiteMock);
-		when(xmlSuiteMock.getTests()).thenReturn(new ArrayList<>());
 
 		testNGService.startTestSuite(suite);
 		assertFalse(ITEM_TREE.getTestItems().isEmpty());
@@ -92,8 +70,6 @@ public class CallbackReportingUnitTest {
 		when(launch.getParameters()).thenReturn(listenerParameters);
 		when(listenerParameters.isCallbackReportingEnabled()).thenReturn(false);
 		when(launch.startTestItem(any(StartTestItemRQ.class))).thenReturn(id);
-
-		XmlSuite xmlSuiteMock = mock(XmlSuite.class);
 		when(suite.getName()).thenReturn(suiteName);
 
 		testNGService.startTestSuite(suite);
@@ -107,10 +83,8 @@ public class CallbackReportingUnitTest {
 		ListenerParameters listenerParameters = mock(ListenerParameters.class);
 		when(launch.getParameters()).thenReturn(listenerParameters);
 		when(listenerParameters.isCallbackReportingEnabled()).thenReturn(true);
-
-		XmlSuite xmlSuiteMock = mock(XmlSuite.class);
 		when(suite.getName()).thenReturn(suiteName);
-		ITEM_TREE.getTestItems().put(ItemTreeUtils.createKey(suite), TestItemTree.createTestItemLeaf(id, 1));
+		ITEM_TREE.getTestItems().put(ItemTreeUtils.createKey(suite), TestItemTree.createTestItemLeaf(id));
 
 		testNGService.finishTestSuite(suite);
 		assertTrue(ITEM_TREE.getTestItems().isEmpty());
