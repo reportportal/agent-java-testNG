@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 ### Changed 
-- Client version updated on [5.0.15](https://github.com/reportportal/client-java/releases/tag/5.0.15)
+- Client version updated on [5.0.17](https://github.com/reportportal/client-java/releases/tag/5.0.17)
 - TestNG's dependency moved to `api` scope
 
 ## [5.0.8]
