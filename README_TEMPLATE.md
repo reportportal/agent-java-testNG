@@ -1,8 +1,8 @@
 # agent-java-testNG
 A TestNG reporter that uploads the results to a ReportPortal server.
 
-> **DISCLAIMER**: We use Google Analytics for sending anonymous usage information as agent's and client's names, and their versions after a
-> successful launch start. This information might help us to improve both ReportPortal backend and client sides. It is used by the
+> **DISCLAIMER**: We use Google Analytics for sending anonymous usage information such as agent's and client's names, and their versions
+> after a successful launch start. This information might help us to improve both ReportPortal backend and client sides. It is used by the
 > ReportPortal team only and is not supposed for sharing with 3rd parties.
   
 [![Build Status](https://travis-ci.org/reportportal/agent-java-testNG.svg?branch=master)](https://travis-ci.org/reportportal/agent-java-testNG)
