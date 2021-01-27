@@ -22,18 +22,17 @@ import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
-import com.epam.reportportal.service.LaunchImpl;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.testng.util.internal.LimitedSizeConcurrentHashMap;
 import com.epam.reportportal.utils.AttributeParser;
+import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.reportportal.utils.ParameterUtils;
 import com.epam.reportportal.utils.TestCaseIdUtils;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
-import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
@@ -46,11 +45,9 @@ import org.testng.collections.Lists;
 import org.testng.internal.ConstructorOrMethod;
 import org.testng.xml.XmlClass;
 import org.testng.xml.XmlTest;
-import rp.com.google.common.annotations.VisibleForTesting;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -66,8 +63,9 @@ import java.util.stream.IntStream;
 import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
-import static rp.com.google.common.base.Strings.isNullOrEmpty;
-import static rp.com.google.common.base.Throwables.getStackTraceAsString;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 
 /**
  * TestNG service implements operations for interaction report portal
@@ -87,11 +85,6 @@ public class TestNGService implements ITestNGService {
 	public static final String NULL_VALUE = "NULL";
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
 
-	public static final Issue NOT_ISSUE = new Issue();
-	static {
-		NOT_ISSUE.setIssueType(LaunchImpl.NOT_ISSUE);
-	}
-
 	private static volatile ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
 
 	private final AtomicBoolean isLaunchFailed = new AtomicBoolean();
@@ -101,7 +94,7 @@ public class TestNGService implements ITestNGService {
 	private final Map<Object, Boolean> RETRY_STATUS_TRACKER = new LimitedSizeConcurrentHashMap<>(MAXIMUM_HISTORY_SIZE);
 	private final Map<Object, Boolean> SKIPPED_STATUS_TRACKER = new LimitedSizeConcurrentHashMap<>(MAXIMUM_HISTORY_SIZE);
 
-	private final MemorizingSupplier<Launch> launch;
+	private final MemoizingSupplier<Launch> launch;
 
 	private volatile Thread shutDownHook;
 
@@ -114,7 +107,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	public TestNGService() {
-		this.launch = new MemorizingSupplier<>(() -> {
+		this.launch = new MemoizingSupplier<>(() -> {
 			//this reads property, so we want to
 			//init ReportPortal object each time Launch object is going to be created
 			StartLaunchRQ startRq = buildStartLaunchRq(getReportPortal().getParameters());
@@ -127,7 +120,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	public TestNGService(Supplier<Launch> launchSupplier) {
-		launch = new MemorizingSupplier<>(launchSupplier);
+		launch = new MemoizingSupplier<>(launchSupplier);
 		shutDownHook = getShutdownHook(launch);
 		Runtime.getRuntime().addShutdownHook(shutDownHook);
 	}
@@ -157,7 +150,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	private void addToTree(ISuite suite, Maybe<String> item) {
-		ITEM_TREE.getTestItems().put(createKey(suite), TestItemTree.createTestItemLeaf(item, suite.getXmlSuite().getTests().size()));
+		ITEM_TREE.getTestItems().put(createKey(suite), TestItemTree.createTestItemLeaf(item));
 	}
 
 	@Override
@@ -342,7 +335,7 @@ public class TestNGService implements ITestNGService {
 				.get(createKey(testContext))).flatMap(testLeaf -> ofNullable(testLeaf.getChildItems()
 				.get(createKey(testResult.getTestClass())))))
 				.ifPresent(testClassLeaf -> testClassLeaf.getChildItems()
-						.put(createKey(testResult), TestItemTree.createTestItemLeaf(stepMaybe, 0)));
+						.put(createKey(testResult), TestItemTree.createTestItemLeaf(stepMaybe)));
 	}
 
 	@Override
@@ -417,7 +410,7 @@ public class TestNGService implements ITestNGService {
 		if (TestMethodType.STEP == type && getAttribute(testResult, RP_RETRY) == null && isRetried) {
 			RETRY_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			rq.setRetry(Boolean.TRUE);
-			rq.setIssue(NOT_ISSUE);
+			rq.setIssue(Launch.NOT_ISSUE);
 		}
 		if (isRetried) {
 			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
@@ -471,12 +464,12 @@ public class TestNGService implements ITestNGService {
 		// TestNG does not repeat before methods if an after method fails during retries. But reports them as skipped.
 		// Mark before methods as not an issue if it is not a culprit.
 		if (instance != null) {
-			if (ItemStatus.FAILED == status && TestMethodType.BEFORE_METHOD == type) {
+			if (ItemStatus.FAILED == status && (TestMethodType.BEFORE_METHOD == type || TestMethodType.BEFORE_CLASS == type)) {
 				SKIPPED_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			}
 			if (ItemStatus.SKIPPED == status && (SKIPPED_STATUS_TRACKER.containsKey(instance) || (TestMethodType.BEFORE_METHOD == type
 					&& getAttribute(testResult, RP_RETRY) != null))) {
-				rq.setIssue(NOT_ISSUE);
+				rq.setIssue(Launch.NOT_ISSUE);
 			}
 		}
 
@@ -502,7 +495,7 @@ public class TestNGService implements ITestNGService {
 			rq.setItemUuid(itemUuid);
 			rq.setLevel("ERROR");
 			if (result.getThrowable() != null) {
-				rq.setMessage(getStackTraceAsString(result.getThrowable()));
+				rq.setMessage(getStackTrace(result.getThrowable()));
 			} else {
 				rq.setMessage("Test has failed without exception");
 			}
@@ -563,10 +556,10 @@ public class TestNGService implements ITestNGService {
 		rq.setAttributes(parameters.getAttributes());
 		rq.setMode(parameters.getLaunchRunningMode());
 		rq.setRerun(parameters.isRerun());
-		if (!isNullOrEmpty(parameters.getRerunOf())) {
+		if (isNotBlank(parameters.getRerunOf())) {
 			rq.setRerunOf(parameters.getRerunOf());
 		}
-		if (!isNullOrEmpty(parameters.getDescription())) {
+		if (isNotBlank(parameters.getDescription())) {
 			rq.setDescription(parameters.getDescription());
 		}
 		if (null != parameters.getSkippedAnIssue()) {
@@ -659,7 +652,7 @@ public class TestNGService implements ITestNGService {
 		Test testAnnotation = getMethodAnnotation(Test.class, testResult);
 		Method method = getMethod(testResult);
 		Object[] parameters = testResult.getParameters();
-		if (method == null || testAnnotation == null || isNullOrEmpty(testAnnotation.dataProvider()) || parameters == null
+		if (method == null || testAnnotation == null || isBlank(testAnnotation.dataProvider()) || parameters == null
 				|| parameters.length <= 0) {
 			return Collections.emptyList();
 		}
@@ -843,7 +836,6 @@ public class TestNGService implements ITestNGService {
 	/**
 	 * Calculate parent id for configuration
 	 */
-	@VisibleForTesting
 	Maybe<String> getConfigParent(ITestResult testResult, TestMethodType type) {
 		Maybe<String> parentId;
 		if (TestMethodType.BEFORE_SUITE.equals(type) || TestMethodType.AFTER_SUITE.equals(type)) {
@@ -852,35 +844,5 @@ public class TestNGService implements ITestNGService {
 			parentId = getAttribute(testResult.getTestContext(), RP_ID);
 		}
 		return parentId;
-	}
-
-	@VisibleForTesting
-	static class MemorizingSupplier<T> implements Supplier<T>, Serializable {
-		final Supplier<T> delegate;
-		transient volatile T value;
-		private static final long serialVersionUID = 0L;
-
-		MemorizingSupplier(Supplier<T> delegate) {
-			this.delegate = delegate;
-		}
-
-		public T get() {
-			if (value == null) {
-				synchronized (this) {
-					if (value == null) {
-						return (value = delegate.get());
-					}
-				}
-			}
-			return value;
-		}
-
-		public void reset() {
-			value = null;
-		}
-
-		public String toString() {
-			return "Suppliers.memoize(" + this.delegate + ")";
-		}
 	}
 }
