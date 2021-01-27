@@ -4,12 +4,14 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.testng.util.ItemTreeUtils;
+import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.testng.ISuite;
+
 
 import static com.epam.reportportal.testng.TestNGService.ITEM_TREE;
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,7 +37,7 @@ public class CallbackReportingUnitTest {
 
 	@BeforeEach
 	public void preconditions() {
-		testNGService = new TestNGService(new TestNGService.MemorizingSupplier<>(() -> launch));
+		testNGService = new TestNGService(new MemoizingSupplier<>(() -> launch));
 		ITEM_TREE.getTestItems().clear();
 	}
 

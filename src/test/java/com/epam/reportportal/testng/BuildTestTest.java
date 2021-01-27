@@ -25,6 +25,7 @@ import com.epam.ta.reportportal.ws.model.attribute.ItemAttributeResource;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import org.hamcrest.Matchers;
+import com.epam.reportportal.utils.MemoizingSupplier;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,7 +72,7 @@ public class BuildTestTest {
 
 	@BeforeEach
 	public void preconditions() {
-		testNGService = new TestNGService(new TestNGService.MemorizingSupplier<>(() -> launch));
+		testNGService = new TestNGService(new MemoizingSupplier<>(() -> launch));
 	}
 
 	@Test

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021 EPAM Systems
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.epam.reportportal.testng;
 
 import com.epam.reportportal.listeners.ItemStatus;
@@ -93,6 +109,49 @@ public class FailedBeforeAfterTest {
 		assertThat(startItems.get(0).getType(), equalTo(TestMethodType.BEFORE_METHOD.name()));
 		assertThat(startItems.get(1).getType(), equalTo(TestMethodType.STEP.name()));
 		assertThat(startItems.get(2).getType(), equalTo(TestMethodType.AFTER_METHOD.name()));
+
+		ArgumentCaptor<Maybe<String>> finishUuidCapture = ArgumentCaptor.forClass(Maybe.class);
+		ArgumentCaptor<FinishTestItemRQ> finishItemCapture = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		// 1 before method, 1 test, 1 after method, finish test class, finish suite = 5
+		verify(launch, times(5)).finishTestItem(finishUuidCapture.capture(), finishItemCapture.capture());
+
+		List<String> finishUuids = finishUuidCapture.getAllValues().stream().map(Maybe::blockingGet).collect(Collectors.toList());
+		assertThat(finishUuids, equalTo(finishUuidOrder));
+
+		List<FinishTestItemRQ> finishItems = finishItemCapture.getAllValues();
+		assertThat(finishItems.get(0).getStatus(), equalTo(ItemStatus.FAILED.name()));
+		assertThat(finishItems.get(0).getIssue(), nullValue());
+
+		finishItems.subList(1, 3).forEach(e -> {
+			assertThat(e.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
+			assertThat(e.getIssue(), notNullValue());
+			Issue issue = e.getIssue();
+			assertThat(issue.getIssueType(), equalTo(LaunchImpl.NOT_ISSUE));
+		});
+
+		finishItems.subList(3, finishItems.size()).forEach(e -> {
+			assertThat(e.getStatus(), equalTo(ItemStatus.FAILED.name()));
+			assertThat(e.getIssue(), nullValue());
+		});
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void agent_should_report_skipped_test_in_case_of_failed_before_class() {
+		TestUtils.runTests(Collections.singletonList(SkippedTestExtension.class), BeforeClassFailedTest.class);
+
+		verify(launch, times(1)).start(); // Start launch
+		verify(launch, times(1)).startTestItem(any());  // Start parent suites
+		verify(launch, times(1)).startTestItem(same(suitedUuid), any()); // Start test class
+
+		ArgumentCaptor<StartTestItemRQ> startItemCapture = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		// 1 before method, 1 test, 1 after method
+		verify(launch, times(3)).startTestItem(same(testClassUuid), startItemCapture.capture());
+
+		List<StartTestItemRQ> startItems = startItemCapture.getAllValues();
+		assertThat(startItems.get(0).getType(), equalTo(TestMethodType.BEFORE_CLASS.name()));
+		assertThat(startItems.get(1).getType(), equalTo(TestMethodType.STEP.name()));
+		assertThat(startItems.get(2).getType(), equalTo(TestMethodType.AFTER_CLASS.name()));
 
 		ArgumentCaptor<Maybe<String>> finishUuidCapture = ArgumentCaptor.forClass(Maybe.class);
 		ArgumentCaptor<FinishTestItemRQ> finishItemCapture = ArgumentCaptor.forClass(FinishTestItemRQ.class);
@@ -257,7 +316,7 @@ public class FailedBeforeAfterTest {
 
 		assertThat(tests.get(0).getStatus(), equalTo(ItemStatus.SKIPPED.name()));
 		assertThat(tests.get(0).isRetry(), equalTo(Boolean.TRUE));
-		assertThat(tests.get(0).getIssue(), sameInstance(TestNGService.NOT_ISSUE));
+		assertThat(tests.get(0).getIssue(), sameInstance(Launch.NOT_ISSUE));
 
 		assertThat(tests.get(1).getStatus(), equalTo(ItemStatus.SKIPPED.name()));
 		assertThat(tests.get(1).isRetry(), nullValue());
