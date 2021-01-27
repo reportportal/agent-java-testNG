@@ -53,32 +53,30 @@ processResources {
 }
 
 dependencies {
-    api 'com.epam.reportportal:client-java:5.0.17'
+    api 'com.epam.reportportal:client-java:5.0.18'
     api 'com.google.code.findbugs:jsr305:3.0.2'
     api 'com.epam.reportportal:commons-model:5.0.0'
     api 'org.testng:testng:7.1.0'
 
     testImplementation('com.github.reportportal:agent-java-test-utils:ddcf50ee20')
 
-    testImplementation('org.junit.platform:junit-platform-runner:1.6.2') {
+    testImplementation("org.junit.platform:junit-platform-runner:${project.junit5_launcher_version}") {
         exclude module: 'junit'
     }
-    testImplementation 'org.junit.platform:junit-platform-launcher:1.6.2'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.2'
-    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.6.2'
-    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.2'
+    testImplementation "org.junit.platform:junit-platform-launcher:${project.junit5_launcher_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${project.junit5_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${project.junit5_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:${project.junit5_version}"
 
     testImplementation "org.aspectj:aspectjweaver:1.9.2"
 
     testImplementation 'org.hamcrest:hamcrest-core:2.2'
-    testImplementation 'org.mockito:mockito-core:3.3.3'
-    testImplementation 'org.mockito:mockito-junit-jupiter:3.3.3'
+    testImplementation "org.mockito:mockito-core:${project.mockito_version}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${project.mockito_version}"
     testImplementation 'ch.qos.logback:logback-classic:1.2.3'
 
     testImplementation 'com.google.inject:guice:4.2.3'
-    testImplementation('com.epam.reportportal:logger-java-logback:5.0.1') {
-        exclude module: 'client-java'
-    }
+    testImplementation 'com.epam.reportportal:logger-java-logback:5.0.3'
 
     testImplementation 'org.apache.commons:commons-io:1.3.2'
     testImplementation 'com.ibm.icu:icu4j:67.1'
