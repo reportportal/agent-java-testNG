@@ -110,7 +110,7 @@ public class TestWithFailedRetryAndDependentMethods {
 		List<FinishTestItemRQ> finishItems = finishItemCapture.getAllValues();
 		assertThat(finishItems.get(0).isRetry(), equalTo(Boolean.TRUE));
 		assertThat(finishItems.get(0).getStatus(), equalTo(ItemStatus.SKIPPED.name()));
-		assertThat(finishItems.get(0).getIssue(), sameInstance(TestNGService.NOT_ISSUE));
+		assertThat(finishItems.get(0).getIssue(), sameInstance(Launch.NOT_ISSUE));
 
 		assertThat(finishItems.get(1).isRetry(), nullValue());
 		assertThat(finishItems.get(1).getStatus(), equalTo(ItemStatus.FAILED.name()));

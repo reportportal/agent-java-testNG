@@ -23,6 +23,7 @@ import com.epam.reportportal.annotations.UniqueID;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,7 +68,7 @@ public class BuildStepTest {
 
 	@BeforeEach
 	public void initMocks() {
-		testNGService = new TestNGService(new TestNGService.MemorizingSupplier<>(() -> launch));
+		testNGService = new TestNGService(new MemoizingSupplier<>(() -> launch));
 	}
 
 	@Test

@@ -6,6 +6,7 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.integration.feature.description.DescriptionTest;
 import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedClassTest;
+import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedParameterizedClassTest;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -17,6 +18,9 @@ import rp.com.google.common.base.Suppliers;
 
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.epam.reportportal.testng.integration.util.TestUtils.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -53,14 +57,14 @@ public class TestNameAndDescriptionTest {
 
 	private final String suitedUuid = namedUuid("suite");
 	private final String testClassUuid = namedUuid("class");
-	private final String testUuid = namedUuid("test");
+	private final String stepUuid = namedUuid("test_");
 
 	@Mock
 	private ReportPortalClient client;
 
 	@BeforeEach
 	public void initMocks() {
-		mockLaunch(client, namedUuid("launchUuid"), suitedUuid, testClassUuid, testUuid);
+		mockLaunch(client, namedUuid("launchUuid"), suitedUuid, testClassUuid, stepUuid);
 		ReportPortal reportPortal = ReportPortal.create(client, new ListenerParameters(PropertiesLoader.load()));
 		TestListener.initReportPortal(reportPortal);
 	}
@@ -94,5 +98,18 @@ public class TestNameAndDescriptionTest {
 		StartTestItemRQ startItem = startTestCapture.getAllValues().get(0);
 
 		assertThat(startItem.getDescription(), equalTo(DescriptionTest.TEST_DESCRIPTION));
+	}
+
+	@Test
+	public void test_name_should_be_passed_to_rp_if_specified_parameterized_test() {
+		runTests(Collections.singletonList(TestListener.class), AnnotationNamedParameterizedClassTest.class);
+
+		verify(client, times(1)).startLaunch(any()); // Start launch
+		verify(client, times(1)).startTestItem(any());  // Start parent suites
+		ArgumentCaptor<StartTestItemRQ> startTestCapture = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, times(1)).startTestItem(same(suitedUuid), startTestCapture.capture()); // Start test class
+		verify(client, times(2)).startTestItem(same(testClassUuid), any());
+
+		assertThat(startTestCapture.getValue().getName(), equalTo(AnnotationNamedParameterizedClassTest.TEST_NAME));
 	}
 }

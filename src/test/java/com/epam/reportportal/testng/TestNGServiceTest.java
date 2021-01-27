@@ -16,10 +16,11 @@
 
 package com.epam.reportportal.testng;
 
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.step.StepReporter;
+import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
@@ -75,7 +76,7 @@ public class TestNGServiceTest {
 
 	@BeforeEach
 	public void preconditions() {
-		testNGService = new TestNGService(new TestNGService.MemorizingSupplier<>(() -> launch));
+		testNGService = new TestNGService(new MemoizingSupplier<>(() -> launch));
 	}
 
 	@Test
@@ -182,7 +183,7 @@ public class TestNGServiceTest {
 		when(testResult.getAttribute(RP_ID)).thenReturn(id);
 		when(launch.getStepReporter()).thenReturn(stepReporter);
 
-		testNGService.finishTestMethod(Statuses.PASSED, testResult);
+		testNGService.finishTestMethod(ItemStatus.PASSED, testResult);
 		verify(launch, times(1)).finishTestItem(eq(id), any(FinishTestItemRQ.class));
 	}
 
@@ -201,7 +202,7 @@ public class TestNGServiceTest {
 		when(testResult.getAttribute(RP_ID)).thenReturn(null).thenReturn(id);
 		when(method.isTest()).thenReturn(true);
 
-		testNGService.finishTestMethod(Statuses.SKIPPED, testResult);
+		testNGService.finishTestMethod(ItemStatus.SKIPPED, testResult);
 
 		verify(launch, times(1)).startTestItem(eq(id), any(StartTestItemRQ.class));
 		verify(testResult, times(1)).setAttribute(eq(RP_ID), any(Maybe.class));

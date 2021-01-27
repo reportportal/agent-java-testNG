@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Changed 
+- Client version updated on [5.0.18](https://github.com/reportportal/client-java/releases/tag/5.0.18)
+- TestNG's dependency moved to `api` scope
+### Fixed
+- 'To investigate' test item in case of `@BeforeClass` failed (issue #153)
 
 ## [5.0.8-TESTNG6]
 ### Changed

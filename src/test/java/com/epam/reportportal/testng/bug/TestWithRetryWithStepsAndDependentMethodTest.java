@@ -139,7 +139,7 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 		List<FinishTestItemRQ> finishItems = finishItemCapture.getAllValues();
 		assertThat(finishItems.get(1).isRetry(), equalTo(Boolean.TRUE));
 		assertThat(finishItems.get(1).getStatus(), equalTo(ItemStatus.SKIPPED.name()));
-		assertThat(finishItems.get(1).getIssue(), sameInstance(TestNGService.NOT_ISSUE));
+		assertThat(finishItems.get(1).getIssue(), sameInstance(Launch.NOT_ISSUE));
 
 		verifyPositiveFinish(finishUuidOrder.subList(0, 1), finishItems.subList(0, 1));
 		verifyPositiveFinish(finishUuidOrder.subList(2, 4), finishItems.subList(2, 4));
