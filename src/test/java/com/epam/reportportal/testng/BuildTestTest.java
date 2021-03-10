@@ -81,7 +81,7 @@ public class BuildTestTest {
 		StartLaunchRQ startLaunchRQ = testNGService.buildStartLaunchRq(listenerParameters);
 		assertThat("Incorrect launch name", startLaunchRQ.getName(), is(DEFAULT_NAME));
 		assertThat("Incorrect start time", startLaunchRQ.getStartTime(), notNullValue());
-		assertThat("Incorrect launch tags", startLaunchRQ.getAttributes(), is(ATTRIBUTES));
+		assertThat("Incorrect launch tags", startLaunchRQ.getAttributes(), hasItem(ATTRIBUTE));
 		assertThat("Incorrect launch mode", startLaunchRQ.getMode(), is(MODE));
 		assertThat("Incorrect description", startLaunchRQ.getDescription(), is(DEFAULT_DESCRIPTION));
 	}

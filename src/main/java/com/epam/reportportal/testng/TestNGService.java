@@ -553,7 +553,8 @@ public class TestNGService implements ITestNGService {
 		StartLaunchRQ rq = new StartLaunchRQ();
 		rq.setName(parameters.getLaunchName());
 		rq.setStartTime(Calendar.getInstance().getTime());
-		rq.setAttributes(parameters.getAttributes());
+		HashSet<ItemAttributesRQ> attributes = new HashSet<>(parameters.getAttributes());
+		rq.setAttributes(attributes);
 		rq.setMode(parameters.getLaunchRunningMode());
 		rq.setRerun(parameters.isRerun());
 		if (isNotBlank(parameters.getRerunOf())) {
@@ -567,7 +568,7 @@ public class TestNGService implements ITestNGService {
 			skippedIssueAttribute.setKey(SKIPPED_ISSUE_KEY);
 			skippedIssueAttribute.setValue(parameters.getSkippedAnIssue().toString());
 			skippedIssueAttribute.setSystem(true);
-			rq.getAttributes().add(skippedIssueAttribute);
+			attributes.add(skippedIssueAttribute);
 		}
 		rq.getAttributes().addAll(SystemAttributesExtractor.extract(AGENT_PROPERTIES_FILE, TestNGService.class.getClassLoader()));
 		return rq;
