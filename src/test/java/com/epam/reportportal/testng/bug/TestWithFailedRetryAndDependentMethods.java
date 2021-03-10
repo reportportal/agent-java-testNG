@@ -8,6 +8,7 @@ import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.BaseTestNGListener;
 import com.epam.reportportal.testng.TestNGService;
 import com.epam.reportportal.testng.integration.bug.FailedRetriesAndTwoDependentMethodsTest;
+import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -17,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import rp.com.google.common.base.Suppliers;
 
 import java.util.Arrays;
 import java.util.Calendar;
@@ -40,7 +40,7 @@ public class TestWithFailedRetryAndDependentMethods {
 		public static final ThreadLocal<ReportPortal> REPORT_PORTAL_THREAD_LOCAL = new ThreadLocal<>();
 
 		public TestListener() {
-			super(new TestNGService(Suppliers.memoize(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters()))));
+			super(new TestNGService(new MemoizingSupplier<>(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters()))));
 		}
 
 		public static void initReportPortal(ReportPortal reportPortal) {

@@ -19,6 +19,7 @@ on:
       - master
       - v4-hotfix
       - v5-testng6
+      - retrofit
     paths-ignore:
       - '.github/**'
       - README.md
@@ -110,20 +111,4 @@ jobs:
           release_name: Release ${{ env.RELEASE_VERSION }}
           body: ${{ steps.readChangelogEntry.outputs.log_entry }}
           draft: false
-          prerelease: false
-
-      - name: Checkout develop branch
-        if: ${{github.ref}} == 'master'
-        uses: actions/checkout@v2
-        with:
-          ref: 'develop'
-          fetch-depth: 0
-
-      - name: Merge release branch into develop
-        id: mergeIntoDevelop
-        if: ${{github.ref}} == 'master'
-        run: |
-          git merge -m 'Merge master branch into develop after a release' origin/master
-          git status | (! grep -Fq 'both modified:') || git status | grep -F 'both modified:' \
-          | { echo -e 'Unable to merge master into develop, merge conflicts:'; (! grep -Eo '[^ ]+$') }
-          git push origin develop
+          prerelease: true

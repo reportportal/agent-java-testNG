@@ -9,6 +9,7 @@ import com.epam.reportportal.testng.integration.feature.nested.NestedStepFeature
 import com.epam.reportportal.testng.integration.feature.nested.NestedStepMultiLevelTest;
 import com.epam.reportportal.testng.integration.feature.nested.NestedStepWithBeforeEachTest;
 import com.epam.reportportal.testng.integration.util.TestUtils;
+import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -17,10 +18,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import rp.com.google.common.base.Suppliers;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -52,7 +51,7 @@ public class NestedStepTest {
 		);
 
 		public TestListener() {
-			super(new TestNGService(Suppliers.memoize(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters()))));
+			super(new TestNGService(new MemoizingSupplier<>(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters()))));
 		}
 
 		public static void initReportPortal(ReportPortal reportPortal) {

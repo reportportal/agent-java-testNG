@@ -17,11 +17,9 @@
 package com.epam.reportportal.testng;
 
 import com.epam.reportportal.listeners.ItemStatus;
-import com.epam.reportportal.listeners.Statuses;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.testng.ISuite;
 import org.testng.ITestContext;
 import org.testng.ITestResult;

@@ -16,8 +16,8 @@
 
 package com.epam.reportportal.testng;
 
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -169,7 +169,7 @@ public class BuildTestTest {
 
 		FinishTestItemRQ rq = testNGService.buildFinishTestRq(testContext);
 		assertThat("Incorrect end time", rq.getEndTime(), is(endTime));
-		assertThat("Incorrect status", rq.getStatus(), is(Statuses.PASSED));
+		assertThat("Incorrect status", rq.getStatus(), is(ItemStatus.PASSED.name()));
 	}
 
 	@Test
@@ -182,7 +182,7 @@ public class BuildTestTest {
 		when(testContext.getFailedTests()).thenReturn(failedTests);
 
 		FinishTestItemRQ rq = testNGService.buildFinishTestRq(testContext);
-		assertThat("Incorrect status", rq.getStatus(), is(Statuses.FAILED));
+		assertThat("Incorrect status", rq.getStatus(), is(ItemStatus.FAILED.name()));
 	}
 
 	@Test
@@ -197,7 +197,7 @@ public class BuildTestTest {
 		when(testContext.getFailedConfigurations()).thenReturn(failedConfigurations);
 
 		FinishTestItemRQ rq = testNGService.buildFinishTestRq(testContext);
-		assertThat("Incorrect status", rq.getStatus(), is(Statuses.FAILED));
+		assertThat("Incorrect status", rq.getStatus(), is(ItemStatus.FAILED.name()));
 	}
 
 	@Test
@@ -215,7 +215,7 @@ public class BuildTestTest {
 		when(testContext.getSkippedTests()).thenReturn(skippedTests);
 
 		FinishTestItemRQ rq = testNGService.buildFinishTestRq(testContext);
-		assertThat("Incorrect status", rq.getStatus(), is(Statuses.FAILED));
+		assertThat("Incorrect status", rq.getStatus(), is(ItemStatus.FAILED.name()));
 	}
 
 	@Test
@@ -231,14 +231,14 @@ public class BuildTestTest {
 		when(testContext.getSkippedConfigurations()).thenReturn(skippedConfigurations);
 
 		FinishTestItemRQ rq = testNGService.buildFinishTestRq(testContext);
-		assertThat("Incorrect status", rq.getStatus(), is(Statuses.FAILED));
+		assertThat("Incorrect status", rq.getStatus(), is(ItemStatus.FAILED.name()));
 	}
 
 	@Test
 	public void testFinishSuite() {
 		FinishTestItemRQ rq = testNGService.buildFinishTestSuiteRq(iSuite);
 		assertThat(rq.getEndTime(), notNullValue());
-		assertThat(rq.getStatus(), is(Statuses.PASSED));
+		assertThat(rq.getStatus(), is(ItemStatus.PASSED.name()));
 	}
 
 	@Test
@@ -254,7 +254,7 @@ public class BuildTestTest {
 		when(resultMap.size()).thenReturn(1);
 
 		FinishTestItemRQ rq = testNGService.buildFinishTestSuiteRq(iSuite);
-		assertThat(rq.getStatus(), is(Statuses.FAILED));
+		assertThat(rq.getStatus(), is(ItemStatus.FAILED.name()));
 	}
 
 	private ListenerParameters defaultListenerParameters() {
