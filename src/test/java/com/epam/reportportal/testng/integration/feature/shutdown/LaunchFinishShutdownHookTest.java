@@ -39,7 +39,7 @@ public class LaunchFinishShutdownHookTest {
 
 		service.startLaunch();
 		System.out.println("Launch started, sleeping...");
-		Thread.sleep(TimeUnit.SECONDS.toMillis(5));
+		Thread.sleep(TimeUnit.SECONDS.toMillis(3));
 		System.out.println("Exiting...");
 	}
 
