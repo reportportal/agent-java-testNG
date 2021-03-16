@@ -32,7 +32,8 @@ public class Constants {
 	static final String DEFAULT_UUID = "default_uuid";
 	static final String DEFAULT_NAME = "default_name";
 	static final String DEFAULT_PROJECT = "default_project";
-	static final Set<ItemAttributesRQ> ATTRIBUTES = new HashSet<>(Collections.singleton(new ItemAttributesRQ("key", "value")));
+	static final ItemAttributesRQ ATTRIBUTE = new ItemAttributesRQ("key", "value");
+	static final Set<ItemAttributesRQ> ATTRIBUTES = new HashSet<>(Collections.singleton(ATTRIBUTE));
 	static final Mode MODE = Mode.DEFAULT;
 	static final String DEFAULT_DESCRIPTION = "default_description";
 	static final Long DEFAULT_TIME = 1515594836210L;
