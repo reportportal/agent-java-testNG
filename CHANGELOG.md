@@ -1,10 +1,8 @@
 # Changelog
 
 ## [Unreleased]
-
-## [5.0.10]
 ### Changed
-- Client version updated on [5.0.20](https://github.com/reportportal/client-java/releases/tag/5.0.20)
+- Client version updated on [5.0.21](https://github.com/reportportal/client-java/releases/tag/5.0.21)
 
 ## [5.0.9]
 ### Changed 
