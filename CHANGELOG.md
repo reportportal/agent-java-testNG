@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- TestNGService.buildStartStepRq(org.testng.ITestResult) returned in business
 
 ## [5.0.11]
 ### Changed
