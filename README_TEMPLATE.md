@@ -4,8 +4,8 @@ A TestNG reporter that uploads the results to a ReportPortal server.
 > **DISCLAIMER**: We use Google Analytics for sending anonymous usage information such as agent's and client's names, and their versions
 > after a successful launch start. This information might help us to improve both ReportPortal backend and client sides. It is used by the
 > ReportPortal team only and is not supposed for sharing with 3rd parties.
-  
-[![Build Status](https://travis-ci.org/reportportal/agent-java-testNG.svg?branch=master)](https://travis-ci.org/reportportal/agent-java-testNG)
+
+[![CI Build](https://github.com/reportportal/agent-java-testNG/actions/workflows/ci.yml/badge.svg)](https://github.com/reportportal/agent-java-testNG/actions/workflows/ci.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/com.epam.reportportal/agent-java-testng.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22agent-java-testng%22)
 [![Join Slack chat!](https://reportportal-slack-auto.herokuapp.com/badge.svg)](https://reportportal-slack-auto.herokuapp.com)
 [![stackoverflow](https://img.shields.io/badge/reportportal-stackoverflow-orange.svg?style=flat)](http://stackoverflow.com/questions/tagged/reportportal)
