@@ -94,7 +94,7 @@ public class TestUtils {
 			Maybe<String> testClassUuid, Collection<Maybe<String>> testMethodUuidList) {
 		mockLaunch(
 				launch,
-				new ListenerParameters(PropertiesLoader.load()),
+				standardParameters(),
 				reporter,
 				launchUuid,
 				suiteUuid,
@@ -195,6 +195,7 @@ public class TestUtils {
 		ListenerParameters result = new ListenerParameters();
 		result.setClientJoin(false);
 		result.setBatchLogsSize(1);
+		result.setBaseUrl("http://localhost:8080");
 		result.setLaunchName("My-test-launch" + CommonUtils.generateUniqueId());
 		result.setProjectName("test-project");
 		result.setEnable(true);

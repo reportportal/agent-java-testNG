@@ -8,7 +8,7 @@ import com.epam.reportportal.testng.integration.feature.parameters.MethodDataPro
 import com.epam.reportportal.testng.integration.feature.parameters.MethodDataProviderParameterTestNullValues;
 import com.epam.reportportal.testng.integration.feature.parameters.ParameterNamesTest;
 import com.epam.reportportal.testng.integration.util.TestUtils;
-import com.epam.reportportal.utils.properties.PropertiesLoader;
+import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import rp.com.google.common.base.Suppliers;
 
 import java.util.Arrays;
 import java.util.Calendar;
@@ -27,6 +26,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.epam.reportportal.testng.integration.util.TestUtils.namedUuid;
+import static com.epam.reportportal.testng.integration.util.TestUtils.standardParameters;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.startsWith;
@@ -40,7 +40,7 @@ public class ParametersBypassTest {
 
 		public TestReportPortalListener() {
 			super(new TestNGServiceExtension(
-					Suppliers.memoize(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters())),
+					new MemoizingSupplier<>(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters())),
 					REPORT_PORTAL_THREAD_LOCAL.get()
 			));
 		}
@@ -74,7 +74,7 @@ public class ParametersBypassTest {
 	public void initMocks() {
 		TestUtils.mockLaunch(client, "launchUuid", suitedUuid, testClassUuid, testMethodUuidList);
 
-		final ReportPortal reportPortal = ReportPortal.create(client, new ListenerParameters(PropertiesLoader.load()));
+		final ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
 		TestReportPortalListener.initReportPortal(reportPortal);
 	}
 

@@ -292,16 +292,6 @@ public class TestNGService implements ITestNGService {
 	 * Extension point to customize test step creation event/request
 	 *
 	 * @param testResult TestNG's testResult context
-	 * @return Request to ReportPortal
-	 */
-	protected StartTestItemRQ buildStartStepRq(final @Nonnull ITestResult testResult) {
-		return buildStartStepRq(testResult, ofNullable(TestMethodType.getStepType(testResult.getMethod())).orElse(TestMethodType.STEP));
-	}
-
-	/**
-	 * Extension point to customize test step creation event/request
-	 *
-	 * @param testResult TestNG's testResult context
 	 * @param type       method type
 	 * @return Request to ReportPortal
 	 */
@@ -324,6 +314,18 @@ public class TestNGService implements ITestNGService {
 		return rq;
 	}
 
+	/**
+	 * Extension point to customize test step creation event/request
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Request to ReportPortal
+	 */
+	protected StartTestItemRQ buildStartStepRq(final @Nonnull ITestResult testResult) {
+		TestMethodType methodType = ofNullable(TestMethodType.getStepType(testResult.getMethod())).orElse(TestMethodType.STEP);
+		testResult.setAttribute(RP_METHOD_TYPE, methodType);
+		return buildStartStepRq(testResult, methodType);
+	}
+
 	private void addToTree(ITestResult testResult, Maybe<String> stepMaybe) {
 		ITestContext testContext = testResult.getTestContext();
 
@@ -337,9 +339,7 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public void startTestMethod(ITestResult testResult) {
-		TestMethodType methodType = ofNullable(TestMethodType.getStepType(testResult.getMethod())).orElse(TestMethodType.STEP);
-		testResult.setAttribute(RP_METHOD_TYPE, methodType);
-		StartTestItemRQ rq = buildStartStepRq(testResult, methodType);
+		StartTestItemRQ rq = buildStartStepRq(testResult);
 		if (Boolean.TRUE == rq.isRetry()) {
 			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
 			testResult.setAttribute(RP_RETRY_SET, Boolean.TRUE);
@@ -361,7 +361,10 @@ public class TestNGService implements ITestNGService {
 	 * @return Request to ReportPortal
 	 */
 	protected FinishTestItemRQ buildFinishTestMethodRq(ItemStatus status, ITestResult testResult) {
-		return buildFinishTestMethodRq(status.name(), testResult);
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		rq.setEndTime(new Date(testResult.getEndMillis()));
+		rq.setStatus(status.name());
+		return rq;
 	}
 
 	/**
@@ -372,10 +375,7 @@ public class TestNGService implements ITestNGService {
 	 */
 	@Deprecated
 	protected FinishTestItemRQ buildFinishTestMethodRq(String status, ITestResult testResult) {
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(new Date(testResult.getEndMillis()));
-		rq.setStatus(status);
-		return rq;
+		return buildFinishTestMethodRq(ItemStatus.valueOf(status), testResult);
 	}
 
 	private void updateTestItemTree(Maybe<OperationCompletionRS> finishItemResponse, ITestResult testResult) {
@@ -552,7 +552,8 @@ public class TestNGService implements ITestNGService {
 		StartLaunchRQ rq = new StartLaunchRQ();
 		rq.setName(parameters.getLaunchName());
 		rq.setStartTime(Calendar.getInstance().getTime());
-		rq.setAttributes(parameters.getAttributes());
+		Set<ItemAttributesRQ> attributes = new HashSet<>(parameters.getAttributes());
+		rq.setAttributes(attributes);
 		rq.setMode(parameters.getLaunchRunningMode());
 		rq.setRerun(parameters.isRerun());
 		if (isNotBlank(parameters.getRerunOf())) {
@@ -566,9 +567,9 @@ public class TestNGService implements ITestNGService {
 			skippedIssueAttribute.setKey(SKIPPED_ISSUE_KEY);
 			skippedIssueAttribute.setValue(parameters.getSkippedAnIssue().toString());
 			skippedIssueAttribute.setSystem(true);
-			rq.getAttributes().add(skippedIssueAttribute);
+			attributes.add(skippedIssueAttribute);
 		}
-		rq.getAttributes().addAll(SystemAttributesExtractor.extract(AGENT_PROPERTIES_FILE, TestNGService.class.getClassLoader()));
+		attributes.addAll(SystemAttributesExtractor.extract(AGENT_PROPERTIES_FILE, TestNGService.class.getClassLoader()));
 		return rq;
 	}
 

@@ -15,64 +15,38 @@
  */
 apply plugin: 'java-library'
 
-project.ext.releaseMode = project.hasProperty('releaseMode')
-
-def branch = releaseMode ? '5.0.0' : 'develop'
-apply from: "https://raw.githubusercontent.com/reportportal/gradle-scripts/$branch/release-commons.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/build-quality.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/release-commons.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/signing.gradle"
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
-    mavenLocal()
-    maven { url "https://dl.bintray.com/epam/reportportal" }
+    mavenCentral()
     maven { url "https://jitpack.io" }
-    jcenter()
-}
-
-project.ext.githubUserName = project.hasProperty('githubUserName') ? githubUserName : ""
-project.ext.githubToken = project.hasProperty('githubToken') ? githubToken : ""
-
-publishing {
-    repositories {
-        maven {
-            name = "TestNG GitHub Packages"
-            url = uri("https://maven.pkg.github.com/reportportal/agent-java-testNG")
-            credentials {
-                username = githubUserName
-                password = githubToken
-            }
-        }
-    }
-}
-
-processResources {
-    filesMatching('agent.properties') {
-        expand(project.properties)
-    }
 }
 
 dependencies {
-    api 'com.epam.reportportal:client-java:5.0.18'
+    api 'com.epam.reportportal:client-java:5.0.21'
     api 'com.google.code.findbugs:jsr305:3.0.2'
     api 'com.epam.reportportal:commons-model:5.0.0'
     api 'org.testng:testng:6.14.3'
 
     testImplementation('com.github.reportportal:agent-java-test-utils:ddcf50ee20')
 
-    testImplementation("org.junit.platform:junit-platform-runner:${project.junit5_launcher_version}") {
+    testImplementation("org.junit.platform:junit-platform-runner:${junit5_runner_version}") {
         exclude module: 'junit'
     }
-    testImplementation "org.junit.platform:junit-platform-launcher:${project.junit5_launcher_version}"
-    testImplementation "org.junit.jupiter:junit-jupiter-api:${project.junit5_version}"
-    testImplementation "org.junit.jupiter:junit-jupiter-params:${project.junit5_version}"
-    testImplementation "org.junit.jupiter:junit-jupiter-engine:${project.junit5_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${junit5_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${junit5_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:${junit5_version}"
 
     testImplementation "org.aspectj:aspectjweaver:1.9.2"
 
     testImplementation 'org.hamcrest:hamcrest-core:2.2'
-    testImplementation "org.mockito:mockito-core:${project.mockito_version}"
-    testImplementation "org.mockito:mockito-junit-jupiter:${project.mockito_version}"
+    testImplementation "org.mockito:mockito-core:${mockito_version}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockito_version}"
     testImplementation 'ch.qos.logback:logback-classic:1.2.3'
 
     testImplementation 'com.google.inject:guice:4.2.3'
@@ -103,6 +77,8 @@ release {
     }
 }
 
-def releaseDependencies = [bintrayUpload, publish]
-releaseDependencies.addAll(afterReleaseBuild.getDependsOn())
-afterReleaseBuild.setDependsOn(releaseDependencies)
+processResources {
+    filesMatching('agent.properties') {
+        expand(project.properties)
+    }
+}
