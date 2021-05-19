@@ -1,0 +1,103 @@
+# Copyright 2021 EPAM Systems
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Promote
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+
+env:
+  REPOSITORY_URL: 'https://maven.pkg.github.com/'
+  UPSTREAM_REPOSITORY_URL: 'https://oss.sonatype.org/'
+  PACKAGE_SUFFIXES: '-javadoc.jar,-javadoc.jar.asc,-sources.jar,-sources.jar.asc,.jar,.jar.asc,.pom,.pom.asc'
+  PACKAGE: 'com.epam.reportportal'
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Get variables
+        run: |
+          echo "ARTIFACT=`echo ${{ github.repository }} | cut -d/ -f2-`" >> $GITHUB_ENV
+          echo "PACKAGE_PATH=`echo ${{ env.PACKAGE }} | sed 's/\./\//g'`" >> $GITHUB_ENV
+
+      - name: Upload package
+        run: |
+          IFS=',' read -a files <<< '${{ env.PACKAGE_SUFFIXES }}'
+          for f in ${files[@]}; do
+            export URL="${{ env.REPOSITORY_URL }}${{ github.repository }}/${PACKAGE_PATH}/${ARTIFACT}/${{ github.event.inputs.version }}/${ARTIFACT}-${{ github.event.inputs.version }}${f}"
+            echo "Downloading artifact: ${URL}"
+            curl -f -u ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} -s -O -L "${URL}"
+          done
+          files=($(ls))
+          echo 'Files downloaded:'
+          echo "${files[@]}"
+
+          echo 'Bundle generation'
+          export BUNDLE_FILE="${ARTIFACT}-${{ github.event.inputs.version }}-bundle.jar"
+          jar -cvf ${BUNDLE_FILE} "${files[@]}"
+
+          echo 'Bundle upload'
+          curl -u ${{ secrets.SONATYPE_USER }}:${{ secrets.SONATYPE_PASSWORD }} -L \
+            --request POST '${{ env.UPSTREAM_REPOSITORY_URL }}service/local/staging/bundle_upload' \
+            --form "file=@${BUNDLE_FILE}" \
+            | jq -r '.repositoryUris[0]' \
+            | (read r; echo "NEXUS_REPOSITORY=${r}" >> $GITHUB_ENV)
+
+      - name: Get repository variables
+        run: |
+          echo "NEXUS_REPOSITORY_NAME=`echo ${NEXUS_REPOSITORY} | sed -E 's/(.+)\/([^\/]+)$/\2/'`" >> $GITHUB_ENV
+
+      - name: Promote package
+        env:
+          ATTEMPTS: 60
+          SLEEP_TIME: 10
+        run: |
+          verified=false
+          for i in `seq 0 ${ATTEMPTS}`; do
+            sleep $SLEEP_TIME
+            curl -f -s -u ${{ secrets.SONATYPE_USER }}:${{ secrets.SONATYPE_PASSWORD }} -L \
+              --header 'Accept: application/json' \
+              ${{ env.UPSTREAM_REPOSITORY_URL }}service/local/staging/repository/${NEXUS_REPOSITORY_NAME} >result.json
+
+            is_closed=`jq -r '.type' result.json`
+            is_transitioning=`jq -r '.transitioning' result.json`
+            echo "Current repository status: $is_closed; transitioning: $is_transitioning"
+
+            if [[ "$is_closed" == "closed" && "$is_transitioning" == "false" ]]; then
+              verified=true
+              break
+            fi
+          done
+          if $verified; then
+            echo "A bundle was verified, releasing"
+            curl -f -u ${{ secrets.SONATYPE_USER }}:${{ secrets.SONATYPE_PASSWORD }} -L \
+              --header 'Content-Type: application/json' \
+              --data-raw "{\"data\":{\"stagedRepositoryIds\":[\"${NEXUS_REPOSITORY_NAME}\"], \"description\":\"Releasing ${{ github.event.inputs.version }}\"}}" \
+              --request POST ${{ env.UPSTREAM_REPOSITORY_URL }}service/local/staging/bulk/promote
+          else
+            echo "Verification failed, please check the bundle"
+            exit 1
+          fi
