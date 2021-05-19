@@ -1,4 +1,4 @@
-# Copyright 2020 EPAM Systems
+# Copyright 2021 EPAM Systems
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -29,7 +29,7 @@ on:
 env:
   VERSION_FILE: gradle.properties
   VERSION_EXTRACT_PATTERN: '(?<=version=).+'
-  GH_USER_NAME: github.actor
+  REPOSITORY_URL: 'https://maven.pkg.github.com/'
   CHANGE_LOG_FILE: CHANGELOG.md
   CHANGE_LOG_TMP_FILE: CHANGELOG_updated.md
   README_FILE: README.md
@@ -44,7 +44,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Generate versions
-        uses: HardNorth/github-version-generate@v1.1.0
+        uses: HardNorth/github-version-generate@v1.1.1
         with:
           version-source: file
           version-file: ${{ env.VERSION_FILE }}
@@ -63,14 +63,18 @@ jobs:
         with:
           name: 'reportportal.io'
           email: 'support@reportportal.io'
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release with Gradle
         id: release
         run: |
-          ./gradlew release -PreleaseMode -Prelease.useAutomaticVersion=true -Prelease.releaseVersion=${{env.RELEASE_VERSION}} \
-          -Prelease.newVersion=${{env.NEXT_VERSION}} -PbintrayUser=${{secrets.BINTRAY_USER}} -PbintrayApiKey=${{secrets.BINTRAY_API_KEY}} \
-          -PgithubUserName=${{env.GH_USER_NAME}} -PgithubToken=${{secrets.GITHUB_TOKEN}}
+          ./gradlew release -Prelease.useAutomaticVersion=true -Prelease.releaseVersion=${{ env.RELEASE_VERSION }} \
+          -Prelease.newVersion=${{ env.NEXT_VERSION }} -PpublishRepo=${{ env.REPOSITORY_URL }}${{ github.repository }} \
+          -PgithubUserName=${{ github.actor }} -PgithubToken=${{ secrets.GITHUB_TOKEN }} \
+          -PgpgPassphrase=${{  secrets.GPG_PASSPHRASE  }} -PgpgPrivateKey="$(cat <<'EOF'
+          ${{ secrets.GPG_PRIVATE_KEY }}
+          EOF
+          )"
 
       - name: Update README.md
         id: readmeUpdate
@@ -104,7 +108,7 @@ jobs:
         id: createRelease
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ env.RELEASE_VERSION }}
           release_name: Release ${{ env.RELEASE_VERSION }}
@@ -113,7 +117,7 @@ jobs:
           prerelease: false
 
       - name: Checkout develop branch
-        if: ${{github.ref}} == 'master'
+        if: ${{ github.ref }} == 'master'
         uses: actions/checkout@v2
         with:
           ref: 'develop'
@@ -121,7 +125,7 @@ jobs:
 
       - name: Merge release branch into develop
         id: mergeIntoDevelop
-        if: ${{github.ref}} == 'master'
+        if: ${{ github.ref }} == 'master'
         run: |
           git merge -m 'Merge master branch into develop after a release' origin/master
           git status | (! grep -Fq 'both modified:') || git status | grep -F 'both modified:' \

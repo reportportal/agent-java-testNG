@@ -9,6 +9,7 @@ import com.epam.reportportal.testng.BaseTestNGListener;
 import com.epam.reportportal.testng.TestNGService;
 import com.epam.reportportal.testng.integration.bug.RetryWithStepsAndDependentMethodTest;
 import com.epam.reportportal.testng.integration.util.TestUtils;
+import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -19,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import rp.com.google.common.base.Suppliers;
 
 import java.util.Arrays;
 import java.util.Calendar;
@@ -47,7 +47,7 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 		public static final ThreadLocal<ReportPortal> REPORT_PORTAL_THREAD_LOCAL = new ThreadLocal<>();
 
 		public TestListener() {
-			super(new TestNGService(Suppliers.memoize(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters()))));
+			super(new TestNGService(new MemoizingSupplier<>(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters()))));
 		}
 
 		public static void initReportPortal(ReportPortal reportPortal) {
@@ -94,7 +94,7 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 	public void initMocks() {
 		mockLaunch(client, namedUuid("launchUuid"), suitedUuid, testClassUuid, testUuidList);
 		TestUtils.mockNestedSteps(client, testStepUuidOrder);
-		ReportPortal reportPortal = ReportPortal.create(client, new ListenerParameters(PropertiesLoader.load()));
+		ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
 		TestListener.initReportPortal(reportPortal);
 	}
 
@@ -108,7 +108,6 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void verify_second_test_passes_in_case_of_retry() {
 		runTests(Collections.singletonList(TestListener.class), RetryWithStepsAndDependentMethodTest.class);
 

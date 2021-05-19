@@ -4,12 +4,11 @@ A TestNG reporter that uploads the results to a ReportPortal server.
 > **DISCLAIMER**: We use Google Analytics for sending anonymous usage information such as agent's and client's names, and their versions
 > after a successful launch start. This information might help us to improve both ReportPortal backend and client sides. It is used by the
 > ReportPortal team only and is not supposed for sharing with 3rd parties.
-  
-[![Build Status](https://travis-ci.org/reportportal/agent-java-testNG.svg?branch=master)](https://travis-ci.org/reportportal/agent-java-testNG)
-[ ![Download](https://api.bintray.com/packages/epam/reportportal/agent-java-testng/images/download.svg) ](https://bintray.com/epam/reportportal/agent-java-testng/_latestVersion)
+
+[![CI Build](https://github.com/reportportal/agent-java-testNG/actions/workflows/ci.yml/badge.svg)](https://github.com/reportportal/agent-java-testNG/actions/workflows/ci.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/com.epam.reportportal/agent-java-testng.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22agent-java-testng%22)
 [![Join Slack chat!](https://reportportal-slack-auto.herokuapp.com/badge.svg)](https://reportportal-slack-auto.herokuapp.com)
 [![stackoverflow](https://img.shields.io/badge/reportportal-stackoverflow-orange.svg?style=flat)](http://stackoverflow.com/questions/tagged/reportportal)
-[![UserVoice](https://img.shields.io/badge/uservoice-vote%20ideas-orange.svg?style=flat)](https://rpp.uservoice.com/forums/247117-report-portal)
 [![Build with Love](https://img.shields.io/badge/build%20with-❤%EF%B8%8F%E2%80%8D-lightgrey.svg)](http://reportportal.io?style=flat)
 ---
 - [Objects interrelation TestNG - ReportPortal](https://github.com/reportportal/agent-java-testNG#objects-interrelation-testng---reportportal)
@@ -82,17 +81,6 @@ Add to `POM.xml`
 **dependency**
 
 ```xml
-<repositories>
-     <repository>
-        <snapshots>
-          <enabled>false</enabled>
-        </snapshots>
-        <id>bintray-epam-reportportal</id>
-        <name>bintray</name>
-        <url>http://dl.bintray.com/epam/reportportal</url>
-     </repository>
-</repositories>
-
 <dependency>
   <groupId>com.epam.reportportal</groupId>
   <artifactId>agent-java-testng</artifactId>
@@ -113,7 +101,7 @@ Add to `POM.xml`
 
 ## Install listener
 
-Download package [here](<https://bintray.com/epam/reportportal/agent-java-testng>).
+Download package [here](<https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22agent-java-testng%22>).
 Choose latest version.
 
 By default, TestNG attaches a few basic listeners to generate HTML and XML

@@ -9,6 +9,7 @@ import com.epam.reportportal.testng.integration.feature.nested.NestedStepFeature
 import com.epam.reportportal.testng.integration.feature.nested.NestedStepMultiLevelTest;
 import com.epam.reportportal.testng.integration.feature.nested.NestedStepWithBeforeEachTest;
 import com.epam.reportportal.testng.integration.util.TestUtils;
+import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -17,17 +18,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import rp.com.google.common.base.Suppliers;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.reportportal.testng.NestedStepTest.TestListener.*;
-import static com.epam.reportportal.testng.integration.util.TestUtils.mockLaunch;
-import static com.epam.reportportal.testng.integration.util.TestUtils.mockNestedSteps;
+import static com.epam.reportportal.testng.integration.util.TestUtils.*;
 import static com.epam.reportportal.util.test.CommonUtils.namedId;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.*;
@@ -52,7 +50,7 @@ public class NestedStepTest {
 		);
 
 		public TestListener() {
-			super(new TestNGService(Suppliers.memoize(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters()))));
+			super(new TestNGService(new MemoizingSupplier<>(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters()))));
 		}
 
 		public static void initReportPortal(ReportPortal reportPortal) {
@@ -71,7 +69,7 @@ public class NestedStepTest {
 	@BeforeEach
 	public void initMocks() {
 		mockLaunch(client, "launchUuid", TEST_SUITE_ID, TEST_CLASS_ID, TEST_METHOD_ID);
-		ReportPortal reportPortal = ReportPortal.create(client, new ListenerParameters(PropertiesLoader.load()));
+		ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
 		TestListener.initReportPortal(reportPortal);
 	}
 

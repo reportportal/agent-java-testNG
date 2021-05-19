@@ -7,6 +7,7 @@ import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.integration.feature.description.DescriptionTest;
 import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedClassTest;
 import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedParameterizedClassTest;
+import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -14,13 +15,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import rp.com.google.common.base.Suppliers;
 
 import java.util.Calendar;
 import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.epam.reportportal.testng.integration.util.TestUtils.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -36,7 +33,7 @@ public class TestNameAndDescriptionTest {
 		public static final ThreadLocal<ReportPortal> REPORT_PORTAL_THREAD_LOCAL = new ThreadLocal<>();
 
 		public TestListener() {
-			super(new TestNGService(Suppliers.memoize(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters()))));
+			super(new TestNGService(new MemoizingSupplier<>(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters()))));
 		}
 
 		public static void initReportPortal(ReportPortal reportPortal) {
@@ -65,7 +62,7 @@ public class TestNameAndDescriptionTest {
 	@BeforeEach
 	public void initMocks() {
 		mockLaunch(client, namedUuid("launchUuid"), suitedUuid, testClassUuid, stepUuid);
-		ReportPortal reportPortal = ReportPortal.create(client, new ListenerParameters(PropertiesLoader.load()));
+		ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
 		TestListener.initReportPortal(reportPortal);
 	}
 
