@@ -25,8 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.reportportal.testng.NestedStepTest.TestListener.*;
-import static com.epam.reportportal.testng.integration.util.TestUtils.mockLaunch;
-import static com.epam.reportportal.testng.integration.util.TestUtils.mockNestedSteps;
+import static com.epam.reportportal.testng.integration.util.TestUtils.*;
 import static com.epam.reportportal.util.test.CommonUtils.namedId;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.*;
@@ -70,7 +69,7 @@ public class NestedStepTest {
 	@BeforeEach
 	public void initMocks() {
 		mockLaunch(client, "launchUuid", TEST_SUITE_ID, TEST_CLASS_ID, TEST_METHOD_ID);
-		ReportPortal reportPortal = ReportPortal.create(client, new ListenerParameters(PropertiesLoader.load()));
+		ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
 		TestListener.initReportPortal(reportPortal);
 	}
 

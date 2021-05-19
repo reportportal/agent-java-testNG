@@ -7,7 +7,6 @@ import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.integration.feature.parameters.*;
 import com.epam.reportportal.testng.integration.util.TestUtils;
 import com.epam.reportportal.utils.MemoizingSupplier;
-import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -25,6 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.epam.reportportal.testng.integration.util.TestUtils.namedUuid;
+import static com.epam.reportportal.testng.integration.util.TestUtils.standardParameters;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.startsWith;
@@ -72,7 +72,7 @@ public class ParametersBypassTest {
 	public void initMocks() {
 		TestUtils.mockLaunch(client, "launchUuid", suitedUuid, testClassUuid, testMethodUuidList);
 
-		final ReportPortal reportPortal = ReportPortal.create(client, new ListenerParameters(PropertiesLoader.load()));
+		final ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
 		TestReportPortalListener.initReportPortal(reportPortal);
 	}
 

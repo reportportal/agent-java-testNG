@@ -16,13 +16,11 @@
 
 package com.epam.reportportal.testng;
 
-import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.integration.ManualStepReportPortalListener;
 import com.epam.reportportal.testng.integration.feature.step.ManualStepReporterFeatureTest;
 import com.epam.reportportal.testng.integration.feature.step.ManualStepReporterSimpleTest;
-import com.epam.reportportal.utils.properties.PropertiesLoader;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,7 +58,7 @@ public class StepReporterTest {
 	@BeforeEach
 	public void initMocks() {
 		mockLaunch(client, "launchUuid", suitedUuid, testClassUuid, testMethodUuid);
-		ReportPortal reportPortal = ReportPortal.create(client, new ListenerParameters(PropertiesLoader.load()));
+		ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
 		ManualStepReportPortalListener.initReportPortal(reportPortal);
 	}
 
