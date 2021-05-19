@@ -62,9 +62,12 @@ jobs:
           echo 'Bundle upload'
           curl -u ${{ secrets.SONATYPE_USER }}:${{ secrets.SONATYPE_PASSWORD }} -L \
             --request POST '${{ env.UPSTREAM_REPOSITORY_URL }}service/local/staging/bundle_upload' \
-            --form "file=@${BUNDLE_FILE}" \
-            | jq -r '.repositoryUris[0]' \
-            | (read r; echo "NEXUS_REPOSITORY=${r}" >> $GITHUB_ENV)
+            --form "file=@${BUNDLE_FILE}" >response.json
+
+          echo 'Bundle upload response:'
+          cat response.json
+
+          echo "NEXUS_REPOSITORY=`jq -r '.repositoryUris[0]' response.json`" >> $GITHUB_ENV
 
       - name: Get repository variables
         run: |
