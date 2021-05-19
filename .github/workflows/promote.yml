@@ -60,12 +60,9 @@ jobs:
           jar -cvf ${BUNDLE_FILE} "${files[@]}"
 
           echo 'Bundle upload'
-          curl -u ${{ secrets.SONATYPE_USER }}:${{ secrets.SONATYPE_PASSWORD }} -L \
+          curl -f -u ${{ secrets.SONATYPE_USER }}:${{ secrets.SONATYPE_PASSWORD }} -L \
             --request POST '${{ env.UPSTREAM_REPOSITORY_URL }}service/local/staging/bundle_upload' \
-            --form "file=@${BUNDLE_FILE}" >response.json
-
-          echo 'Bundle upload response:'
-          cat response.json
+            --form "file=@${BUNDLE_FILE}" >response.json && echo "Response: $(cat response.json)" || echo "Response: $(cat response.json)"
 
           echo "NEXUS_REPOSITORY=`jq -r '.repositoryUris[0]' response.json`" >> $GITHUB_ENV
 
