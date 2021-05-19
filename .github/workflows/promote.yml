@@ -65,7 +65,7 @@ jobs:
             --request POST '${{ env.UPSTREAM_REPOSITORY_URL }}service/local/staging/bundle_upload' \
             --form "file=@${BUNDLE_FILE}" >response.json || error=true
 
-          if [["$error" == "true"]]; then
+          if [[ "$error" == "true" ]]; then
             echo "Got error response: $(cat response.json)"
             exit 1
           fi
