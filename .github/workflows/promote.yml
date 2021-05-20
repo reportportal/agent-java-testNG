@@ -61,7 +61,7 @@ jobs:
 
           echo 'Bundle upload'
           curl -u ${{ secrets.SONATYPE_USER }}:${{ secrets.SONATYPE_PASSWORD }} -L \
-            --request POST '${{ env.UPSTREAM_REPOSITORY_URL }}service/local/staging/bundle_upload' \
+            --request POST '${{ env.UPSTREAM_REPOSITORY_URL }}/service/local/staging/bundle_upload' \
             --form "file=@${BUNDLE_FILE}" >response.json
 
           response_type=`jq type response.json || echo ''`
@@ -110,7 +110,7 @@ jobs:
             curl -f -u ${{ secrets.SONATYPE_USER }}:${{ secrets.SONATYPE_PASSWORD }} -L \
               --header 'Content-Type: application/json' \
               --data-raw "{\"data\":{\"stagedRepositoryIds\":[\"${NEXUS_REPOSITORY_NAME}\"], \"description\":\"Releasing ${{ github.event.inputs.version }}\"}}" \
-              --request POST ${{ env.UPSTREAM_REPOSITORY_URL }}service/local/staging/bulk/promote
+              --request POST ${{ env.UPSTREAM_REPOSITORY_URL }}/service/local/staging/bulk/promote
           else
             echo "Verification failed, please check the bundle"
             exit 1
