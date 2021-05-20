@@ -65,6 +65,8 @@ jobs:
             --form "file=@${BUNDLE_FILE}" >response.json
 
           repo=$(jq -r '.repositoryUris[0]' response.json)
+          echo 'Repository:'
+          echo "$repo"
           if [ -z "$repo" ]; then
             echo "Unable to upload bundle"
             cat response.json
