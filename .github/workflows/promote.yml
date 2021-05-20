@@ -66,15 +66,15 @@ jobs:
 
           response_type=`jq type response.json || echo ''`
           if [ -z "$response_type" ]; then
-            echo 'ERROR: Response is not JSON!'
-            cat response.json
+            echo 'ERROR: Response is not JSON!' 1>&2
+            cat response.json 1>&2
             exit 1
           fi
 
           repo=`jq -r '.repositoryUris[0]' response.json`
           if [ -z "$repo" ]; then
-            echo "Unable to upload bundle"
-            cat response.json
+            echo 'Unable to upload bundle' 1>&2
+            cat response.json 1>&2
             exit 1
           fi
 
@@ -112,6 +112,6 @@ jobs:
               --data-raw "{\"data\":{\"stagedRepositoryIds\":[\"${NEXUS_REPOSITORY_NAME}\"], \"description\":\"Releasing ${{ github.event.inputs.version }}\"}}" \
               --request POST ${{ env.UPSTREAM_REPOSITORY_URL }}/service/local/staging/bulk/promote
           else
-            echo "Verification failed, please check the bundle"
+            echo 'Verification failed, please check the bundle' 1>&2
             exit 1
           fi
