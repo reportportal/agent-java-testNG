@@ -67,12 +67,11 @@ jobs:
           repo=`jq -r '.repositoryUris[0]' response.json`
           if [ -z "$repo" ]; then
             echo "Unable to upload bundle"
-            echo "`cat response.json`"
+            cat response.json
             exit 1
           fi
 
           echo "NEXUS_REPOSITORY=${repo}" >> $GITHUB_ENV
-
 
       - name: Get repository variables
         run: |
