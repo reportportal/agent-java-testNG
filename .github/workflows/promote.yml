@@ -64,11 +64,14 @@ jobs:
             --request POST '${{ env.UPSTREAM_REPOSITORY_URL }}service/local/staging/bundle_upload' \
             --form "file=@${BUNDLE_FILE}" >response.json
 
-          cat response.json
+          response_type=`jq type response.json`
+          if [ -z "$response_type" ]; then
+            echo 'ERROR: Response is not JSON!'
+            cat response.json
+            exit 1
+          fi
 
           repo=`jq -r '.repositoryUris[0]' response.json`
-          echo 'Repository:'
-          echo "$repo"
           if [ -z "$repo" ]; then
             echo "Unable to upload bundle"
             cat response.json
