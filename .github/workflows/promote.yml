@@ -64,7 +64,9 @@ jobs:
             --request POST '${{ env.UPSTREAM_REPOSITORY_URL }}service/local/staging/bundle_upload' \
             --form "file=@${BUNDLE_FILE}" >response.json
 
-          repo=$(jq -r '.repositoryUris[0]' response.json)
+          cat response.json
+
+          repo=`jq -r '.repositoryUris[0]' response.json`
           echo 'Repository:'
           echo "$repo"
           if [ -z "$repo" ]; then
