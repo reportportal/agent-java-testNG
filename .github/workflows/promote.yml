@@ -64,7 +64,7 @@ jobs:
             --request POST '${{ env.UPSTREAM_REPOSITORY_URL }}service/local/staging/bundle_upload' \
             --form "file=@${BUNDLE_FILE}" >response.json
 
-          repo=`jq -r '.repositoryUris[0]' response.json`
+          repo=$(jq -r '.repositoryUris[0]' response.json)
           if [ -z "$repo" ]; then
             echo "Unable to upload bundle"
             cat response.json
