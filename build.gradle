@@ -65,6 +65,7 @@ test {
         def weaver = configurations.testRuntimeClasspath.find { it.name.contains("aspectjweaver") }
         jvmArgs += "-javaagent:$weaver"
     }
+    environment "AGENT_NO_ANALYTICS", "1"
 }
 
 wrapper {
