@@ -1,6 +1,12 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- TestNGService.buildStartStepRq(org.testng.ITestResult) returned in business
+
+## [5.0.11]
+### Changed
+- Client version updated on [5.0.21](https://github.com/reportportal/client-java/releases/tag/5.0.21)
 
 ## [5.1.0-BETA-1]
 ### Changed
