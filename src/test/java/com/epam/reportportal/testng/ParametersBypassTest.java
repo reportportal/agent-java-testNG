@@ -7,6 +7,7 @@ import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.integration.feature.parameters.*;
 import com.epam.reportportal.testng.integration.util.TestUtils;
 import com.epam.reportportal.utils.MemoizingSupplier;
+import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;

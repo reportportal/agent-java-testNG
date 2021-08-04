@@ -1,7 +1,6 @@
 package com.epam.reportportal.testng;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.integration.CallbackReportingListener;
@@ -50,7 +49,7 @@ public class CallbackReportingIntegrationTest {
 		Maybe<OperationCompletionRS> finishResponse = TestUtils.createMaybe(new OperationCompletionRS("finished"));
 		when(reportPortalClient.finishTestItem(eq(testMethodUuid), any())).thenReturn(finishResponse);
 
-		when(reportPortalClient.log(any(MultiPartRequest.class))).thenReturn(TestUtils.createMaybe(new BatchSaveOperatingRS()));
+		when(reportPortalClient.log(any(List.class))).thenReturn(TestUtils.createMaybe(new BatchSaveOperatingRS()));
 		when(reportPortalClient.log(any(SaveLogRQ.class))).thenReturn(TestUtils.createMaybe(new EntryCreatedAsyncRS("logId")));
 
 		ListenerParameters params = standardParameters();

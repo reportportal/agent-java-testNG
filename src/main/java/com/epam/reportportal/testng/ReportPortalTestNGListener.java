@@ -15,8 +15,9 @@
  */
 package com.epam.reportportal.testng;
 
-import rp.com.google.common.base.Supplier;
-import rp.com.google.common.base.Suppliers;
+import com.epam.reportportal.utils.MemoizingSupplier;
+
+import java.util.function.Supplier;
 
 /**
  * Backward-compatible version of Listeners with version prior to 3.0.0
@@ -26,12 +27,7 @@ import rp.com.google.common.base.Suppliers;
 public class ReportPortalTestNGListener extends BaseTestNGListener {
 
 	/* static instance with lazy init */
-	public static final Supplier<ITestNGService> SERVICE = Suppliers.memoize(new Supplier<ITestNGService>() {
-		@Override
-		public ITestNGService get() {
-			return new TestNGService();
-		}
-	});
+	public static final Supplier<ITestNGService> SERVICE = new MemoizingSupplier<>(TestNGService::new);
 
 	public ReportPortalTestNGListener() {
 		super(SERVICE.get());

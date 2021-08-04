@@ -124,9 +124,7 @@ public class FailedBeforeAfterTest {
 
 		finishItems.subList(1, 3).forEach(e -> {
 			assertThat(e.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
-			assertThat(e.getIssue(), notNullValue());
-			Issue issue = e.getIssue();
-			assertThat(issue.getIssueType(), equalTo(LaunchImpl.NOT_ISSUE));
+			assertThat(e.getIssue(), allOf(notNullValue(), sameInstance(Launch.NOT_ISSUE)));
 		});
 
 		finishItems.subList(3, finishItems.size()).forEach(e -> {
@@ -167,9 +165,7 @@ public class FailedBeforeAfterTest {
 
 		finishItems.subList(1, 3).forEach(e -> {
 			assertThat(e.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
-			assertThat(e.getIssue(), notNullValue());
-			Issue issue = e.getIssue();
-			assertThat(issue.getIssueType(), equalTo(LaunchImpl.NOT_ISSUE));
+			assertThat(e.getIssue(), allOf(notNullValue(), sameInstance(Launch.NOT_ISSUE)));
 		});
 
 		finishItems.subList(3, finishItems.size()).forEach(e -> {
@@ -216,9 +212,7 @@ public class FailedBeforeAfterTest {
 
 		finishItems.subList(1, 6).forEach(e -> {
 			assertThat(e.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
-			assertThat(e.getIssue(), notNullValue());
-			Issue issue = e.getIssue();
-			assertThat(issue.getIssueType(), equalTo(LaunchImpl.NOT_ISSUE));
+			assertThat(e.getIssue(), allOf(notNullValue(), sameInstance(Launch.NOT_ISSUE)));
 		});
 
 		finishItems.subList(6, finishItems.size()).forEach(e -> {
@@ -301,9 +295,7 @@ public class FailedBeforeAfterTest {
 		// all other befores should be skipped with "not issue" flag
 		befores.subList(2, befores.size()).forEach(e -> {
 			assertThat(e.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
-			assertThat(e.getIssue(), notNullValue());
-			Issue issue = e.getIssue();
-			assertThat(issue.getIssueType(), equalTo(LaunchImpl.NOT_ISSUE));
+			assertThat(e.getIssue(), allOf(notNullValue(), sameInstance(Launch.NOT_ISSUE)));
 		});
 
 		List<FinishTestItemRQ> tests = IntStream.range(0, itemUuids.size())

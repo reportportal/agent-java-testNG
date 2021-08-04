@@ -1,7 +1,6 @@
 package com.epam.reportportal.testng.integration.util;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.service.step.StepReporter;
@@ -162,10 +161,6 @@ public class TestUtils {
 		when(client.finishTestItem(eq(suiteUuid), any())).thenReturn(suiteFinishMaybe);
 
 		when(client.finishLaunch(eq(launchUuid), any())).thenReturn(TestUtils.createMaybe(new OperationCompletionRS()));
-	}
-
-	public static void mockLogging(ReportPortalClient client) {
-		when(client.log(any(MultiPartRequest.class))).thenReturn(TestUtils.createMaybe(new BatchSaveOperatingRS()));
 	}
 
 	public static void mockNestedSteps(ReportPortalClient client, Pair<String, String> parentNestedPair) {
