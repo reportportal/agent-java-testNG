@@ -1,5 +1,6 @@
 package com.epam.reportportal.testng;
 
+import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.testng.integration.feature.shutdown.LaunchFinishShutdownHookRemoveTest;
 import com.epam.reportportal.testng.integration.feature.shutdown.LaunchFinishShutdownHookTest;
 import com.epam.reportportal.util.test.ProcessUtils;
@@ -20,14 +21,14 @@ import static org.hamcrest.Matchers.*;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestLaunchFinishShutdownHook {
 
-	// TODO: fix LaunchFinishShutdownHookTest.class parameter
 	@ParameterizedTest
-	@ValueSource(classes = { LaunchFinishShutdownHookRemoveTest.class })
+	@ValueSource(classes = { LaunchFinishShutdownHookTest.class, LaunchFinishShutdownHookRemoveTest.class })
 	public void test_shutdown_hook_finishes_launch_on_java_machine_exit(final Class<?> clazz) throws Exception {
 
 		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
 		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, Collections.emptyMap(), "files/socket_response.txt");
-		Callable<Process> clientCallable = () -> ProcessUtils.buildProcess(true, clazz, String.valueOf(ss.getLocalPort()));
+		Callable<Process> clientCallable = () -> ProcessUtils.buildProcess(true, clazz,
+				Collections.singletonMap(StatisticsService.DISABLE_PROPERTY, "1"), String.valueOf(ss.getLocalPort()));
 		Pair<String, Process> startResult = SocketUtils.executeServerCallable(serverCallable, clientCallable);
 		assertThat(startResult.getValue(), notNullValue());
 		assertThat("First request is a launch start", startResult.getKey(), startsWith("POST /api/v1/test-project/launch"));
