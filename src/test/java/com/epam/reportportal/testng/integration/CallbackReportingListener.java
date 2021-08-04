@@ -16,7 +16,7 @@ public class CallbackReportingListener extends BaseTestNGListener {
 	public static final ThreadLocal<ReportPortal> REPORT_PORTAL_THREAD_LOCAL = new ThreadLocal<>();
 
 	public CallbackReportingListener() {
-		super(new TestNGServiceExtension(new MemoizingSupplier<Launch>(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters())),
+		super(new TestNGServiceExtension(new MemoizingSupplier<>(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters())),
 				REPORT_PORTAL_THREAD_LOCAL.get()
 		));
 	}

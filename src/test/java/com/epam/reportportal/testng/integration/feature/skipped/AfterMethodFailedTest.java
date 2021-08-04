@@ -11,17 +11,17 @@ public class AfterMethodFailedTest {
 	private static final Logger LOGGER = LoggerFactory.getLogger(BeforeMethodFailedTest.class);
 
 	@BeforeMethod
-	public void beforeMethodFailed() {
-		LOGGER.info("Inside @BeforeMethod beforeMethodFailed step");
+	public void beforeMethod() {
+		LOGGER.info("Inside @BeforeMethod beforeMethod step");
 	}
 
 	@Test
-	public void testBeforeMethodFailed() {
-		LOGGER.info("Test: testBeforeMethodFailed");
+	public void testAfterMethodFailed() {
+		LOGGER.info("Test: testAfterMethodFailed");
 	}
 
 	@AfterMethod
-	public void shutDown() {
-		throw new IllegalStateException("Inside @AfterMethod shutDown step");
+	public void failedAfterMethod() {
+		throw new IllegalStateException("Inside @AfterMethod failedAfterMethod step");
 	}
 }

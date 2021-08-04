@@ -79,12 +79,11 @@ public class TestWithFailedRetryAndDependentMethods {
 	@BeforeEach
 	public void initMocks() {
 		mockLaunch(client, namedUuid("launchUuid"), suitedUuid, testClassUuid, testUuidList);
-		ReportPortal reportPortal = ReportPortal.create(client, new ListenerParameters(PropertiesLoader.load()));
+		ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
 		TestListener.initReportPortal(reportPortal);
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void verify_second_test_passes_in_case_of_retry() {
 		runTests(Collections.singletonList(TestListener.class), FailedRetriesAndTwoDependentMethodsTest.class);
 
@@ -97,9 +96,8 @@ public class TestWithFailedRetryAndDependentMethods {
 		List<StartTestItemRQ> startItems = startTestCapture.getAllValues();
 
 		assertThat(startItems.get(1).isRetry(), equalTo(Boolean.TRUE));
-		Stream.concat(startItems.subList(0, 1).stream(), startItems.subList(2, startItems.size()).stream()).forEach(i -> {
-			assertThat(i.isRetry(), nullValue());
-		});
+		Stream.concat(startItems.subList(0, 1).stream(), startItems.subList(2, startItems.size()).stream())
+				.forEach(i -> assertThat(i.isRetry(), nullValue()));
 
 		ArgumentCaptor<String> finishUuidCapture = ArgumentCaptor.forClass(String.class);
 		ArgumentCaptor<FinishTestItemRQ> finishItemCapture = ArgumentCaptor.forClass(FinishTestItemRQ.class);

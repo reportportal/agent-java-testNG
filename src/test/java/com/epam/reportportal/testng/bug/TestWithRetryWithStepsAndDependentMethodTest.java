@@ -91,7 +91,7 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 	public void initMocks() {
 		mockLaunch(client, namedUuid("launchUuid"), suitedUuid, testClassUuid, testUuidList);
 		TestUtils.mockNestedSteps(client, testStepUuidOrder);
-		ReportPortal reportPortal = ReportPortal.create(client, new ListenerParameters(PropertiesLoader.load()));
+		ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
 		TestListener.initReportPortal(reportPortal);
 	}
 
@@ -105,7 +105,6 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void verify_second_test_passes_in_case_of_retry() {
 		runTests(Collections.singletonList(TestListener.class), RetryWithStepsAndDependentMethodTest.class);
 
