@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.0-RC-1]
 ### Added
 - Class level attribute handling [#158](https://github.com/reportportal/agent-java-testNG/issues/158)
 ### Changed
