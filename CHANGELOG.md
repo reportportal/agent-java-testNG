@@ -1,10 +1,20 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Class level attribute handling [#158](https://github.com/reportportal/agent-java-testNG/issues/158)
+### Changed
+- TestNGService.buildStartStepRq(org.testng.ITestResult) returned in business
+- Client version updated on [5.1.0-RC-5](https://github.com/reportportal/client-java/releases/tag/5.1.0-RC-5)
+- Version changed on 5.1.0
 
 ## [5.0.11]
 ### Changed
 - Client version updated on [5.0.21](https://github.com/reportportal/client-java/releases/tag/5.0.21)
+
+## [5.1.0-BETA-1]
+### Changed
+- Client version updated on [5.1.0-BETA-1](https://github.com/reportportal/client-java/releases/tag/5.1.0-BETA-1)
 
 ## [5.0.9]
 ### Changed 

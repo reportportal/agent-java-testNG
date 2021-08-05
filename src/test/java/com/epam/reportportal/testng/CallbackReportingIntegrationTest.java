@@ -1,13 +1,11 @@
 package com.epam.reportportal.testng;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.integration.CallbackReportingListener;
 import com.epam.reportportal.testng.integration.feature.callback.CallbackReportingTest;
 import com.epam.reportportal.testng.integration.util.TestUtils;
-import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
@@ -19,6 +17,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.*;
 
+import static com.epam.reportportal.testng.integration.util.TestUtils.standardParameters;
 import static java.util.stream.Collectors.groupingBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -50,10 +49,12 @@ public class CallbackReportingIntegrationTest {
 		Maybe<OperationCompletionRS> finishResponse = TestUtils.createMaybe(new OperationCompletionRS("finished"));
 		when(reportPortalClient.finishTestItem(eq(testMethodUuid), any())).thenReturn(finishResponse);
 
-		when(reportPortalClient.log(any(MultiPartRequest.class))).thenReturn(TestUtils.createMaybe(new BatchSaveOperatingRS()));
+		when(reportPortalClient.log(any(List.class))).thenReturn(TestUtils.createMaybe(new BatchSaveOperatingRS()));
 		when(reportPortalClient.log(any(SaveLogRQ.class))).thenReturn(TestUtils.createMaybe(new EntryCreatedAsyncRS("logId")));
 
-		final ReportPortal reportPortal = ReportPortal.create(reportPortalClient, new ListenerParameters(PropertiesLoader.load()));
+		ListenerParameters params = standardParameters();
+		params.setCallbackReportingEnabled(true);
+		final ReportPortal reportPortal = ReportPortal.create(reportPortalClient, params);
 		CallbackReportingListener.initReportPortal(reportPortal);
 	}
 

@@ -7,7 +7,6 @@ import com.epam.reportportal.testng.BaseTestNGListener;
 import com.epam.reportportal.testng.TestNGService;
 import com.epam.reportportal.testng.integration.util.TestUtils;
 import com.epam.reportportal.utils.MemoizingSupplier;
-import rp.com.google.common.base.Suppliers;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>

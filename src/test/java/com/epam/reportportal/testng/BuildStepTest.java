@@ -21,7 +21,6 @@ import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.TestCaseIdKey;
 import com.epam.reportportal.annotations.UniqueID;
 import com.epam.reportportal.listeners.ItemStatus;
-import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
@@ -245,7 +244,7 @@ public class BuildStepTest {
 		when(testResult.getEndMillis()).thenReturn(DEFAULT_TIME);
 		FinishTestItemRQ rq = testNGService.buildFinishTestMethodRq(ItemStatus.PASSED, testResult);
 		assertThat("Incorrect end time", rq.getEndTime().getTime(), is(DEFAULT_TIME));
-		assertThat("Incorrect status", rq.getStatus(), is(Statuses.PASSED));
+		assertThat("Incorrect status", rq.getStatus(), is(ItemStatus.PASSED.name()));
 		assertThat("Incorrect issue", rq.getIssue(), nullValue());
 	}
 

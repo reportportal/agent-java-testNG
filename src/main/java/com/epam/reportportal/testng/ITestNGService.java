@@ -76,7 +76,7 @@ public interface ITestNGService {
 	 *
 	 * @param status     Status (PASSED/FAILED)
 	 * @param testResult TestNG's test result
-	 * @see com.epam.reportportal.listeners.Statuses
+	 * @see com.epam.reportportal.listeners.ItemStatus
 	 * @deprecated
 	 */
 	@Deprecated

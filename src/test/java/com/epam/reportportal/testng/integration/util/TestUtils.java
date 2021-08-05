@@ -1,7 +1,6 @@
 package com.epam.reportportal.testng.integration.util;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.service.step.StepReporter;
@@ -94,7 +93,7 @@ public class TestUtils {
 			Maybe<String> testClassUuid, Collection<Maybe<String>> testMethodUuidList) {
 		mockLaunch(
 				launch,
-				new ListenerParameters(PropertiesLoader.load()),
+				standardParameters(),
 				reporter,
 				launchUuid,
 				suiteUuid,
@@ -164,10 +163,6 @@ public class TestUtils {
 		when(client.finishLaunch(eq(launchUuid), any())).thenReturn(TestUtils.createMaybe(new OperationCompletionRS()));
 	}
 
-	public static void mockLogging(ReportPortalClient client) {
-		when(client.log(any(MultiPartRequest.class))).thenReturn(TestUtils.createMaybe(new BatchSaveOperatingRS()));
-	}
-
 	public static void mockNestedSteps(ReportPortalClient client, Pair<String, String> parentNestedPair) {
 		mockNestedSteps(client, Collections.singletonList(parentNestedPair));
 	}
@@ -195,6 +190,7 @@ public class TestUtils {
 		ListenerParameters result = new ListenerParameters();
 		result.setClientJoin(false);
 		result.setBatchLogsSize(1);
+		result.setBaseUrl("http://localhost:8080");
 		result.setLaunchName("My-test-launch" + CommonUtils.generateUniqueId());
 		result.setProjectName("test-project");
 		result.setEnable(true);

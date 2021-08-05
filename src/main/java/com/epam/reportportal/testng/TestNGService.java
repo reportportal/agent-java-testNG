@@ -295,16 +295,6 @@ public class TestNGService implements ITestNGService {
 	 * Extension point to customize test step creation event/request
 	 *
 	 * @param testResult TestNG's testResult context
-	 * @return Request to ReportPortal
-	 */
-	protected StartTestItemRQ buildStartStepRq(final @Nonnull ITestResult testResult) {
-		return buildStartStepRq(testResult, ofNullable(TestMethodType.getStepType(testResult.getMethod())).orElse(TestMethodType.STEP));
-	}
-
-	/**
-	 * Extension point to customize test step creation event/request
-	 *
-	 * @param testResult TestNG's testResult context
 	 * @param type       method type
 	 * @return Request to ReportPortal
 	 */
@@ -327,22 +317,32 @@ public class TestNGService implements ITestNGService {
 		return rq;
 	}
 
+	/**
+	 * Extension point to customize test step creation event/request
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Request to ReportPortal
+	 */
+	protected StartTestItemRQ buildStartStepRq(final @Nonnull ITestResult testResult) {
+		TestMethodType methodType = ofNullable(TestMethodType.getStepType(testResult.getMethod())).orElse(TestMethodType.STEP);
+		testResult.setAttribute(RP_METHOD_TYPE, methodType);
+		return buildStartStepRq(testResult, methodType);
+	}
+
 	private void addToTree(ITestResult testResult, Maybe<String> stepMaybe) {
 		ITestContext testContext = testResult.getTestContext();
 
 		ofNullable(ITEM_TREE.getTestItems()
 				.get(createKey(testContext.getSuite()))).flatMap(suiteLeaf -> ofNullable(suiteLeaf.getChildItems()
-				.get(createKey(testContext))).flatMap(testLeaf -> ofNullable(testLeaf.getChildItems()
-				.get(createKey(testResult.getTestClass())))))
+						.get(createKey(testContext))).flatMap(testLeaf -> ofNullable(testLeaf.getChildItems()
+						.get(createKey(testResult.getTestClass())))))
 				.ifPresent(testClassLeaf -> testClassLeaf.getChildItems()
 						.put(createKey(testResult), TestItemTree.createTestItemLeaf(stepMaybe)));
 	}
 
 	@Override
 	public void startTestMethod(ITestResult testResult) {
-		TestMethodType methodType = ofNullable(TestMethodType.getStepType(testResult.getMethod())).orElse(TestMethodType.STEP);
-		testResult.setAttribute(RP_METHOD_TYPE, methodType);
-		StartTestItemRQ rq = buildStartStepRq(testResult, methodType);
+		StartTestItemRQ rq = buildStartStepRq(testResult);
 		if (Boolean.TRUE == rq.isRetry()) {
 			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
 		}
@@ -363,7 +363,10 @@ public class TestNGService implements ITestNGService {
 	 * @return Request to ReportPortal
 	 */
 	protected FinishTestItemRQ buildFinishTestMethodRq(ItemStatus status, ITestResult testResult) {
-		return buildFinishTestMethodRq(status.name(), testResult);
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		rq.setEndTime(new Date(testResult.getEndMillis()));
+		rq.setStatus(status.name());
+		return rq;
 	}
 
 	/**
@@ -374,10 +377,7 @@ public class TestNGService implements ITestNGService {
 	 */
 	@Deprecated
 	protected FinishTestItemRQ buildFinishTestMethodRq(String status, ITestResult testResult) {
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(new Date(testResult.getEndMillis()));
-		rq.setStatus(status);
-		return rq;
+		return buildFinishTestMethodRq(ItemStatus.valueOf(status), testResult);
 	}
 
 	private void updateTestItemTree(Maybe<OperationCompletionRS> finishItemResponse, ITestResult testResult) {
@@ -534,6 +534,8 @@ public class TestNGService implements ITestNGService {
 				XmlClass xmlClass = xmlClasses.get(0);
 				if (xmlClass != null) {
 					rq.setCodeRef(xmlClass.getName());
+					ofNullable(xmlClass.getSupportClass()).map(c -> c.getAnnotation(Attributes.class))
+							.ifPresent(a -> rq.setAttributes(AttributeParser.retrieveAttributes(a)));
 				}
 			}
 		}
@@ -553,7 +555,7 @@ public class TestNGService implements ITestNGService {
 		StartLaunchRQ rq = new StartLaunchRQ();
 		rq.setName(parameters.getLaunchName());
 		rq.setStartTime(Calendar.getInstance().getTime());
-		Set<ItemAttributesRQ> attributes = new HashSet<ItemAttributesRQ>(parameters.getAttributes());
+		Set<ItemAttributesRQ> attributes = new HashSet<>(parameters.getAttributes());
 		rq.setAttributes(attributes);
 		rq.setMode(parameters.getLaunchRunningMode());
 		rq.setRerun(parameters.isRerun());
