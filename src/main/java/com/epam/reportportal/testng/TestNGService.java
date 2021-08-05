@@ -334,8 +334,8 @@ public class TestNGService implements ITestNGService {
 
 		ofNullable(ITEM_TREE.getTestItems()
 				.get(createKey(testContext.getSuite()))).flatMap(suiteLeaf -> ofNullable(suiteLeaf.getChildItems()
-				.get(createKey(testContext))).flatMap(testLeaf -> ofNullable(testLeaf.getChildItems()
-				.get(createKey(testResult.getTestClass())))))
+						.get(createKey(testContext))).flatMap(testLeaf -> ofNullable(testLeaf.getChildItems()
+						.get(createKey(testResult.getTestClass())))))
 				.ifPresent(testClassLeaf -> testClassLeaf.getChildItems()
 						.put(createKey(testResult), TestItemTree.createTestItemLeaf(stepMaybe)));
 	}
@@ -534,6 +534,8 @@ public class TestNGService implements ITestNGService {
 				XmlClass xmlClass = xmlClasses.get(0);
 				if (xmlClass != null) {
 					rq.setCodeRef(xmlClass.getName());
+					ofNullable(xmlClass.getSupportClass()).map(c -> c.getAnnotation(Attributes.class))
+							.ifPresent(a -> rq.setAttributes(AttributeParser.retrieveAttributes(a)));
 				}
 			}
 		}
