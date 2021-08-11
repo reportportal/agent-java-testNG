@@ -110,12 +110,19 @@ public class TestNGService implements ITestNGService {
 		this.launch = new MemoizingSupplier<>(() -> {
 			//this reads property, so we want to
 			//init ReportPortal object each time Launch object is going to be created
-			StartLaunchRQ startRq = buildStartLaunchRq(getReportPortal().getParameters());
+			final ListenerParameters parameters = getReportPortal().getParameters();
+			StartLaunchRQ startRq = buildStartLaunchRq(parameters);
 			startRq.setStartTime(Calendar.getInstance().getTime());
-			Launch newLaunch = getReportPortal().newLaunch(startRq);
-			shutDownHook = getShutdownHook(() -> newLaunch);
-			Runtime.getRuntime().addShutdownHook(shutDownHook);
-			return newLaunch;
+
+			Launch launch;
+			if (parameters.isAppend() && Optional.ofNullable(parameters.getAppendOf()).isPresent()) {
+				launch = getReportPortal().withLaunch(Maybe.just(parameters.getAppendOf()));
+			} else {
+				launch = getReportPortal().newLaunch(startRq);
+				shutDownHook = getShutdownHook(() -> launch);
+				Runtime.getRuntime().addShutdownHook(shutDownHook);
+			}
+			return launch;
 		});
 	}
 
@@ -141,12 +148,14 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public void finishLaunch() {
-		FinishExecutionRQ rq = new FinishExecutionRQ();
-		rq.setEndTime(Calendar.getInstance().getTime());
-		rq.setStatus(isLaunchFailed.get() ? ItemStatus.FAILED.name() : ItemStatus.PASSED.name());
-		launch.get().finish(rq);
-		launch.reset();
-		Runtime.getRuntime().removeShutdownHook(shutDownHook);
+		if (!getReportPortal().getParameters().isAppend()) {
+			FinishExecutionRQ rq = new FinishExecutionRQ();
+			rq.setEndTime(Calendar.getInstance().getTime());
+			rq.setStatus(isLaunchFailed.get() ? ItemStatus.FAILED.name() : ItemStatus.PASSED.name());
+			launch.get().finish(rq);
+			launch.reset();
+			Runtime.getRuntime().removeShutdownHook(shutDownHook);
+		}
 	}
 
 	private void addToTree(ISuite suite, Maybe<String> item) {
