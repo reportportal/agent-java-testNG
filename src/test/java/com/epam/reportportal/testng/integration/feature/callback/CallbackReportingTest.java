@@ -1,5 +1,6 @@
 package com.epam.reportportal.testng.integration.feature.callback;
 
+import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.tree.ItemTreeReporter;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.testng.TestNGService;
@@ -12,6 +13,7 @@ import org.testng.annotations.Test;
 import java.util.Calendar;
 
 import static com.epam.reportportal.testng.TestNGService.ITEM_TREE;
+import static java.util.Optional.ofNullable;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -55,13 +57,12 @@ public class CallbackReportingTest {
 	}
 
 	private void attachLog(TestItemTree.TestItemLeaf testItemLeaf) {
-		ItemTreeReporter.sendLog(
-				TestNGService.getReportPortal().getClient(),
+		ofNullable(Launch.currentLaunch()).ifPresent(l -> ItemTreeReporter.sendLog(l.getClient(),
 				"ERROR",
 				"Error message",
 				Calendar.getInstance().getTime(),
 				ITEM_TREE.getLaunchId(),
 				testItemLeaf
-		);
+		));
 	}
 }
