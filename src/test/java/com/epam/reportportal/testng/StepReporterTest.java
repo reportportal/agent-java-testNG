@@ -18,7 +18,7 @@ package com.epam.reportportal.testng;
 
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
-import com.epam.reportportal.testng.integration.ManualStepReportPortalListener;
+import com.epam.reportportal.testng.integration.TestNgListener;
 import com.epam.reportportal.testng.integration.feature.step.ManualStepReporterFeatureTest;
 import com.epam.reportportal.testng.integration.feature.step.ManualStepReporterSimpleTest;
 import org.apache.commons.lang3.tuple.Pair;
@@ -59,7 +59,7 @@ public class StepReporterTest {
 	public void initMocks() {
 		mockLaunch(client, "launchUuid", suitedUuid, testClassUuid, testMethodUuid);
 		ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
-		ManualStepReportPortalListener.initReportPortal(reportPortal);
+		TestNgListener.initReportPortal(reportPortal);
 	}
 
 	/*
@@ -73,7 +73,7 @@ public class StepReporterTest {
 	@Test
 	public void verify_failed_nested_step_not_fails_test_run() {
 		mockNestedSteps(client, testStepUuidOrder);
-		TestNG testNg = runTests(Collections.singletonList(ManualStepReportPortalListener.class), ManualStepReporterFeatureTest.class);
+		TestNG testNg = runTests(Collections.singletonList(TestNgListener.class), ManualStepReporterFeatureTest.class);
 
 		assertThat(testNg.hasFailure(), equalTo(Boolean.FALSE));
 	}
@@ -81,7 +81,7 @@ public class StepReporterTest {
 	@Test
 	public void verify_listener_finishes_unfinished_step() {
 		mockNestedSteps(client, testStepUuidOrder.get(0));
-		runTests(Collections.singletonList(ManualStepReportPortalListener.class), ManualStepReporterSimpleTest.class);
+		runTests(Collections.singletonList(TestNgListener.class), ManualStepReporterSimpleTest.class);
 
 		verify(client, timeout(1000).times(1)).finishTestItem(same(stepUuidList.get(0)), any());
 	}
