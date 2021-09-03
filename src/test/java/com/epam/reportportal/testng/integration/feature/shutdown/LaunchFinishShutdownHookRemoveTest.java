@@ -12,12 +12,8 @@ import java.util.concurrent.TimeUnit;
 public class LaunchFinishShutdownHookRemoveTest {
 
 	private static class MyTestNgService extends TestNGService {
-		public MyTestNgService() {
-			super();
-		}
-
-		protected void setRp(ReportPortal rp) {
-			TestNGService.setReportPortal(rp);
+		public MyTestNgService(ReportPortal reportPortal) {
+			super(reportPortal);
 		}
 	}
 
@@ -34,8 +30,7 @@ public class LaunchFinishShutdownHookRemoveTest {
 		ListenerParameters parameters = TestUtils.standardParameters();
 		parameters.setBaseUrl("http://localhost:" + port);
 		ReportPortal client = ReportPortal.builder().withParameters(parameters).withExecutorService(myExecutor).build();
-		MyTestNgService service = new MyTestNgService();
-		service.setRp(client);
+		MyTestNgService service = new MyTestNgService(client);
 
 		service.startLaunch();
 		System.out.println("Launch started, sleeping...");

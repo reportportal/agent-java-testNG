@@ -106,17 +106,21 @@ public class TestNGService implements ITestNGService {
 		});
 	}
 
-	public TestNGService() {
+	public TestNGService(@Nonnull final ReportPortal reportPortal) {
 		this.launch = new MemoizingSupplier<>(() -> {
 			//this reads property, so we want to
 			//init ReportPortal object each time Launch object is going to be created
-			StartLaunchRQ startRq = buildStartLaunchRq(getReportPortal().getParameters());
+			StartLaunchRQ startRq = buildStartLaunchRq(reportPortal.getParameters());
 			startRq.setStartTime(Calendar.getInstance().getTime());
-			Launch newLaunch = getReportPortal().newLaunch(startRq);
+			Launch newLaunch = reportPortal.newLaunch(startRq);
 			shutDownHook = getShutdownHook(() -> newLaunch);
 			Runtime.getRuntime().addShutdownHook(shutDownHook);
 			return newLaunch;
 		});
+	}
+
+	public TestNGService() {
+		this(getReportPortal());
 	}
 
 	public TestNGService(Supplier<Launch> launchSupplier) {
@@ -125,10 +129,24 @@ public class TestNGService implements ITestNGService {
 		Runtime.getRuntime().addShutdownHook(shutDownHook);
 	}
 
+	/**
+	 * Return current instance of {@link ReportPortal} class
+	 *
+	 * @deprecated use <code>Launch.currentLaunch().getClient()</code>
+	 * @return ReportPortal instance
+	 */
+	@Deprecated
 	public static ReportPortal getReportPortal() {
 		return REPORT_PORTAL;
 	}
 
+	/**
+	 * Set current instance of {@link ReportPortal} class
+	 *
+	 * @deprecated use {@link TestNGService#TestNGService(com.epam.reportportal.service.ReportPortal)}
+	 * @param reportPortal class instance
+	 */
+	@Deprecated
 	protected static void setReportPortal(ReportPortal reportPortal) {
 		REPORT_PORTAL = reportPortal;
 	}
