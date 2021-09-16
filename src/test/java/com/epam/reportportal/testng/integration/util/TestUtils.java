@@ -89,12 +89,11 @@ public class TestUtils {
 		return rq;
 	}
 
-	public static void mockLaunch(Launch launch, StepReporter reporter, Maybe<String> launchUuid, Maybe<String> suiteUuid,
+	public static void mockLaunch(Launch launch, Maybe<String> launchUuid, Maybe<String> suiteUuid,
 			Maybe<String> testClassUuid, Collection<Maybe<String>> testMethodUuidList) {
 		mockLaunch(
 				launch,
 				standardParameters(),
-				reporter,
 				launchUuid,
 				suiteUuid,
 				testClassUuid,
@@ -103,10 +102,9 @@ public class TestUtils {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static void mockLaunch(Launch launch, ListenerParameters parameters, StepReporter reporter, Maybe<String> launchUuid,
+	public static void mockLaunch(Launch launch, ListenerParameters parameters, Maybe<String> launchUuid,
 			Maybe<String> suiteUuid, Maybe<String> testClassUuid, Collection<Maybe<String>> testMethodUuidList) {
 		when(launch.getParameters()).thenReturn(parameters);
-		when(launch.getStepReporter()).thenReturn(reporter);
 
 		when(launch.start()).thenReturn(launchUuid);
 		when(launch.startTestItem(any())).thenReturn(suiteUuid);

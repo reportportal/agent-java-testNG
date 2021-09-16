@@ -2,6 +2,7 @@ package com.epam.reportportal.testng;
 
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.testng.integration.TestNgListener;
 import com.epam.reportportal.testng.integration.feature.description.DescriptionTest;
 import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedClassTest;
 import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedParameterizedClassTest;
@@ -23,17 +24,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class TestNameAndDescriptionTest {
-	public static class TestListener extends BaseTestNGListener {
-		public static final ThreadLocal<ReportPortal> REPORT_PORTAL_THREAD_LOCAL = new ThreadLocal<>();
-
-		public TestListener() {
-			super(new TestNGService(REPORT_PORTAL_THREAD_LOCAL.get()));
-		}
-
-		public static void initReportPortal(ReportPortal reportPortal) {
-			REPORT_PORTAL_THREAD_LOCAL.set(reportPortal);
-		}
-	}
 
 	private final String suitedUuid = namedUuid("suite");
 	private final String testClassUuid = namedUuid("class");
@@ -46,12 +36,12 @@ public class TestNameAndDescriptionTest {
 	public void initMocks() {
 		mockLaunch(client, namedUuid("launchUuid"), suitedUuid, testClassUuid, stepUuid);
 		ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
-		TestListener.initReportPortal(reportPortal);
+		TestNgListener.initReportPortal(reportPortal);
 	}
 
 	@Test
 	public void test_name_should_be_passed_to_rp_if_specified() {
-		runTests(Collections.singletonList(TestListener.class), AnnotationNamedClassTest.class);
+		runTests(Collections.singletonList(TestNgListener.class), AnnotationNamedClassTest.class);
 
 		verify(client, times(1)).startLaunch(any()); // Start launch
 		verify(client, times(1)).startTestItem(any());  // Start parent suites
@@ -67,7 +57,7 @@ public class TestNameAndDescriptionTest {
 
 	@Test
 	public void test_description_should_be_passed_to_rp_if_specified() {
-		runTests(Collections.singletonList(TestListener.class), DescriptionTest.class);
+		runTests(Collections.singletonList(TestNgListener.class), DescriptionTest.class);
 
 		verify(client, times(1)).startLaunch(any()); // Start launch
 		verify(client, times(1)).startTestItem(any());  // Start parent suites
@@ -82,7 +72,7 @@ public class TestNameAndDescriptionTest {
 
 	@Test
 	public void test_name_should_be_passed_to_rp_if_specified_parameterized_test() {
-		runTests(Collections.singletonList(TestListener.class), AnnotationNamedParameterizedClassTest.class);
+		runTests(Collections.singletonList(TestNgListener.class), AnnotationNamedParameterizedClassTest.class);
 
 		verify(client, times(1)).startLaunch(any()); // Start launch
 		verify(client, times(1)).startTestItem(any());  // Start parent suites

@@ -1,7 +1,6 @@
 package com.epam.reportportal.testng;
 
 import com.epam.reportportal.service.Launch;
-import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.testng.integration.feature.retry.BasicRetryTest;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -71,8 +70,6 @@ public class RetryTest {
 
 	@Mock
 	private Launch launch;
-	@Mock
-	private StepReporter reporter;
 
 	@BeforeEach
 	public void initMocks() {
@@ -89,7 +86,7 @@ public class RetryTest {
 				// RETRY 2
 				testUuidList.get(2), testUuidList.get(5), testUuidList.get(8), testUuidList.get(11)
 		);
-		mockLaunch(launch, reporter, createMaybe("launchUuid"), suitedUuid, testClassUuid, startMethodUuidOrder);
+		mockLaunch(launch, createMaybe("launchUuid"), suitedUuid, testClassUuid, startMethodUuidOrder);
 		RetryListener.initLaunch(launch);
 	}
 

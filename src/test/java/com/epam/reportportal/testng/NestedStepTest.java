@@ -2,6 +2,7 @@ package com.epam.reportportal.testng;
 
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.testng.integration.TestNgListener;
 import com.epam.reportportal.testng.integration.feature.nested.NestedStepFeatureFailedTest;
 import com.epam.reportportal.testng.integration.feature.nested.NestedStepFeaturePassedTest;
 import com.epam.reportportal.testng.integration.feature.nested.NestedStepMultiLevelTest;
@@ -33,18 +34,6 @@ public class NestedStepTest {
 	public static final String METHOD_WITH_INNER_METHOD_NAME_TEMPLATE = "I am method with inner method";
 	public static final String INNER_METHOD_NAME_TEMPLATE = "I am - {method}";
 
-	public static class TestListener extends BaseTestNGListener {
-		public static final ThreadLocal<ReportPortal> REPORT_PORTAL_THREAD_LOCAL = new ThreadLocal<>();
-
-		public TestListener() {
-			super(new TestNGService(REPORT_PORTAL_THREAD_LOCAL.get()));
-		}
-
-		public static void initReportPortal(ReportPortal reportPortal) {
-			REPORT_PORTAL_THREAD_LOCAL.set(reportPortal);
-		}
-	}
-
 	private final String testSuiteId = namedId("suite_");
 	private final String testClassId = namedId("class_");
 	private final String testMethodId = namedId("test_");
@@ -59,14 +48,14 @@ public class NestedStepTest {
 	@BeforeEach
 	public void initMocks() {
 		mockLaunch(client, "launchUuid", testSuiteId, testClassId, testMethodId);
-		TestListener.initReportPortal(ReportPortal.create(client, standardParameters()));
+		TestNgListener.initReportPortal(ReportPortal.create(client, standardParameters()));
 	}
 
 	@Test
 	public void nestedTest() {
 		mockNestedSteps(client, testStepIdOrder.get(0));
 
-		TestUtils.runTests(singletonList(TestListener.class), NestedStepFeaturePassedTest.class);
+		TestUtils.runTests(singletonList(TestNgListener.class), NestedStepFeaturePassedTest.class);
 
 		ArgumentCaptor<StartTestItemRQ> nestedStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		ArgumentCaptor<FinishTestItemRQ> finishNestedCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
@@ -89,7 +78,7 @@ public class NestedStepTest {
 	public void nestedInBeforeMethodTest() {
 		mockNestedSteps(client, testStepIdOrder.get(0));
 
-		TestUtils.runTests(singletonList(TestListener.class), NestedStepWithBeforeEachTest.class);
+		TestUtils.runTests(singletonList(TestNgListener.class), NestedStepWithBeforeEachTest.class);
 
 		ArgumentCaptor<StartTestItemRQ> nestedStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		ArgumentCaptor<FinishTestItemRQ> finishNestedCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
@@ -113,7 +102,7 @@ public class NestedStepTest {
 		mockNestedSteps(client, testStepIdOrder.get(0));
 
 		try {
-			TestUtils.runTests(singletonList(TestListener.class), NestedStepFeatureFailedTest.class);
+			TestUtils.runTests(singletonList(TestNgListener.class), NestedStepFeatureFailedTest.class);
 		} catch (Exception ex) {
 			//to prevent this test failing
 		}
@@ -139,7 +128,7 @@ public class NestedStepTest {
 	public void testWithMultiLevelNested() throws NoSuchMethodException {
 		mockNestedSteps(client, testStepIdOrder);
 
-		TestUtils.runTests(singletonList(TestListener.class), NestedStepMultiLevelTest.class);
+		TestUtils.runTests(singletonList(TestNgListener.class), NestedStepMultiLevelTest.class);
 
 		ArgumentCaptor<StartTestItemRQ> nestedStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		ArgumentCaptor<FinishTestItemRQ> finishNestedCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);

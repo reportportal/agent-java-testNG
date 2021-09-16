@@ -7,11 +7,11 @@ import com.epam.reportportal.testng.TestNGService;
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-public class ManualStepReportPortalListener extends BaseTestNGListener {
+public class TestNgListener extends BaseTestNGListener {
 
 	public static final ThreadLocal<ReportPortal> REPORT_PORTAL_THREAD_LOCAL = new ThreadLocal<>();
 
-	public ManualStepReportPortalListener() {
+	public TestNgListener() {
 		super(new TestNGService(REPORT_PORTAL_THREAD_LOCAL.get()));
 	}
 

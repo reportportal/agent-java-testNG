@@ -2,7 +2,6 @@ package com.epam.reportportal.testng;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
-import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.testng.integration.feature.attributes.ClassLevelAttributesTest;
 import com.epam.reportportal.testng.integration.util.TestUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -19,7 +18,8 @@ import java.util.Collections;
 import static com.epam.reportportal.testng.integration.util.TestUtils.extractRequest;
 import static com.epam.reportportal.testng.integration.util.TestUtils.standardParameters;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -45,15 +45,12 @@ public class AttributeTest {
 
 	@Mock
 	private Launch launch;
-	@Mock
-	private StepReporter stepReporter;
 
 	@BeforeEach
 	public void initMocks() {
 		when(launch.getParameters()).thenReturn(parameters);
 		when(launch.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
 		when(launch.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
-		when(launch.getStepReporter()).thenReturn(stepReporter);
 		TestReportPortalListener.initLaunch(launch);
 	}
 

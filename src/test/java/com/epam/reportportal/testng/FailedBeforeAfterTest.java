@@ -18,13 +18,10 @@ package com.epam.reportportal.testng;
 
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.service.Launch;
-import com.epam.reportportal.service.LaunchImpl;
-import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.testng.integration.feature.skipped.*;
 import com.epam.reportportal.testng.integration.util.TestUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
-import com.epam.ta.reportportal.ws.model.issue.Issue;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,19 +66,16 @@ public class FailedBeforeAfterTest {
 			createMaybe(namedUuid("after"))
 	);
 	private final List<String> finishUuidOrder = Stream.concat(testMethodUuidList.stream().map(Maybe::blockingGet),
-			Stream.of(testClassUuid.blockingGet(), suitedUuid.blockingGet())
-	)
+					Stream.of(testClassUuid.blockingGet(), suitedUuid.blockingGet())
+			)
 			.collect(Collectors.toList());
 
 	@Mock
 	private Launch launch;
-	@Mock
-	private StepReporter reporter;
 
 	@BeforeEach
 	public void setupMock() {
 		mockLaunch(launch,
-				reporter,
 				createMaybe("launchUuid"),
 				suitedUuid,
 				testClassUuid,

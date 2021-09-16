@@ -281,7 +281,8 @@ public class TestNGService implements ITestNGService {
 	 * @param type       Type of method
 	 * @return Request to ReportPortal
 	 */
-	protected StartTestItemRQ buildStartConfigurationRq(ITestResult testResult, TestMethodType type) {
+	@Nonnull
+	protected StartTestItemRQ buildStartConfigurationRq(@Nonnull ITestResult testResult, @Nullable TestMethodType type) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setName(createConfigurationName(testResult));
 		rq.setCodeRef(testResult.getMethod().getQualifiedName());
@@ -316,6 +317,7 @@ public class TestNGService implements ITestNGService {
 	 * @param type       method type
 	 * @return Request to ReportPortal
 	 */
+	@Nonnull
 	protected StartTestItemRQ buildStartStepRq(final @Nonnull ITestResult testResult, final @Nonnull TestMethodType type) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setName(createStepName(testResult));
@@ -341,6 +343,7 @@ public class TestNGService implements ITestNGService {
 	 * @param testResult TestNG's testResult context
 	 * @return Request to ReportPortal
 	 */
+	@Nonnull
 	protected StartTestItemRQ buildStartStepRq(final @Nonnull ITestResult testResult) {
 		TestMethodType methodType = ofNullable(TestMethodType.getStepType(testResult.getMethod())).orElse(TestMethodType.STEP);
 		testResult.setAttribute(RP_METHOD_TYPE, methodType);
@@ -473,7 +476,6 @@ public class TestNGService implements ITestNGService {
 			createSkippedSteps(testResult);
 		}
 
-		launch.get().getStepReporter().finishPreviousStep();
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
 
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
@@ -543,7 +545,8 @@ public class TestNGService implements ITestNGService {
 	 * @param testContext TestNG test context
 	 * @return Request to ReportPortal
 	 */
-	protected StartTestItemRQ buildStartTestItemRq(ITestContext testContext) {
+	@Nonnull
+	protected StartTestItemRQ buildStartTestItemRq(@Nonnull ITestContext testContext) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		XmlTest currentXmlTest = testContext.getCurrentXmlTest();
 		if (currentXmlTest != null) {
