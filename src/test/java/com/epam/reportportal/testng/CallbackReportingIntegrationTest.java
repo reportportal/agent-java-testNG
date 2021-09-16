@@ -32,6 +32,7 @@ public class CallbackReportingIntegrationTest {
 	private final String testMethodUuid = UUID.randomUUID().toString();
 
 	@BeforeEach
+	@SuppressWarnings("unchecked")
 	public void initMocks() {
 		ReportPortalClient reportPortalClient = mock(ReportPortalClient.class);
 

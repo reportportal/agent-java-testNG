@@ -50,15 +50,12 @@ public class TestCaseIdTest {
 	private Launch launch;
 	@Mock
 	private ListenerParameters parameters;
-	@Mock
-	private StepReporter stepReporter;
 
 	@BeforeEach
 	public void initMocks() {
 		when(launch.getParameters()).thenReturn(parameters);
 		when(launch.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
 		when(launch.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
-		when(launch.getStepReporter()).thenReturn(stepReporter);
 		TestReportPortalListener.initLaunch(launch);
 		when(parameters.isCallbackReportingEnabled()).thenReturn(Boolean.TRUE);
 	}
