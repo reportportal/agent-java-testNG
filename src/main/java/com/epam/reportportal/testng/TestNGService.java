@@ -550,18 +550,11 @@ public class TestNGService implements ITestNGService {
 	@Nonnull
 	protected StartTestItemRQ buildStartTestItemRq(@Nonnull ITestContext testContext) {
 		StartTestItemRQ rq = new StartTestItemRQ();
-		XmlTest currentXmlTest = testContext.getCurrentXmlTest();
-		if (currentXmlTest != null) {
-			List<XmlClass> xmlClasses = currentXmlTest.getXmlClasses();
-			if (xmlClasses != null) {
-				XmlClass xmlClass = xmlClasses.get(0);
-				if (xmlClass != null) {
-					rq.setCodeRef(xmlClass.getName());
-					ofNullable(xmlClass.getSupportClass()).map(c -> c.getAnnotation(Attributes.class))
-							.ifPresent(a -> rq.setAttributes(AttributeParser.retrieveAttributes(a)));
-				}
-			}
-		}
+		ofNullable(testContext.getCurrentXmlTest()).map(XmlTest::getXmlClasses).map(classes -> classes.get(0)).ifPresent(xmlClass -> {
+			rq.setCodeRef(xmlClass.getName());
+			ofNullable(xmlClass.getSupportClass()).map(c -> c.getAnnotation(Attributes.class))
+					.ifPresent(a -> rq.setAttributes(AttributeParser.retrieveAttributes(a)));
+		});
 		rq.setName(testContext.getName());
 		rq.setStartTime(testContext.getStartDate());
 		rq.setType("TEST");

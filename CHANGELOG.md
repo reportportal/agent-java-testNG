@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- `buildStartTestItemRq` method refactoring
 
 ## [5.1.0]
 ### Changed
