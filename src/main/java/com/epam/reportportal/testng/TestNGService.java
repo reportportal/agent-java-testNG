@@ -362,7 +362,7 @@ public class TestNGService implements ITestNGService {
 	}
 
 	@Override
-	public void startTestMethod(ITestResult testResult) {
+	public void startTestMethod(@Nonnull ITestResult testResult) {
 		StartTestItemRQ rq = buildStartStepRq(testResult);
 		if (Boolean.TRUE == rq.isRetry()) {
 			testResult.setAttribute(RP_RETRY, Boolean.TRUE);
@@ -383,7 +383,8 @@ public class TestNGService implements ITestNGService {
 	 * @param testResult TestNG's testResult context
 	 * @return Request to ReportPortal
 	 */
-	protected FinishTestItemRQ buildFinishTestMethodRq(ItemStatus status, ITestResult testResult) {
+	@Nonnull
+	protected FinishTestItemRQ buildFinishTestMethodRq(@Nonnull ItemStatus status, @Nonnull ITestResult testResult) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(new Date(testResult.getEndMillis()));
 		rq.setStatus(status.name());
@@ -397,7 +398,8 @@ public class TestNGService implements ITestNGService {
 	 * @deprecated use {@link #buildFinishTestMethodRq(ItemStatus, ITestResult)}
 	 */
 	@Deprecated
-	protected FinishTestItemRQ buildFinishTestMethodRq(String status, ITestResult testResult) {
+	@Nonnull
+	protected FinishTestItemRQ buildFinishTestMethodRq(@Nonnull String status, @Nonnull ITestResult testResult) {
 		return buildFinishTestMethodRq(ItemStatus.valueOf(status), testResult);
 	}
 
