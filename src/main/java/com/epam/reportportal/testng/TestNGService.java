@@ -132,8 +132,8 @@ public class TestNGService implements ITestNGService {
 	/**
 	 * Return current instance of {@link ReportPortal} class
 	 *
-	 * @deprecated use <code>Launch.currentLaunch().getClient()</code>
 	 * @return ReportPortal instance
+	 * @deprecated use <code>Launch.currentLaunch().getClient()</code>
 	 */
 	@Deprecated
 	public static ReportPortal getReportPortal() {
@@ -143,8 +143,8 @@ public class TestNGService implements ITestNGService {
 	/**
 	 * Set current instance of {@link ReportPortal} class
 	 *
-	 * @deprecated use {@link TestNGService#TestNGService(com.epam.reportportal.service.ReportPortal)}
 	 * @param reportPortal class instance
+	 * @deprecated use {@link TestNGService#TestNGService(com.epam.reportportal.service.ReportPortal)}
 	 */
 	@Deprecated
 	protected static void setReportPortal(ReportPortal reportPortal) {
@@ -550,11 +550,15 @@ public class TestNGService implements ITestNGService {
 	@Nonnull
 	protected StartTestItemRQ buildStartTestItemRq(@Nonnull ITestContext testContext) {
 		StartTestItemRQ rq = new StartTestItemRQ();
-		ofNullable(testContext.getCurrentXmlTest()).map(XmlTest::getXmlClasses).map(classes -> classes.get(0)).ifPresent(xmlClass -> {
-			rq.setCodeRef(xmlClass.getName());
+		Set<ItemAttributesRQ> attributes = rq.getAttributes() == null ? new HashSet<>() : new HashSet<>(rq.getAttributes());
+		rq.setAttributes(attributes);
+		ofNullable(testContext.getCurrentXmlTest()).map(XmlTest::getXmlClasses).ifPresent(xmlClasses -> xmlClasses.forEach(xmlClass -> {
+			String className = xmlClass.getName();
+			String codeRef = rq.getCodeRef();
+			rq.setCodeRef(codeRef == null ? className : codeRef + ";" + className);
 			ofNullable(xmlClass.getSupportClass()).map(c -> c.getAnnotation(Attributes.class))
-					.ifPresent(a -> rq.setAttributes(AttributeParser.retrieveAttributes(a)));
-		});
+					.ifPresent(a -> attributes.addAll(AttributeParser.retrieveAttributes(a)));
+		}));
 		rq.setName(testContext.getName());
 		rq.setStartTime(testContext.getStartDate());
 		rq.setType("TEST");
@@ -641,22 +645,21 @@ public class TestNGService implements ITestNGService {
 	 * @param testResult TestNG's testResult context
 	 * @return Step Parameters being sent to Report Portal
 	 */
-	private List<ParameterResource> createAnnotationParameters(ITestResult testResult) {
-		Parameters parametersAnnotation = getMethodAnnotation(Parameters.class, testResult);
-		if (parametersAnnotation == null) {
-			return Collections.emptyList();
-		}
-		String[] keys = parametersAnnotation.value();
-		Object[] parameters = testResult.getParameters();
-		if (parameters.length != keys.length || keys.length <= 0) {
-			return Collections.emptyList();
-		}
-		return IntStream.range(0, keys.length).mapToObj(i -> {
-			ParameterResource parameter = new ParameterResource();
-			parameter.setKey(keys[i]);
-			parameter.setValue(parameters[i] == null ? NULL_VALUE : parameters[i].toString());
-			return parameter;
-		}).collect(toList());
+	@Nonnull
+	private List<ParameterResource> createAnnotationParameters(@Nonnull ITestResult testResult) {
+		return getMethodAnnotation(Parameters.class, testResult).map(a -> {
+			String[] keys = a.value();
+			Object[] parameters = testResult.getParameters();
+			if (parameters.length != keys.length || keys.length <= 0) {
+				return Collections.<ParameterResource>emptyList();
+			}
+			return IntStream.range(0, keys.length).mapToObj(i -> {
+				ParameterResource parameter = new ParameterResource();
+				parameter.setKey(keys[i]);
+				parameter.setValue(parameters[i] == null ? NULL_VALUE : parameters[i].toString());
+				return parameter;
+			}).collect(toList());
+		}).orElse(Collections.emptyList());
 	}
 
 	/**
@@ -667,15 +670,16 @@ public class TestNGService implements ITestNGService {
 	 * @param testResult TestNG's testResult context
 	 * @return Step Parameters being sent to ReportPortal
 	 */
-	private List<ParameterResource> createDataProviderParameters(ITestResult testResult) {
-		Test testAnnotation = getMethodAnnotation(Test.class, testResult);
-		Method method = getMethod(testResult);
-		Object[] parameters = testResult.getParameters();
-		if (method == null || testAnnotation == null || isBlank(testAnnotation.dataProvider()) || parameters == null
-				|| parameters.length <= 0) {
-			return Collections.emptyList();
-		}
-		return ParameterUtils.getParameters(method, Arrays.asList(parameters));
+	@Nonnull
+	private List<ParameterResource> createDataProviderParameters(@Nonnull ITestResult testResult) {
+		return getMethodAnnotation(Test.class, testResult).map(a -> {
+			Method method = getMethod(testResult);
+			Object[] parameters = testResult.getParameters();
+			if (method == null || isBlank(a.dataProvider()) || parameters == null || parameters.length <= 0) {
+				return Collections.<ParameterResource>emptyList();
+			}
+			return ParameterUtils.getParameters(method, Arrays.asList(parameters));
+		}).orElse(Collections.emptyList());
 	}
 
 	private List<ParameterResource> crateFactoryParameters(ITestResult testResult) {
@@ -790,29 +794,26 @@ public class TestNGService implements ITestNGService {
 	 * @param testResult Where to find
 	 * @return test item ID or null
 	 */
-	private String extractUniqueID(ITestResult testResult) {
-		UniqueID itemUniqueID = getMethodAnnotation(UniqueID.class, testResult);
-		return itemUniqueID != null ? itemUniqueID.value() : null;
+	@Nullable
+	private String extractUniqueID(@Nonnull ITestResult testResult) {
+		return getMethodAnnotation(UniqueID.class, testResult).map(UniqueID::value).orElse(null);
 	}
 
+	@Nullable
 	private TestCaseIdEntry getTestCaseId(@Nonnull String codeRef, @Nonnull ITestResult testResult) {
-		TestCaseId testCaseId = getMethodAnnotation(TestCaseId.class, testResult);
 		Method method = getMethod(testResult);
 		List<Object> parameters = ofNullable(testResult.getParameters()).map(Arrays::asList).orElse(null);
-		TestCaseIdEntry id = ofNullable(method).map(m -> TestCaseIdUtils.getTestCaseId(testCaseId, m, parameters))
+		TestCaseIdEntry id = getMethodAnnotation(TestCaseId.class,
+				testResult
+		).flatMap(a -> ofNullable(method).map(m -> TestCaseIdUtils.getTestCaseId(a, m, parameters)))
 				.orElse(TestCaseIdUtils.getTestCaseId(codeRef, parameters));
-		if (id == null) {
-			return null;
-		}
-		return id.getId().endsWith("[]") ? new TestCaseIdEntry(id.getId().substring(0, id.getId().length() - 2)) : id;
+
+		return id == null ? null : id.getId().endsWith("[]") ? new TestCaseIdEntry(id.getId().substring(0, id.getId().length() - 2)) : id;
 	}
 
-	protected Set<ItemAttributesRQ> createStepAttributes(ITestResult testResult) {
-		Attributes attributesAnnotation = getMethodAnnotation(Attributes.class, testResult);
-		if (attributesAnnotation != null) {
-			return AttributeParser.retrieveAttributes(attributesAnnotation);
-		}
-		return null;
+	@Nullable
+	protected Set<ItemAttributesRQ> createStepAttributes(@Nonnull ITestResult testResult) {
+		return getMethodAnnotation(Attributes.class, testResult).map(AttributeParser::retrieveAttributes).orElse(null);
 	}
 
 	@Nullable
@@ -831,12 +832,9 @@ public class TestNGService implements ITestNGService {
 	 * @param testResult Where to find
 	 * @return {@link Annotation} or null if doesn't exists
 	 */
-	private <T extends Annotation> T getMethodAnnotation(Class<T> annotation, ITestResult testResult) {
-		Method method = getMethod(testResult);
-		if (null != method) {
-			return method.getAnnotation(annotation);
-		}
-		return null;
+	@Nonnull
+	private <T extends Annotation> Optional<T> getMethodAnnotation(@Nonnull Class<T> annotation, @Nonnull ITestResult testResult) {
+		return ofNullable(getMethod(testResult)).map(m -> m.getAnnotation(annotation));
 	}
 
 	/**
