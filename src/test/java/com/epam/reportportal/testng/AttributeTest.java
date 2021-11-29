@@ -58,7 +58,7 @@ public class AttributeTest {
 	public void verify_class_level_attributes_bypass() {
 		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), ClassLevelAttributesTest.class);
 
-		verify(launch, times(1)).startTestItem(any());  // Start parent suite
+		verify(launch).startTestItem(any());  // Start parent suite
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(launch, times(2)).startTestItem(any(), captor.capture()); // Start test and step
