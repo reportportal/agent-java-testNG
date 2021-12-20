@@ -93,7 +93,7 @@ Add to `POM.xml`
 <dependency>
   <groupId>com.epam.reportportal</groupId>
   <artifactId>logger-java-log4j</artifactId>
-  <version>5.1.2</version>
+  <version>5.1.3</version>
 </dependency>
 ```
 
