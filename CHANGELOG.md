@@ -3,7 +3,8 @@
 ## [Unreleased]
 ### Changed
 - `buildStartTestItemRq` method refactoring
-- All class level attributes are reported on TestNG Tests now, not only for the first specified class as it was before. 
+- All class level attributes are reported on TestNG Tests now, not only for the first specified class as it was before.
+- Client version updated on [5.1.1](https://github.com/reportportal/client-java/releases/tag/5.1.1)
 
 ## [5.1.0]
 ### Changed
