@@ -59,11 +59,11 @@ public class FailedBeforeAfterTest {
 		}
 	}
 
-	private final Maybe<String> suitedUuid = createMaybe(namedUuid("suite"));
-	private final Maybe<String> testClassUuid = createMaybe(namedUuid("class"));
-	private final List<Maybe<String>> testMethodUuidList = Arrays.asList(createMaybe(namedUuid("before")),
-			createMaybe(namedUuid("test")),
-			createMaybe(namedUuid("after"))
+	private final Maybe<String> suitedUuid = Maybe.just(namedUuid("suite"));
+	private final Maybe<String> testClassUuid = Maybe.just(namedUuid("class"));
+	private final List<Maybe<String>> testMethodUuidList = Arrays.asList(Maybe.just(namedUuid("before")),
+			Maybe.just(namedUuid("test")),
+			Maybe.just(namedUuid("after"))
 	);
 	private final List<String> finishUuidOrder = Stream.concat(testMethodUuidList.stream().map(Maybe::blockingGet),
 					Stream.of(testClassUuid.blockingGet(), suitedUuid.blockingGet())
@@ -76,7 +76,7 @@ public class FailedBeforeAfterTest {
 	@BeforeEach
 	public void setupMock() {
 		mockLaunch(launch,
-				createMaybe("launchUuid"),
+				Maybe.just("launchUuid"),
 				suitedUuid,
 				testClassUuid,
 				Stream.concat(testMethodUuidList.stream(), Stream.concat(testMethodUuidList.stream(), testMethodUuidList.stream()))

@@ -36,22 +36,22 @@ public class CallbackReportingIntegrationTest {
 	public void initMocks() {
 		ReportPortalClient reportPortalClient = mock(ReportPortalClient.class);
 
-		when(reportPortalClient.startLaunch(any())).thenReturn(TestUtils.createMaybe(new StartLaunchRS("launchUuid", 1L)));
+		when(reportPortalClient.startLaunch(any())).thenReturn(Maybe.just(new StartLaunchRS("launchUuid", 1L)));
 
-		Maybe<ItemCreatedRS> suiteMaybe = TestUtils.createMaybe(new ItemCreatedRS(suitedUuid, suitedUuid));
+		Maybe<ItemCreatedRS> suiteMaybe = Maybe.just(new ItemCreatedRS(suitedUuid, suitedUuid));
 		when(reportPortalClient.startTestItem(any())).thenReturn(suiteMaybe);
 
-		Maybe<ItemCreatedRS> testClassMaybe = TestUtils.createMaybe(new ItemCreatedRS(testClassUuid, testClassUuid));
+		Maybe<ItemCreatedRS> testClassMaybe = Maybe.just(new ItemCreatedRS(testClassUuid, testClassUuid));
 		when(reportPortalClient.startTestItem(eq(suiteMaybe.blockingGet().getId()), any())).thenReturn(testClassMaybe);
 
-		Maybe<ItemCreatedRS> testMethodMaybe = TestUtils.createMaybe(new ItemCreatedRS(testMethodUuid, testMethodUuid));
+		Maybe<ItemCreatedRS> testMethodMaybe = Maybe.just(new ItemCreatedRS(testMethodUuid, testMethodUuid));
 		when(reportPortalClient.startTestItem(eq(testClassMaybe.blockingGet().getId()), any())).thenReturn(testMethodMaybe);
 
-		Maybe<OperationCompletionRS> finishResponse = TestUtils.createMaybe(new OperationCompletionRS("finished"));
+		Maybe<OperationCompletionRS> finishResponse = Maybe.just(new OperationCompletionRS("finished"));
 		when(reportPortalClient.finishTestItem(eq(testMethodUuid), any())).thenReturn(finishResponse);
 
-		when(reportPortalClient.log(any(List.class))).thenReturn(TestUtils.createMaybe(new BatchSaveOperatingRS()));
-		when(reportPortalClient.log(any(SaveLogRQ.class))).thenReturn(TestUtils.createMaybe(new EntryCreatedAsyncRS("logId")));
+		when(reportPortalClient.log(any(List.class))).thenReturn(Maybe.just(new BatchSaveOperatingRS()));
+		when(reportPortalClient.log(any(SaveLogRQ.class))).thenReturn(Maybe.just(new EntryCreatedAsyncRS("logId")));
 
 		ListenerParameters params = standardParameters();
 		params.setCallbackReportingEnabled(true);
