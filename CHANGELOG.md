@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Support of TestNG version 7.5
 ### Changed
 - `buildStartTestItemRq` method refactoring
 - All class level attributes are reported on TestNG Tests now, not only for the first specified class as it was before.
