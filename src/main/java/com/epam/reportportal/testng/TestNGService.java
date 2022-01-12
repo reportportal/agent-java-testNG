@@ -59,6 +59,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
 import static java.util.Optional.ofNullable;
@@ -73,7 +74,11 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 public class TestNGService implements ITestNGService {
 
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
-	private static final Predicate<StackTraceElement> IS_RETRY_ELEMENT = e -> "org.testng.internal.TestInvoker".equals(e.getClassName())
+	private static final Set<String> TESTNG_INVOKERS = Stream.of(
+			"org.testng.internal.TestInvoker",
+			"org.testng.internal.invokers.TestInvoker"
+	).collect(Collectors.toSet());
+	private static final Predicate<StackTraceElement> IS_RETRY_ELEMENT = e -> TESTNG_INVOKERS.contains(e.getClassName())
 			&& "retryFailed".equals(e.getMethodName());
 	private static final Predicate<StackTraceElement[]> IS_RETRY = eList -> Arrays.stream(eList).anyMatch(IS_RETRY_ELEMENT);
 	private static final int MAXIMUM_HISTORY_SIZE = 1000;
