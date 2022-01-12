@@ -6,8 +6,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
 
-@Attributes(attributes = { @Attribute(key = "myKey", value = "myValue") })
+@Attributes(attributes = { @Attribute(key = ClassLevelAttributesTest.KEY, value = ClassLevelAttributesTest.VALUE) })
 public class ClassLevelAttributesTest {
+	public static final String KEY = "attribute_test_key";
+	public static final String VALUE = "attribute_test_value";
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(ClassLevelAttributesTest.class);
 
 	@Test

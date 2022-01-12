@@ -1,6 +1,14 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Support of TestNG version 7.5
+### Changed
+- `buildStartTestItemRq` method refactoring
+- All class level attributes are reported on TestNG Tests now, not only for the first specified class as it was before.
+- Client version updated on [5.1.4](https://github.com/reportportal/client-java/releases/tag/5.1.4)
+- Slf4j version updated on 1.7.32 to support newer versions of Logback with security fixes
+- TestNG version updated on 7.5
 
 ## [5.1.0]
 ### Changed

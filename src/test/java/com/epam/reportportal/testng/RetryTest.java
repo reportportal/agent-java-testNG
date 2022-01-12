@@ -40,14 +40,14 @@ public class RetryTest {
 		}
 	}
 
-	private final Maybe<String> suitedUuid = createMaybe(namedUuid("suite"));
-	private final Maybe<String> testClassUuid = createMaybe(namedUuid("class"));
+	private final Maybe<String> suitedUuid = Maybe.just(namedUuid("suite"));
+	private final Maybe<String> testClassUuid = Maybe.just(namedUuid("class"));
 	private final List<Maybe<String>> testUuidList = Stream.concat(Stream.concat(
-			Stream.generate(() -> createMaybe(namedUuid("before1"))).limit(3),
-			Stream.generate(() -> createMaybe(namedUuid("before2"))).limit(3)
+			Stream.generate(() -> Maybe.just(namedUuid("before1"))).limit(3),
+			Stream.generate(() -> Maybe.just(namedUuid("before2"))).limit(3)
 	), Stream.concat(
-			Stream.generate(() -> createMaybe(namedUuid("test"))).limit(3),
-			Stream.generate(() -> createMaybe(namedUuid("after"))).limit(3)
+			Stream.generate(() -> Maybe.just(namedUuid("test"))).limit(3),
+			Stream.generate(() -> Maybe.just(namedUuid("after"))).limit(3)
 	)).collect(Collectors.toList());
 
 	private final List<String> finishMethodUuidOrder = Stream.of(
@@ -86,7 +86,7 @@ public class RetryTest {
 				// RETRY 2
 				testUuidList.get(2), testUuidList.get(5), testUuidList.get(8), testUuidList.get(11)
 		);
-		mockLaunch(launch, createMaybe("launchUuid"), suitedUuid, testClassUuid, startMethodUuidOrder);
+		mockLaunch(launch, Maybe.just("launchUuid"), suitedUuid, testClassUuid, startMethodUuidOrder);
 		RetryListener.initLaunch(launch);
 	}
 

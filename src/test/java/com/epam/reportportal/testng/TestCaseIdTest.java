@@ -2,9 +2,9 @@ package com.epam.reportportal.testng;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
-import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.testng.integration.feature.testcaseid.*;
 import com.epam.reportportal.testng.integration.util.TestUtils;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,8 +54,8 @@ public class TestCaseIdTest {
 	@BeforeEach
 	public void initMocks() {
 		when(launch.getParameters()).thenReturn(parameters);
-		when(launch.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
-		when(launch.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
+		when(launch.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
+		when(launch.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
 		TestReportPortalListener.initLaunch(launch);
 		when(parameters.isCallbackReportingEnabled()).thenReturn(Boolean.TRUE);
 	}
@@ -137,8 +137,7 @@ public class TestCaseIdTest {
 
 	@Test
 	public void verify_test_case_id_parameterized_no_marked_parameters() {
-		TestUtils.runTests(
-				Collections.singletonList(TestReportPortalListener.class),
+		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class),
 				TestCaseIdFromAnnotationValueParametrizedNoParam.class
 		);
 

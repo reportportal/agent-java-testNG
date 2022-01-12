@@ -4,6 +4,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.testng.integration.feature.attributes.ClassLevelAttributesTest;
 import com.epam.reportportal.testng.integration.util.TestUtils;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import io.reactivex.Maybe;
@@ -49,8 +50,8 @@ public class AttributeTest {
 	@BeforeEach
 	public void initMocks() {
 		when(launch.getParameters()).thenReturn(parameters);
-		when(launch.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
-		when(launch.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> TestUtils.createMaybeUuid());
+		when(launch.startTestItem(any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
+		when(launch.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
 		TestReportPortalListener.initLaunch(launch);
 	}
 
@@ -58,7 +59,7 @@ public class AttributeTest {
 	public void verify_class_level_attributes_bypass() {
 		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), ClassLevelAttributesTest.class);
 
-		verify(launch, times(1)).startTestItem(any());  // Start parent suite
+		verify(launch).startTestItem(any());  // Start parent suite
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(launch, times(2)).startTestItem(any(), captor.capture()); // Start test and step
@@ -67,7 +68,7 @@ public class AttributeTest {
 
 		assertThat(testRequest.getAttributes(), hasSize(1));
 		ItemAttributesRQ attribute = testRequest.getAttributes().iterator().next();
-		assertThat(attribute.getKey(), equalTo("myKey"));
-		assertThat(attribute.getValue(), equalTo("myValue"));
+		assertThat(attribute.getKey(), equalTo(ClassLevelAttributesTest.KEY));
+		assertThat(attribute.getValue(), equalTo(ClassLevelAttributesTest.VALUE));
 	}
 }
