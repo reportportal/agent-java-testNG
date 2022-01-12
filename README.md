@@ -82,7 +82,7 @@ Add to `POM.xml`
 <dependency>
   <groupId>com.epam.reportportal</groupId>
   <artifactId>agent-java-testng</artifactId>
-  <version>5.1.0</version>
+  <version>5.1.1</version>
 </dependency>
 <!-- TODO Leave only one dependency, depends on what logger you use: -->
 <dependency>
