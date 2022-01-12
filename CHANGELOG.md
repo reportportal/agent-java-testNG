@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.1]
 ### Added
 - Support of TestNG version 7.5
 ### Changed
