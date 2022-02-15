@@ -13,6 +13,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -152,5 +153,25 @@ public class TestCaseIdTest {
 
 		assertThat(testRequest.getName(), equalTo(TestUtils.TEST_NAME));
 		assertThat(actualTestCaseIds, containsInAnyOrder("[one,1]", "[two,2]", "[three,3]"));
+	}
+
+	@Test
+	public void verify_test_case_id_not_parameterized_no_marked_parameters() {
+		String testCaseId = TestCaseIdFromAnnotationValueNotParametrizedNoParam.TEST_CASE_ID;
+		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class),
+				TestCaseIdFromAnnotationValueNotParametrizedNoParam.class
+		);
+
+		verify(launch, times(1)).startTestItem(any());  // Start parent suites
+
+		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(launch, times(4)).startTestItem(any(), captor.capture()); // Start test and step
+
+		StartTestItemRQ testRequest = extractRequest(captor, "test");
+		List<StartTestItemRQ> stepRequests = extractRequests(captor, "step");
+		List<String> actualTestCaseIds = stepRequests.stream().map(StartTestItemRQ::getTestCaseId).collect(Collectors.toList());
+
+		assertThat(testRequest.getName(), equalTo(TestUtils.TEST_NAME));
+		assertThat(actualTestCaseIds, containsInAnyOrder(testCaseId, testCaseId, testCaseId));
 	}
 }
