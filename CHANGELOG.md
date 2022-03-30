@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 ### Changed
-- Client version updated on [5.1.4](https://github.com/reportportal/client-java/releases/tag/5.1.4)
+- Client version updated on [5.1.7](https://github.com/reportportal/client-java/releases/tag/5.1.7)
 
 ## [5.1.1]
 ### Added
