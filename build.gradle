@@ -39,12 +39,12 @@ repositories {
 }
 
 dependencies {
-    api 'com.epam.reportportal:client-java:5.1.4'
+    api 'com.epam.reportportal:client-java:5.1.5'
     api 'com.google.code.findbugs:jsr305:3.0.2'
     api 'com.epam.reportportal:commons-model:5.0.0'
     api 'org.testng:testng:7.5' // 7.5 - the last version which supports Java 1.8
 
-    implementation 'org.slf4j:slf4j-api:1.7.32'
+    implementation 'org.slf4j:slf4j-api:1.7.36'
 
     testImplementation('com.github.reportportal:agent-java-test-utils:236a68c')
 
