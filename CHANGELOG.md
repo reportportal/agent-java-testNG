@@ -1,8 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Test Case ID templating, by @HardNorth
 ### Changed
-- Client version updated on [5.1.7](https://github.com/reportportal/client-java/releases/tag/5.1.7)
+- Client version updated on [5.1.9](https://github.com/reportportal/client-java/releases/tag/5.1.9), by @HardNorth
+- Slf4j version updated on 1.7.36, by @HardNorth
 
 ## [5.1.1]
 ### Added
