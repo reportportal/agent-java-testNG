@@ -39,12 +39,12 @@ repositories {
 }
 
 dependencies {
-    api 'com.epam.reportportal:client-java:5.1.4'
+    api 'com.epam.reportportal:client-java:5.1.9'
     api 'com.google.code.findbugs:jsr305:3.0.2'
     api 'com.epam.reportportal:commons-model:5.0.0'
     api 'org.testng:testng:7.5' // 7.5 - the last version which supports Java 1.8
 
-    implementation 'org.slf4j:slf4j-api:1.7.32'
+    implementation 'org.slf4j:slf4j-api:1.7.36'
 
     testImplementation('com.github.reportportal:agent-java-test-utils:236a68c')
 
@@ -54,12 +54,12 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter-params:${junit5_version}"
     testImplementation "org.junit.jupiter:junit-jupiter-engine:${junit5_version}"
 
-    testImplementation "org.aspectj:aspectjweaver:1.9.2"
+    testImplementation 'org.aspectj:aspectjweaver:1.9.2'
 
     testImplementation 'org.hamcrest:hamcrest-core:2.2'
     testImplementation "org.mockito:mockito-core:${mockito_version}"
     testImplementation "org.mockito:mockito-junit-jupiter:${mockito_version}"
-    testImplementation 'ch.qos.logback:logback-classic:1.2.10'
+    testImplementation 'ch.qos.logback:logback-classic:1.2.11'
 
     testImplementation 'com.epam.reportportal:logger-java-logback:5.1.1'
 
@@ -71,13 +71,13 @@ dependencies {
 test {
     useJUnitPlatform()
     outputs.upToDateWhen { false }
-    exclude("com/epam/reportportal/testng/integration/feature/**")
+    exclude('com/epam/reportportal/testng/integration/feature/**')
     maxParallelForks(5) // it's forks - separate JVMs, should not interfere each other
     doFirst {
-        def weaver = configurations.testRuntimeClasspath.find { it.name.contains("aspectjweaver") }
+        def weaver = configurations.testRuntimeClasspath.find { it.name.contains('aspectjweaver') }
         jvmArgs += "-javaagent:$weaver"
     }
-    environment "AGENT_NO_ANALYTICS", "1"
+    environment 'AGENT_NO_ANALYTICS', '1'
 }
 
 wrapper {

@@ -1,5 +1,6 @@
 package com.epam.reportportal.testng;
 
+import com.epam.reportportal.listeners.ItemType;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.testng.integration.feature.testcaseid.*;
@@ -21,8 +22,8 @@ import java.util.stream.Stream;
 import static com.epam.reportportal.testng.integration.util.TestUtils.extractRequest;
 import static com.epam.reportportal.testng.integration.util.TestUtils.extractRequests;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
 /**
@@ -152,5 +153,44 @@ public class TestCaseIdTest {
 
 		assertThat(testRequest.getName(), equalTo(TestUtils.TEST_NAME));
 		assertThat(actualTestCaseIds, containsInAnyOrder("[one,1]", "[two,2]", "[three,3]"));
+	}
+
+	@Test
+	public void verify_test_case_id_not_parameterized_no_marked_parameters() {
+		String testCaseId = TestCaseIdFromAnnotationValueNotParametrizedNoParam.TEST_CASE_ID;
+		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class),
+				TestCaseIdFromAnnotationValueNotParametrizedNoParam.class
+		);
+
+		verify(launch, times(1)).startTestItem(any());  // Start parent suites
+
+		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(launch, times(4)).startTestItem(any(), captor.capture()); // Start test and step
+
+		StartTestItemRQ testRequest = extractRequest(captor, "test");
+		List<StartTestItemRQ> stepRequests = extractRequests(captor, "step");
+		List<String> actualTestCaseIds = stepRequests.stream().map(StartTestItemRQ::getTestCaseId).collect(Collectors.toList());
+
+		assertThat(testRequest.getName(), equalTo(TestUtils.TEST_NAME));
+		assertThat(actualTestCaseIds, containsInAnyOrder(testCaseId, testCaseId, testCaseId));
+	}
+
+	@Test
+	void test_verify_test_case_id_supports_templating_with_self_reference() {
+		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class), TestCaseIdTemplateTest.class);
+
+		verify(launch, times(1)).startTestItem(any()); // Start parent Suite
+
+		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(launch, times(2)).startTestItem(notNull(), captor.capture()); // Start a test
+
+		List<StartTestItemRQ> stepRequests = captor.getAllValues()
+				.stream()
+				.filter(rq -> ItemType.STEP.name().equals(rq.getType()))
+				.collect(Collectors.toList());
+		assertThat(stepRequests, hasSize(1));
+		assertThat(stepRequests.get(0).getTestCaseId(),
+				equalTo(TestCaseIdTemplateTest.TEST_CASE_ID_VALUE.replace("{this.FIELD}", TestCaseIdTemplateTest.FIELD))
+		);
 	}
 }

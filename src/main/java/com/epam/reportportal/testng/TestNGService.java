@@ -807,10 +807,11 @@ public class TestNGService implements ITestNGService {
 	@Nullable
 	private TestCaseIdEntry getTestCaseId(@Nonnull String codeRef, @Nonnull ITestResult testResult) {
 		Method method = getMethod(testResult);
+		Object instance = testResult.getInstance();
 		List<Object> parameters = ofNullable(testResult.getParameters()).map(Arrays::asList).orElse(null);
 		TestCaseIdEntry id = getMethodAnnotation(TestCaseId.class,
 				testResult
-		).flatMap(a -> ofNullable(method).map(m -> TestCaseIdUtils.getTestCaseId(a, m, parameters)))
+		).flatMap(a -> ofNullable(method).map(m -> TestCaseIdUtils.getTestCaseId(a, m, codeRef, parameters, instance)))
 				.orElse(TestCaseIdUtils.getTestCaseId(codeRef, parameters));
 
 		return id == null ? null : id.getId().endsWith("[]") ? new TestCaseIdEntry(id.getId().substring(0, id.getId().length() - 2)) : id;

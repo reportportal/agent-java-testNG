@@ -23,8 +23,7 @@ public class TestCaseIdFromCodeRefAndParams {
 	}
 
 	@DataProvider(name = "test-data-provider")
-	public Iterator<Object> params() {
-		return Arrays.asList((Object) "one", (Object) "two", (Object) "three").iterator();
+	public Iterator<Object[]> params() {
+		return Arrays.asList(new Object[] { "one" }, new Object[] { "two" }, new Object[] { "three" }).iterator();
 	}
-
 }
