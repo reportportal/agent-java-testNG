@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.2]
 ### Added
 - Test Case ID templating, by @HardNorth
 ### Changed
