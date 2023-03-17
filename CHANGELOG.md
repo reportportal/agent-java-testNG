@@ -4,7 +4,7 @@
 
 ## [5.1.3]
 ### Changed
-- Client version updated on [5.1.11](https://github.com/reportportal/client-java/releases/tag/5.1.11), by @HardNorth
+- Client version updated on [5.1.16](https://github.com/reportportal/client-java/releases/tag/5.1.16), by @HardNorth
 
 ## [5.1.2]
 ### Added

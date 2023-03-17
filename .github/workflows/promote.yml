@@ -32,12 +32,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
-      - name: Set up JDK 1.8
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
-
       - name: Get variables
         run: |
           echo "ARTIFACT=`echo ${{ github.repository }} | cut -d/ -f2- | awk '{print tolower($0)}'`" >> $GITHUB_ENV
@@ -60,7 +54,7 @@ jobs:
           jar -cvf ${BUNDLE_FILE} "${files[@]}"
 
           echo 'Bundle upload'
-          curl -u ${{ secrets.SONATYPE_USER }}:${{ secrets.SONATYPE_PASSWORD }} -L \
+          curl -f -u ${{ secrets.SONATYPE_USER }}:${{ secrets.SONATYPE_PASSWORD }} -L \
             --request POST '${{ env.UPSTREAM_REPOSITORY_URL }}/service/local/staging/bundle_upload' \
             --form "file=@${BUNDLE_FILE}" >response.json
 

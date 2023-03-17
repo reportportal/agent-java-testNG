@@ -10,7 +10,6 @@ import com.epam.reportportal.testng.TestNGService;
 import com.epam.reportportal.testng.integration.bug.RetryWithStepsAndDependentMethodTest;
 import com.epam.reportportal.testng.integration.util.TestUtils;
 import com.epam.reportportal.utils.MemoizingSupplier;
-import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -90,6 +89,7 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 	@BeforeEach
 	public void initMocks() {
 		mockLaunch(client, namedUuid("launchUuid"), suitedUuid, testClassUuid, testUuidList);
+		mockLogging(client);
 		TestUtils.mockNestedSteps(client, testStepUuidOrder);
 		ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
 		TestListener.initReportPortal(reportPortal);
@@ -134,7 +134,8 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 		List<FinishTestItemRQ> finishItems = finishItemCapture.getAllValues();
 		assertThat(finishItems.get(1).isRetry(), equalTo(Boolean.TRUE));
 		assertThat(finishItems.get(1).getStatus(), equalTo(ItemStatus.SKIPPED.name()));
-		assertThat(finishItems.get(1).getIssue(), sameInstance(Launch.NOT_ISSUE));
+		assertThat(finishItems.get(1).getIssue(), notNullValue());
+		assertThat(finishItems.get(1).getIssue().getIssueType(), equalTo(Launch.NOT_ISSUE.getIssueType()));
 
 		verifyPositiveFinish(finishUuidOrder.subList(0, 1), finishItems.subList(0, 1));
 		verifyPositiveFinish(finishUuidOrder.subList(2, finishUuidOrder.size()), finishItems.subList(2, finishItems.size()));
