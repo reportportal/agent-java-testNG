@@ -9,7 +9,6 @@ import com.epam.reportportal.testng.BaseTestNGListener;
 import com.epam.reportportal.testng.TestNGService;
 import com.epam.reportportal.testng.integration.bug.FailedRetriesAndTwoDependentMethodsTest;
 import com.epam.reportportal.utils.MemoizingSupplier;
-import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -79,6 +78,7 @@ public class TestWithFailedRetryAndDependentMethods {
 	@BeforeEach
 	public void initMocks() {
 		mockLaunch(client, namedUuid("launchUuid"), suitedUuid, testClassUuid, testUuidList);
+		mockLogging(client);
 		ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
 		TestListener.initReportPortal(reportPortal);
 	}
@@ -108,7 +108,8 @@ public class TestWithFailedRetryAndDependentMethods {
 		List<FinishTestItemRQ> finishItems = finishItemCapture.getAllValues();
 		assertThat(finishItems.get(0).isRetry(), equalTo(Boolean.TRUE));
 		assertThat(finishItems.get(0).getStatus(), equalTo(ItemStatus.SKIPPED.name()));
-		assertThat(finishItems.get(0).getIssue(), sameInstance(Launch.NOT_ISSUE));
+		assertThat(finishItems.get(0).getIssue(), notNullValue());
+		assertThat(finishItems.get(0).getIssue().getIssueType(), equalTo(Launch.NOT_ISSUE.getIssueType()));
 
 		assertThat(finishItems.get(1).isRetry(), nullValue());
 		assertThat(finishItems.get(1).getStatus(), equalTo(ItemStatus.FAILED.name()));
