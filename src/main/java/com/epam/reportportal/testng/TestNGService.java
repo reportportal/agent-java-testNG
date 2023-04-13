@@ -619,6 +619,7 @@ public class TestNGService implements ITestNGService {
 	 * @param suite TestNG's suite context
 	 * @return Request to ReportPortal
 	 */
+	@SuppressWarnings("unused")
 	protected FinishTestItemRQ buildFinishTestSuiteRq(ISuite suite) {
 		/* 'real' end time */
 		Date now = Calendar.getInstance().getTime();
