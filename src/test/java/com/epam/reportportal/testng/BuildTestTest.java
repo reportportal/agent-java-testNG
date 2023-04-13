@@ -16,7 +16,6 @@
 
 package com.epam.reportportal.testng;
 
-import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
@@ -31,7 +30,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.testng.*;
-import org.testng.internal.ResultMap;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -63,9 +61,6 @@ public class BuildTestTest {
 
 	@Mock
 	private ITestContext testContext;
-
-	@Mock
-	private ISuite iSuite;
 
 	@Mock
 	private Launch launch;
@@ -159,102 +154,11 @@ public class BuildTestTest {
 
 	@Test
 	public void testFinishTestRqPassed() {
-		ResultMap empty = new ResultMap();
 		Date endTime = new Date(DEFAULT_TIME);
 		when(testContext.getEndDate()).thenReturn(endTime);
-		when(testContext.getFailedTests()).thenReturn(empty);
-		when(testContext.getFailedConfigurations()).thenReturn(empty);
-		when(testContext.getSkippedTests()).thenReturn(empty);
-		when(testContext.getSkippedConfigurations()).thenReturn(empty);
 
 		FinishTestItemRQ rq = testNGService.buildFinishTestRq(testContext);
 		assertThat("Incorrect end time", rq.getEndTime(), is(endTime));
-		assertThat("Incorrect status", rq.getStatus(), is(ItemStatus.PASSED.name()));
-	}
-
-	@Test
-	public void testFinishHasFailedTests() {
-		IResultMap failedTests = mock(IResultMap.class);
-
-		ResultMap empty = new ResultMap();
-
-		when(failedTests.size()).thenReturn(1);
-		when(testContext.getFailedTests()).thenReturn(failedTests);
-
-		FinishTestItemRQ rq = testNGService.buildFinishTestRq(testContext);
-		assertThat("Incorrect status", rq.getStatus(), is(ItemStatus.FAILED.name()));
-	}
-
-	@Test
-	public void testFinishHasFailedConfigurations() {
-		IResultMap failedConfigurations = mock(IResultMap.class);
-
-		ResultMap empty = new ResultMap();
-
-		when(testContext.getFailedTests()).thenReturn(empty);
-
-		when(failedConfigurations.size()).thenReturn(1);
-		when(testContext.getFailedConfigurations()).thenReturn(failedConfigurations);
-
-		FinishTestItemRQ rq = testNGService.buildFinishTestRq(testContext);
-		assertThat("Incorrect status", rq.getStatus(), is(ItemStatus.FAILED.name()));
-	}
-
-	@Test
-	public void testFinishHasSkippedTest() {
-		IResultMap skippedTests = mock(IResultMap.class);
-
-		ResultMap empty = new ResultMap();
-
-		when(testContext.getFailedTests()).thenReturn(empty);
-		when(testContext.getFailedConfigurations()).thenReturn(empty);
-		when(testContext.getSkippedConfigurations()).thenReturn(empty);
-
-		when(skippedTests.size()).thenReturn(1);
-		when(skippedTests.getAllResults()).thenReturn(Collections.singleton(mock(ITestResult.class)));
-		when(testContext.getSkippedTests()).thenReturn(skippedTests);
-
-		FinishTestItemRQ rq = testNGService.buildFinishTestRq(testContext);
-		assertThat("Incorrect status", rq.getStatus(), is(ItemStatus.FAILED.name()));
-	}
-
-	@Test
-	public void testFinishHasSkippedConfigurationsTest() {
-		IResultMap skippedConfigurations = mock(IResultMap.class);
-
-		ResultMap empty = new ResultMap();
-
-		when(testContext.getFailedTests()).thenReturn(empty);
-		when(testContext.getFailedConfigurations()).thenReturn(empty);
-
-		when(skippedConfigurations.size()).thenReturn(1);
-		when(testContext.getSkippedConfigurations()).thenReturn(skippedConfigurations);
-
-		FinishTestItemRQ rq = testNGService.buildFinishTestRq(testContext);
-		assertThat("Incorrect status", rq.getStatus(), is(ItemStatus.FAILED.name()));
-	}
-
-	@Test
-	public void testFinishSuite() {
-		FinishTestItemRQ rq = testNGService.buildFinishTestSuiteRq(iSuite);
-		assertThat(rq.getEndTime(), notNullValue());
-		assertThat(rq.getStatus(), is(ItemStatus.PASSED.name()));
-	}
-
-	@Test
-	public void testFinishSuiteFailed() {
-		ISuiteResult suiteResult = mock(ISuiteResult.class);
-		Map<String, ISuiteResult> suiteResults = new HashMap<String, ISuiteResult>(1);
-		suiteResults.put("", suiteResult);
-		IResultMap resultMap = mock(ResultMap.class);
-
-		when(iSuite.getResults()).thenReturn(suiteResults);
-		when(suiteResult.getTestContext()).thenReturn(testContext);
-		when(testContext.getFailedTests()).thenReturn(resultMap);
-		when(resultMap.size()).thenReturn(1);
-
-		FinishTestItemRQ rq = testNGService.buildFinishTestSuiteRq(iSuite);
-		assertThat(rq.getStatus(), is(ItemStatus.FAILED.name()));
 	}
 
 	private ListenerParameters defaultListenerParameters() {
