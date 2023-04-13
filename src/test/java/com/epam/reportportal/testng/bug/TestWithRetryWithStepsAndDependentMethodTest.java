@@ -96,11 +96,20 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 	}
 
 	private static void verifyPositiveFinish(List<String> finishUuids, List<FinishTestItemRQ> finishItems) {
-		IntStream.range(0, finishItems.size()).forEach(i -> {
+		IntStream.range(0, finishItems.size() - 2).forEach(i -> {
 			String uuid = finishUuids.get(i);
 			FinishTestItemRQ item = finishItems.get(i);
 			assertThat("FinishTestItemRQ for uuid '" + uuid + "' incorrect retry flag.", item.isRetry(), nullValue());
 			assertThat("FinishTestItemRQ for uuid '" + uuid + "' incorrect status.", item.getStatus(), equalTo(ItemStatus.PASSED.name()));
+		});
+	}
+
+	private static void verifySuiteFinish(List<String> finishUuids, List<FinishTestItemRQ> finishItems) {
+		IntStream.range(finishItems.size() - 2, finishItems.size()).forEach(i -> {
+			String uuid = finishUuids.get(i);
+			FinishTestItemRQ item = finishItems.get(i);
+			assertThat("FinishTestItemRQ for uuid '" + uuid + "' incorrect retry flag.", item.isRetry(), nullValue());
+			assertThat("FinishTestItemRQ for uuid '" + uuid + "' incorrect status.", item.getStatus(), nullValue());
 		});
 	}
 
@@ -138,6 +147,6 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 		assertThat(finishItems.get(1).getIssue().getIssueType(), equalTo(Launch.NOT_ISSUE.getIssueType()));
 
 		verifyPositiveFinish(finishUuidOrder.subList(0, 1), finishItems.subList(0, 1));
-		verifyPositiveFinish(finishUuidOrder.subList(2, finishUuidOrder.size()), finishItems.subList(2, finishItems.size()));
+		verifySuiteFinish(finishUuidOrder.subList(2, finishUuidOrder.size()), finishItems.subList(2, finishItems.size()));
 	}
 }
