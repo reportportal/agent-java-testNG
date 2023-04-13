@@ -122,7 +122,7 @@ public class FailedBeforeAfterTest {
 		});
 
 		finishItems.subList(3, finishItems.size()).forEach(e -> {
-			assertThat(e.getStatus(), equalTo(ItemStatus.FAILED.name()));
+			assertThat(e.getStatus(), nullValue());
 			assertThat(e.getIssue(), nullValue());
 		});
 	}
@@ -163,7 +163,7 @@ public class FailedBeforeAfterTest {
 		});
 
 		finishItems.subList(3, finishItems.size()).forEach(e -> {
-			assertThat(e.getStatus(), equalTo(ItemStatus.FAILED.name()));
+			assertThat(e.getStatus(), nullValue());
 			assertThat(e.getIssue(), nullValue());
 		});
 	}
@@ -210,7 +210,7 @@ public class FailedBeforeAfterTest {
 		});
 
 		finishItems.subList(6, finishItems.size()).forEach(e -> {
-			assertThat(e.getStatus(), equalTo(ItemStatus.FAILED.name()));
+			assertThat(e.getStatus(), nullValue());
 			assertThat(e.getIssue(), nullValue());
 		});
 	}
@@ -252,7 +252,7 @@ public class FailedBeforeAfterTest {
 		});
 
 		finishItems.subList(3, finishItems.size()).forEach(e -> {
-			assertThat(e.getStatus(), equalTo(ItemStatus.FAILED.name()));
+			assertThat(e.getStatus(), nullValue());
 			assertThat(e.getIssue(), nullValue());
 		});
 	}

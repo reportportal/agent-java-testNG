@@ -1,12 +1,20 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Issue [#195](https://github.com/reportportal/agent-java-testNG/issues/195) Test is reported as interrupted when testng `SkipException` is thrown in the BeforeClass method, by @HardNorth
+### Changed
+- Client version updated on [5.1.17](https://github.com/reportportal/client-java/releases/tag/5.1.17), by @HardNorth
+### Removed
+- Suite status calculation, since it's server's deal since v5, by @HardNorth
 
 ## [5.1.4]
+### Changed
+- Client version updated on [5.1.16](https://github.com/reportportal/client-java/releases/tag/5.1.16), by @HardNorth
 
 ## [5.1.3]
 ### Changed
-- Client version updated on [5.1.16](https://github.com/reportportal/client-java/releases/tag/5.1.16), by @HardNorth
+- Client version updated on [5.1.15](https://github.com/reportportal/client-java/releases/tag/5.1.15), by @HardNorth
 
 ## [5.1.2]
 ### Added
