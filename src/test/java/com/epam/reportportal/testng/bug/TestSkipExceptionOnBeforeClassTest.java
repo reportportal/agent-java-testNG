@@ -126,13 +126,18 @@ public class TestSkipExceptionOnBeforeClassTest {
         List<FinishTestItemRQ> finishItems = finishItemCapture.getAllValues();
 
         FinishTestItemRQ beforeClassFinish = finishItems.get(0);
-        assertThat(beforeClassFinish.getStatus(), equalTo(ItemStatus.SKIPPED));
+        assertThat(beforeClassFinish.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
         assertThat(beforeClassFinish.getIssue(), nullValue());
 
-        finishItems.subList(1, finishItems.size()).forEach(finishTestItemRQ -> {
-            assertThat(finishTestItemRQ.getStatus(), equalTo(ItemStatus.SKIPPED));
+        finishItems.subList(1, finishItems.size() - 2).forEach(finishTestItemRQ -> {
+            assertThat(finishTestItemRQ.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
             assertThat(finishTestItemRQ.getIssue(), notNullValue());
             assertThat(finishTestItemRQ.getIssue().getIssueType(), equalTo(Launch.NOT_ISSUE.getIssueType()));
+        });
+
+        finishItems.subList(finishItems.size() - 2, finishItems.size()).forEach(finishTestItemRQ -> {
+            assertThat(finishTestItemRQ.getStatus(), nullValue());
+            assertThat(finishTestItemRQ.getIssue(), nullValue());
         });
     }
 }

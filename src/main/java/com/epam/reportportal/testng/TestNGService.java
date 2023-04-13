@@ -54,7 +54,6 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -72,7 +71,13 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
  * TestNG service implements operations for interaction report portal
  */
 public class TestNGService implements ITestNGService {
-
+	private static final Set<TestMethodType> BEFORE_METHODS = Stream.of(
+			TestMethodType.BEFORE_TEST,
+			TestMethodType.BEFORE_SUITE,
+			TestMethodType.BEFORE_GROUPS,
+			TestMethodType.BEFORE_CLASS,
+			TestMethodType.BEFORE_METHOD
+	).collect(Collectors.toSet());
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
 	private static final Set<String> TESTNG_INVOKERS = Stream.of(
 			"org.testng.internal.TestInvoker",
@@ -91,8 +96,6 @@ public class TestNGService implements ITestNGService {
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
 
 	private static volatile ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
-
-	private final AtomicBoolean isLaunchFailed = new AtomicBoolean();
 
 	private final Map<Object, Queue<Pair<Maybe<String>, FinishTestItemRQ>>> BEFORE_METHOD_TRACKER = new ConcurrentHashMap<>();
 
@@ -166,7 +169,6 @@ public class TestNGService implements ITestNGService {
 	public void finishLaunch() {
 		FinishExecutionRQ rq = new FinishExecutionRQ();
 		rq.setEndTime(Calendar.getInstance().getTime());
-		rq.setStatus(isLaunchFailed.get() ? ItemStatus.FAILED.name() : ItemStatus.PASSED.name());
 		launch.get().finish(rq);
 		launch.reset();
 		Runtime.getRuntime().removeShutdownHook(shutDownHook);
@@ -303,6 +305,10 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public void startConfiguration(ITestResult testResult) {
+		if(ofNullable(getAttribute(testResult, RP_ID)).isPresent()) {
+			// Already started, E.G. SkipException is thrown
+			return;
+		}
 		TestMethodType type = TestMethodType.getStepType(testResult.getMethod());
 		testResult.setAttribute(RP_METHOD_TYPE, type);
 		StartTestItemRQ rq = buildStartConfigurationRq(testResult, type);
@@ -494,9 +500,15 @@ public class TestNGService implements ITestNGService {
 			if (ItemStatus.FAILED == status && (TestMethodType.BEFORE_METHOD == type || TestMethodType.BEFORE_CLASS == type)) {
 				SKIPPED_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			}
-			if (ItemStatus.SKIPPED == status && (SKIPPED_STATUS_TRACKER.containsKey(instance) || (TestMethodType.BEFORE_METHOD == type
-					&& getAttribute(testResult, RP_RETRY) != null))) {
+			if (ItemStatus.SKIPPED == status
+					&& (SKIPPED_STATUS_TRACKER.containsKey(instance)
+					|| (TestMethodType.BEFORE_METHOD == type && getAttribute(testResult, RP_RETRY) != null))
+			) {
 				rq.setIssue(Launch.NOT_ISSUE);
+			}
+			if(ItemStatus.SKIPPED == status && BEFORE_METHODS.contains(type) && testResult.getThrowable() != null) {
+				sendReportPortalMsg(testResult);
+				SKIPPED_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			}
 		}
 
@@ -612,7 +624,6 @@ public class TestNGService implements ITestNGService {
 		Date now = Calendar.getInstance().getTime();
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(now);
-		rq.setStatus(getSuiteStatus(suite));
 		return rq;
 	}
 
@@ -625,8 +636,6 @@ public class TestNGService implements ITestNGService {
 	protected FinishTestItemRQ buildFinishTestRq(ITestContext testContext) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(testContext.getEndDate());
-		String status = isTestPassed(testContext) ? ItemStatus.PASSED.name() : ItemStatus.FAILED.name();
-		rq.setStatus(status);
 		return rq;
 	}
 
@@ -755,42 +764,6 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected String createStepDescription(ITestResult testResult) {
 		return testResult.getMethod().getDescription();
-	}
-
-	/**
-	 * Extension point to customize test suite status being sent to ReportPortal
-	 *
-	 * @param suite TestNG's suite
-	 * @return Status PASSED/FAILED/etc
-	 */
-	protected String getSuiteStatus(ISuite suite) {
-		Collection<ISuiteResult> suiteResults = suite.getResults().values();
-		ItemStatus suiteStatus = ItemStatus.PASSED;
-		for (ISuiteResult suiteResult : suiteResults) {
-			if (!(isTestPassed(suiteResult.getTestContext()))) {
-				suiteStatus = ItemStatus.FAILED;
-				break;
-			}
-		}
-		// if at least one suite failed launch should be failed
-		isLaunchFailed.compareAndSet(false, suiteStatus == ItemStatus.FAILED);
-		return suiteStatus.name();
-	}
-
-	/**
-	 * Check is current method passed according the number of failed tests and
-	 * configurations
-	 *
-	 * @param testContext TestNG's test content
-	 * @return TRUE if passed, FALSE otherwise
-	 */
-	protected boolean isTestPassed(ITestContext testContext) {
-		return testContext.getFailedTests().size() == 0 && testContext.getFailedConfigurations().size() == 0
-				&& testContext.getSkippedConfigurations().size() == 0 && (testContext.getSkippedTests().size() == 0
-				|| testContext.getSkippedTests()
-				.getAllResults()
-				.stream()
-				.allMatch(e -> (boolean) ofNullable(getAttribute(e, RP_RETRY)).orElse(Boolean.FALSE)));
 	}
 
 	/**
