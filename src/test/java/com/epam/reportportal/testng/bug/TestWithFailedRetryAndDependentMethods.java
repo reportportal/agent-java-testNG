@@ -115,9 +115,14 @@ public class TestWithFailedRetryAndDependentMethods {
 			assertThat(i.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
 		});
 
-		finishItems.subList(4, finishItems.size()).forEach(i -> {
+		finishItems.subList(4, finishItems.size() - 2).forEach(i -> {
 			assertThat(i.isRetry(), nullValue());
 			assertThat(i.getStatus(), equalTo(ItemStatus.FAILED.name()));
+		});
+
+		finishItems.subList(finishItems.size() - 2, finishItems.size()).forEach(i -> {
+			assertThat(i.isRetry(), nullValue());
+			assertThat(i.getStatus(), nullValue());
 		});
 	}
 }
