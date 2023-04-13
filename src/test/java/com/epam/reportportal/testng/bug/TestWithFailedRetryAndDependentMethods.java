@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.reportportal.testng.integration.util.TestUtils.*;
@@ -64,13 +65,8 @@ public class TestWithFailedRetryAndDependentMethods {
 	private final String testClassUuid = namedUuid("class");
 	private final List<String> testUuidList = Arrays.asList(namedUuid("test1"), namedUuid("test1"), namedUuid("test2"), namedUuid("test3"));
 
-	private final List<String> finishUuidOrder = Arrays.asList(testUuidList.get(0),
-			testUuidList.get(1),
-			testUuidList.get(2),
-			testUuidList.get(3),
-			testClassUuid,
-			suitedUuid
-	);
+	private final List<String> finishUuidOrder =
+			Stream.concat(testUuidList.stream(), Stream.of(testClassUuid, suitedUuid)).collect(Collectors.toList());
 
 	@Mock
 	private ReportPortalClient client;
