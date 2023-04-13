@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.0]
 ### Fixed
 - Issue [#195](https://github.com/reportportal/agent-java-testNG/issues/195) Test is reported as interrupted when testng `SkipException` is thrown in the BeforeClass method, by @HardNorth
 ### Changed
