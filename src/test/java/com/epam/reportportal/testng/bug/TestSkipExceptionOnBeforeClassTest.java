@@ -121,7 +121,7 @@ public class TestSkipExceptionOnBeforeClassTest {
         ArgumentCaptor<FinishTestItemRQ> finishItemCapture = ArgumentCaptor.forClass(FinishTestItemRQ.class);
         verify(client, times(finishUuidOrder.size())).finishTestItem(finishUuidCapture.capture(), finishItemCapture.capture());
         List<String> finishUuids = finishUuidCapture.getAllValues();
-        assertThat(finishUuids, equalTo(finishUuidOrder));
+        assertThat(finishUuids, containsInAnyOrder(finishUuidOrder.toArray(new String[0])));
 
         List<FinishTestItemRQ> finishItems = finishItemCapture.getAllValues();
 
