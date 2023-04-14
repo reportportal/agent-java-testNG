@@ -17,7 +17,6 @@ package com.epam.reportportal.testng;
 
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.TestCaseId;
-import com.epam.reportportal.annotations.UniqueID;
 import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
@@ -95,8 +94,6 @@ public class TestNGService implements ITestNGService {
 	public static final String NULL_VALUE = "NULL";
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
 
-	private static volatile ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
-
 	private final Map<Object, Queue<Pair<Maybe<String>, FinishTestItemRQ>>> BEFORE_METHOD_TRACKER = new ConcurrentHashMap<>();
 
 	private final Map<Object, Boolean> RETRY_STATUS_TRACKER = new LimitedSizeConcurrentHashMap<>(MAXIMUM_HISTORY_SIZE);
@@ -127,36 +124,10 @@ public class TestNGService implements ITestNGService {
 		});
 	}
 
-	public TestNGService() {
-		this(getReportPortal());
-	}
-
 	public TestNGService(Supplier<Launch> launchSupplier) {
 		launch = new MemoizingSupplier<>(launchSupplier);
 		shutDownHook = getShutdownHook(launch);
 		Runtime.getRuntime().addShutdownHook(shutDownHook);
-	}
-
-	/**
-	 * Return current instance of {@link ReportPortal} class
-	 *
-	 * @return ReportPortal instance
-	 * @deprecated use <code>Launch.currentLaunch().getClient()</code>
-	 */
-	@Deprecated
-	public static ReportPortal getReportPortal() {
-		return REPORT_PORTAL;
-	}
-
-	/**
-	 * Set current instance of {@link ReportPortal} class
-	 *
-	 * @param reportPortal class instance
-	 * @deprecated use {@link TestNGService#TestNGService(com.epam.reportportal.service.ReportPortal)}
-	 */
-	@Deprecated
-	protected static void setReportPortal(ReportPortal reportPortal) {
-		REPORT_PORTAL = reportPortal;
 	}
 
 	@Override
@@ -338,7 +309,6 @@ public class TestNGService implements ITestNGService {
 		rq.setAttributes(createStepAttributes(testResult));
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
-		rq.setUniqueId(extractUniqueID(testResult));
 		rq.setStartTime(new Date(testResult.getStartMillis()));
 		rq.setType(type.toString());
 		boolean retry = isRetry(testResult);
@@ -765,17 +735,6 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected String createStepDescription(ITestResult testResult) {
 		return testResult.getMethod().getDescription();
-	}
-
-	/**
-	 * Returns test item ID from annotation if it provided.
-	 *
-	 * @param testResult Where to find
-	 * @return test item ID or null
-	 */
-	@Nullable
-	private String extractUniqueID(@Nonnull ITestResult testResult) {
-		return getMethodAnnotation(UniqueID.class, testResult).map(UniqueID::value).orElse(null);
 	}
 
 	@Nullable
