@@ -4,6 +4,7 @@
 ### Removed
 - Java 8 support, by @HardNorth
 - Obsolete `UniqueID` annotation support, by @HardNorth
+- Deprecated code, by @HardNorth
 
 ## [5.2.0]
 ### Fixed
