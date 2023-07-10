@@ -12,6 +12,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.ServerSocket;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -22,16 +23,16 @@ import static org.hamcrest.Matchers.*;
 public class TestLaunchFinishShutdownHook {
 
 	@ParameterizedTest
-	@ValueSource(classes = { LaunchFinishShutdownHookTest.class, LaunchFinishShutdownHookRemoveTest.class })
+	@ValueSource(classes = {LaunchFinishShutdownHookTest.class, LaunchFinishShutdownHookRemoveTest.class})
 	public void test_shutdown_hook_finishes_launch_on_java_machine_exit(final Class<?> clazz) throws Exception {
 
 		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
 		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, Collections.emptyMap(), "files/socket_response.txt");
 		Callable<Process> clientCallable = () -> ProcessUtils.buildProcess(true, clazz,
 				Collections.singletonMap(StatisticsService.DISABLE_PROPERTY, "1"), String.valueOf(ss.getLocalPort()));
-		Pair<String, Process> startResult = SocketUtils.executeServerCallable(serverCallable, clientCallable);
+		Pair<List<String>, Process> startResult = SocketUtils.executeServerCallable(serverCallable, clientCallable);
 		assertThat(startResult.getValue(), notNullValue());
-		assertThat("First request is a launch start", startResult.getKey(), startsWith("POST /api/v1/test-project/launch"));
+		assertThat("First request is a launch start", startResult.getKey().get(0), startsWith("POST /api/v1/test-project/launch"));
 
 		Callable<Integer> clientCallableResult = () -> {
 			try {
@@ -45,10 +46,10 @@ public class TestLaunchFinishShutdownHook {
 				return -2;
 			}
 		};
-		Pair<String, Integer> finishResult = SocketUtils.executeServerCallable(serverCallable, clientCallableResult);
+		Pair<List<String>, Integer> finishResult = SocketUtils.executeServerCallable(serverCallable, clientCallableResult);
 
 		assertThat("Second request is a launch finish",
-				finishResult.getKey(),
+				finishResult.getKey().get(0),
 				startsWith("PUT /api/v1/test-project/launch/b7a79414-287c-452d-b157-c32fe6cb1c72/finish")
 		);
 		assertThat("Exit code should be '0'", finishResult.getValue(), equalTo(0));

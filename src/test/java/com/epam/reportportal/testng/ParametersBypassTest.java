@@ -1,16 +1,11 @@
 package com.epam.reportportal.testng;
 
-import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.integration.feature.parameters.*;
 import com.epam.reportportal.testng.integration.util.TestUtils;
-import com.epam.reportportal.utils.MemoizingSupplier;
-import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
-import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -18,7 +13,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,27 +32,11 @@ public class ParametersBypassTest {
 		public static final ThreadLocal<ReportPortal> REPORT_PORTAL_THREAD_LOCAL = new ThreadLocal<>();
 
 		public TestReportPortalListener() {
-			super(new TestNGServiceExtension(
-					new MemoizingSupplier<>(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters())),
-					REPORT_PORTAL_THREAD_LOCAL.get()
-			));
+			super(new TestNGService(REPORT_PORTAL_THREAD_LOCAL.get()));
 		}
 
 		public static void initReportPortal(ReportPortal reportPortal) {
 			REPORT_PORTAL_THREAD_LOCAL.set(reportPortal);
-		}
-
-		private static Launch getLaunch(ListenerParameters parameters) {
-
-			ReportPortal reportPortal = REPORT_PORTAL_THREAD_LOCAL.get();
-			StartLaunchRQ rq = new StartLaunchRQ();
-			rq.setName(parameters.getLaunchName());
-			rq.setStartTime(Calendar.getInstance().getTime());
-			rq.setMode(parameters.getLaunchRunningMode());
-			rq.setStartTime(Calendar.getInstance().getTime());
-
-			return reportPortal.newLaunch(rq);
-
 		}
 	}
 

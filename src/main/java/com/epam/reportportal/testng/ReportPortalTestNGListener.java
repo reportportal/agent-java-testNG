@@ -15,6 +15,7 @@
  */
 package com.epam.reportportal.testng;
 
+import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.utils.MemoizingSupplier;
 
 import java.util.function.Supplier;
@@ -27,7 +28,8 @@ import java.util.function.Supplier;
 public class ReportPortalTestNGListener extends BaseTestNGListener {
 
 	/* static instance with lazy init */
-	public static final Supplier<ITestNGService> SERVICE = new MemoizingSupplier<>(TestNGService::new);
+	public static final Supplier<ITestNGService> SERVICE =
+			new MemoizingSupplier<>(() -> new TestNGService(ReportPortal.builder().build()));
 
 	public ReportPortalTestNGListener() {
 		super(SERVICE.get());

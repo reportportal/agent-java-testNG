@@ -3,7 +3,6 @@ package com.epam.reportportal.testng.integration.feature.callback;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.tree.ItemTreeReporter;
 import com.epam.reportportal.service.tree.TestItemTree;
-import com.epam.reportportal.testng.TestNGService;
 import com.epam.reportportal.testng.util.ItemTreeUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import org.testng.ITestResult;
@@ -51,9 +50,11 @@ public class CallbackReportingTest {
 		finishTestItemRQ.setDescription(description);
 		finishTestItemRQ.setStatus(status);
 		finishTestItemRQ.setEndTime(Calendar.getInstance().getTime());
-		ItemTreeReporter.finishItem(TestNGService.getReportPortal().getClient(), finishTestItemRQ, ITEM_TREE.getLaunchId(), testResultLeaf)
-				.cache()
-				.blockingGet();
+		//noinspection ResultOfMethodCallIgnored
+		ofNullable(Launch.currentLaunch()).ifPresent(l ->
+				ItemTreeReporter.finishItem(l.getClient(), finishTestItemRQ, ITEM_TREE.getLaunchId(), testResultLeaf)
+						.cache()
+						.blockingGet());
 	}
 
 	private void attachLog(TestItemTree.TestItemLeaf testItemLeaf) {

@@ -19,7 +19,6 @@ package com.epam.reportportal.testng;
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.TestCaseIdKey;
-import com.epam.reportportal.annotations.UniqueID;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.utils.MemoizingSupplier;
@@ -169,25 +168,6 @@ public class BuildStepTest {
 		when(testNGMethod.isTest()).thenReturn(true);
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
 		assertThat("Incorrect test item parameters", rq.getParameters(), nullValue());
-	}
-
-	@Test
-	public void testUniqueId() {
-		when(testResult.getMethod()).thenReturn(testNGMethod);
-		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
-		when(testNGMethod.isTest()).thenReturn(true);
-		Method[] methods = TestMethodsExamples.class.getDeclaredMethods();
-		Method method = null;
-		for (Method m : methods) {
-			if (m.getName().contains("uniqueIdAnnotation")) {
-				method = m;
-			}
-		}
-
-		when(constructorOrMethod.getMethod()).thenReturn(method);
-		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
-		assertThat("Incorrect unique id", rq.getUniqueId(), is("ProvidedID"));
-
 	}
 
 	@Test
@@ -358,12 +338,6 @@ public class BuildStepTest {
 	}
 
 	private static class TestMethodsExamples {
-		@UniqueID("ProvidedID")
-		@org.testng.annotations.Test
-		private void uniqueIdAnnotation() {
-			//just for testing providing unique id
-		}
-
 		@Ignore
 		@org.testng.annotations.Test(dataProvider = "dp")
 		private void dataProviderWithoutKey(String param_0, String param_1) {
