@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.3.0]
 ### Changed
 - Client version updated on [5.1.21](https://github.com/reportportal/client-java/releases/tag/5.1.21), by @HardNorth
 - Slf4j version updated on version 2.0.4 to support newer versions of Logback with security fixes, by @HardNorth
