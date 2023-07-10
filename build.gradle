@@ -59,7 +59,7 @@ dependencies {
     testImplementation 'org.hamcrest:hamcrest-core:2.2'
     testImplementation "org.mockito:mockito-core:${mockito_version}"
     testImplementation "org.mockito:mockito-junit-jupiter:${mockito_version}"
-    testImplementation 'ch.qos.logback:logback-classic:1.2.11'
+    testImplementation 'ch.qos.logback:logback-classic:1.4.5'
 
     testImplementation 'com.epam.reportportal:logger-java-logback:5.1.5'
 
