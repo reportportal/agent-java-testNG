@@ -32,7 +32,7 @@ public class TestLaunchFinishShutdownHook {
 				Collections.singletonMap(StatisticsService.DISABLE_PROPERTY, "1"), String.valueOf(ss.getLocalPort()));
 		Pair<List<String>, Process> startResult = SocketUtils.executeServerCallable(serverCallable, clientCallable);
 		assertThat(startResult.getValue(), notNullValue());
-		assertThat("First request is a launch start", startResult.getKey().get(0), startsWith("POST /api/v1/test-project/launch"));
+		assertThat("First request is a launch start", startResult.getKey().get(0), startsWith("POST /api/v2/test-project/launch"));
 
 		Callable<Integer> clientCallableResult = () -> {
 			try {
@@ -50,7 +50,7 @@ public class TestLaunchFinishShutdownHook {
 
 		assertThat("Second request is a launch finish",
 				finishResult.getKey().get(0),
-				startsWith("PUT /api/v1/test-project/launch/b7a79414-287c-452d-b157-c32fe6cb1c72/finish")
+				startsWith("PUT /api/v2/test-project/launch/b7a79414-287c-452d-b157-c32fe6cb1c72/finish")
 		);
 		assertThat("Exit code should be '0'", finishResult.getValue(), equalTo(0));
 	}
