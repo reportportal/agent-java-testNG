@@ -1,230 +1,154 @@
-# agent-java-testNG
+# Report Portal Listener for TestNG tests
 A TestNG reporter that uploads the results to a ReportPortal server.
 
 > **DISCLAIMER**: We use Google Analytics for sending anonymous usage information such as agent's and client's names, and their versions
 > after a successful launch start. This information might help us to improve both ReportPortal backend and client sides. It is used by the
 > ReportPortal team only and is not supposed for sharing with 3rd parties.
 
-[![Maven Central](https://img.shields.io/maven-central/v/com.epam.reportportal/agent-java-testng.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22agent-java-testng%22)
+[![Maven Central](https://img.shields.io/maven-central/v/com.epam.reportportal/agent-java-testng.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/com.epam.reportportal/agent-java-testng)
 [![CI Build](https://github.com/reportportal/agent-java-testNG/actions/workflows/ci.yml/badge.svg)](https://github.com/reportportal/agent-java-testNG/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/reportportal/agent-java-testNG/branch/develop/graph/badge.svg?token=CshHrWt7sS)](https://codecov.io/gh/reportportal/agent-java-testNG)
 [![Join Slack chat!](https://slack.epmrpp.reportportal.io/badge.svg)](https://slack.epmrpp.reportportal.io/)
 [![stackoverflow](https://img.shields.io/badge/reportportal-stackoverflow-orange.svg?style=flat)](http://stackoverflow.com/questions/tagged/reportportal)
 [![Build with Love](https://img.shields.io/badge/build%20with-❤%EF%B8%8F%E2%80%8D-lightgrey.svg)](http://reportportal.io?style=flat)
----
-- [Objects interrelation TestNG - ReportPortal](https://github.com/reportportal/agent-java-testNG#objects-interrelation-testng---reportportal)
-- [Dependencies](https://github.com/reportportal/agent-java-testNG#dependencies)
-- [Install listener](https://github.com/reportportal/agent-java-testNG#install-listener)
-  - [Listener class](https://github.com/reportportal/agent-java-testNG#listener-class)
-  - [Listener parameters](https://github.com/reportportal/agent-java-testNG/#listener-parameters)
-  - [Maven Surefire plugin](https://github.com/reportportal/agent-java-testNG#maven-surefire-plugin)
-  - [Specify listener in testng.xml](https://github.com/reportportal/agent-java-testNG#specify-listener-in-testngxml)
-  - [Custom runner](https://github.com/reportportal/agent-java-testNG#custom-runner)
-  - [Using command line](https://github.com/reportportal/agent-java-testNG#using-command-line)
-  - [Using \@Listeners annotation](https://github.com/reportportal/agent-java-testNG#using-listeners-annotation)
-  - [Using ServiceLoader](https://github.com/reportportal/agent-java-testNG#using-serviceloader)
-- [Code example How to overload params in run-time](https://github.com/reportportal/agent-java-testNG#code-example-how-to-overload-params-in-run-time)
-- [Example and step-by-step instruction with logback](https://github.com/reportportal/examples-java/tree/master/example-testng-logback)
-- [Example and step-by-step instruction with Log4j](https://github.com/reportportal/examples-java/tree/master/example-testng-log4j)
----
 
-**[TestNG](http://testng.org)** provides support for attaching custom listeners, reporters, annotation transformers and method interceptors to your tests.
-Handling events
+The latest version: $LATEST_VERSION. Please use `Maven Central` link above to get the agent.
+**For TestNG version [7.1.0](https://central.sonatype.com/artifact/org.testng/testng/7.1.0) and higher**
 
-TestNG agent can handle next events:
+## Overview: How to Add ReportPortal Logging to Your Project
 
--   Start launch
--   Finish launch
--   Start suite
--   Finish suite
--   Start test
--   Finish test
--   Start test step
--   Successful finish of test step
--   Fail of test step
--   Skip of test step
--   Start configuration (All «before» and «after» methods)
--   Fail of configuration
--   Successful finish of configuration
--   Skip configuration
+To start using Report Portal with TestNG framework please do the following steps:
 
-## Objects interrelation TestNG - ReportPortal
-
-| **TestNG object**    | **ReportPortal object**       |
-|----------------------|-------------------------------|
-| LAUNCH               |LAUNCH                         |
-| BEFORE_SUITE         |TestItem (type = BEFORE_SUITE) |
-| BEFORE_GROUPS        |TestItem (type = BEFORE_GROUPS)|
-| SUITE                |TestItem (type = SUITE)        |
-| BEFORE_TEST          |TestItem (type = BEFORE_TEST)  |
-| TEST                 |TestItem (type = TEST)         |
-| BEFORE_CLASS         |TestItem (type = BEFORE_CLASS) |
-| CLASS                |Not in structure. Avoid it     |
-| BEFORE_METHOD        |TestItem (type = BEFORE_METHOD)|
-| METHOD               |TestItem (type = STEP)         |
-| AFTER_METHOD         |TestItem (type = AFTER_METHOD) |
-| AFTER_CLASS          |TestItem (type = AFTER_CLASS)  |
-| AFTER_TEST           |TestItem (type = AFTER_TEST)   |
-| AFTER_SUITE          |TestItem (type = AFTER_SUITE)  |
-| AFTER_GROUPS         |TestItem (type = AFTER_GROUPS) |
-
-TestItem – report portal specified object for representing:  suite, test, method objects in different test systems. Used as tree structure and can be recursively placed inside himself.
-
-## Dependencies
-> Minimum supported TestNG version: [7.1.0](https://search.maven.org/artifact/org.testng/testng/7.1.0/jar)
+1. [Configuration](#configuration)
+  * Create/update the `reportportal.properties` configuration file
+  * Build system configuration
+  * Add Listener
+2. [Logging configuration](#logging)
+  * Loggers and their types
+3. [Running tests](#running-tests)
+  * Build system commands
+4. [Custom use examples](#customization)
 
 
-Add to `POM.xml`
+## Configuration
+### 'reportportal.properties' configuration file
 
-**dependency**
+To start using Report Portal you need to create a file named `reportportal.properties` in your Java project in a source
+folder `src/main/resources` or `src/test/resources` (depending on where your tests are located):
 
+**reportportal.properties**
+
+```
+rp.endpoint = http://localhost:8080
+rp.api.key = e0e541d8-b1cd-426a-ae18-b771173c545a
+rp.launch = TestNG Tests
+rp.project = default_personal
+```
+
+**Property description**
+
+* `rp.endpoint` - the URL for the report portal server (actual link).
+* `rp.api.key` - an access token for Report Portal which is used for user identification. It can be found on your report
+  portal user profile page.
+* `rp.project` - a project ID on which the agent will report test launches. Must be set to one of your assigned
+  projects.
+* `rp.launch` - a user-selected identifier of test launches.
+
+
+The full list of supported properties is located here in client-java library documentation (a common library for all
+Java agents): https://github.com/reportportal/client-java
+
+## Build system configuration
+
+### Maven
+
+If your project is Maven-based the first thing, which you should do, is to add dependencies to `pom.xml` file:
 ```xml
-<dependency>
-  <groupId>com.epam.reportportal</groupId>
-  <artifactId>agent-java-testng</artifactId>
-  <version>$LATEST_VERSION</version>
-</dependency>
-<!-- TODO Leave only one dependency, depends on what logger you use: -->
-<dependency>
-  <groupId>com.epam.reportportal</groupId>
-  <artifactId>logger-java-logback</artifactId>
-  <version>5.1.1</version>
-</dependency>
-<dependency>
-  <groupId>com.epam.reportportal</groupId>
-  <artifactId>logger-java-log4j</artifactId>
-  <version>5.1.4</version>
-</dependency>
+<project>
+  <!-- project declaration omitted -->
+  
+  <dependency>
+    <groupId>com.epam.reportportal</groupId>
+    <artifactId>agent-java-testng</artifactId>
+    <version>$LATEST_VERSION</version>
+    <scope>test</scope>
+  </dependency>
+
+  <!-- build config omitted -->
+</project>
 ```
+You are free to use you own version of TestNG, but not earlier than 7.1.0. If you leave just Agent dependency it will
+be still OK, it will use transitive TestNG version.
 
-## Install listener
+### Gradle
 
-Download package [here](<https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22agent-java-testng%22>).
-Choose latest version.
-
-By default, TestNG attaches a few basic listeners to generate HTML and XML
-reports. For reporting TestNG test events (ie start of test, successful finish
-of test, test fail) to ReportPortal user should add ReportPortal TestNg
-listener to run and configure input parameters. 
-
-### Listener parameters
-Description of listeners input parameters and how to configure it see “Parameters” in [Configuration section](http://reportportal.io/docs/JVM-based-clients-configuration).
-Which are common for all **JVM based** agents.
-
-### Listener class:
-`com.epam.reportportal.testng.ReportPortalTestNGListener`
-
-There are several ways how to install listener:
-
-- [Maven Surefire plugin](https://github.com/reportportal/agent-java-testNG#maven-surefire-plugin)
-- [Specify listener in testng.xml](https://github.com/reportportal/agent-java-testNG#specify-listener-in-testngxml)
-- [Custom runner](https://github.com/reportportal/agent-java-testNG#custom-runner)
-- [Using command line](https://github.com/reportportal/agent-java-testNG#using-command-line)
-- [Using \@Listeners annotation](https://github.com/reportportal/agent-java-testNG#using-listeners-annotation)
-- [Using ServiceLoader](https://github.com/reportportal/agent-java-testNG#using-serviceloader)
-
-> Please note, that listener must be configured in a single place only.
-> Configuring multiple listeners will lead to incorrect application behavior.
-
-### Maven Surefire plugin
-
-Maven surefire plugin allows configuring multiple custom listeners. For logging
-to Report Portal user should add Report Portal listener to “Listener” property.
-
-```xml
-<plugins>
-    [...]
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.15</version>
-        <configuration>
-          <properties>
-            <property>
-              <name>usedefaultlisteners</name>
-              <value>false</value> <!-- disabling default listeners is optional -->
-            </property>
-            <property>
-              <name>listener</name>
-              <value>com.epam.reportportal.testng.ReportPortalTestNGListener</value>
-            </property>
-          </properties>
-        </configuration>
-      </plugin>
-    [...]
-</plugins>
-```
-
->   If you use maven surefire plugin set report portal listener only in
->   "listener" property in pom.xml.
-
-### Specify listener in testng.xml
-
-Here is how you can define report portal listener in your testng.xml file.
-
-```xml
-<suite>
-   
-  <listeners>
-    <listener class-name="com.example.MyListener" />
-    <listener class-name="com.epam.reportportal.testng.ReportPortalTestNGListener" />
-  </listeners>
-.....
-```
-
-### Custom runner
-
-TestNG allows users to create own runners. In this case user can instantiate
-listener by himself and add it to TestNG object.
-
-```java
-ReportPortalTestNGListener listener = new ReportPortalTestNGListener();
-TestNG testNg = new TestNG();
-List<String> lSuites = Lists.newArrayList();
-Collections.addAll(lSuites, “testng_suite.xml”);
-testNg.setTestSuites(lSuites);
-testNg.addListener((Object) listener);
-testNg.run();
-```
-
-### Using command line
-
-Assuming that you have TestNG and Report Portal client jars in your class path,
-you can run TestNG tests with Report Portal listener as follows:
-
-*java org.testng.TestNG testng1.xml –listener
-com.epam.reportportal.testng.ReportPortalTestNGListener*
-
-### Using \@Listeners annotation
-
-Report Portal listener can be set using \@Listener annotation.
-
-```java
-@Listeners({ReportPortalTestNGListener.class})
-public class FailedParameterizedTest {
-…..
+For Gradle-based projects please update dependencies section in `build.gradle` file:
+```groovy
+dependencies {
+    testImplementation 'com.epam.reportportal:agent-java-testng:$LATEST_VERSION'
 }
 ```
 
-\@Listeners annotation will apply to your entire suite file, just as if you had
-specified it in a testng.xml file. Please do not restrict its scope.
+## Listener configuration
+There are many ways to configure a listener in TestNG, but the most elegant and recommended way is to use a
+`ServiceLoader` file. Here is how you can do that:
 
-### Using ServiceLoader
+1. Create folders **_/META-INF/services_** in **_resources_** folder (`src/main/resources` or `src/test/resources`)
+2. Put there a file named **_org.testng.ITestNGListener_**
+3. Put a default implementation reference as a single row into the file: **_com.epam.reportportal.testng.ReportPortalTestNGListener_**
 
-JDK offers a very elegant mechanism to specify implementations of interfaces on
-the class path via the
-[ServiceLoader](<http://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html>)
-class. With ServiceLoader, all you need to do is create a jar file that contains
-your listener(s) and a few configuration files, put that jar file on the
-classpath when you run TestNG and TestNG will automatically find them. You can
-use service loaded mechanism for adding Report Portal listener to test
-execution. Please see detailed information here:
+Example:
+__/META-INF/services/org.testng.ITestNGListener__
+```none
+com.epam.reportportal.testng.ReportPortalTestNGListener
+```
 
-<http://testng.org/doc/documentation-main.html#testng-listeners> 5.17.2 -
-Specifying listeners with ServiceLoader.
+That's it! You are all set.
 
+## Logging
 
-## Code example How to overload params in run-time
+Report Portal provides its own logger implementations for major logging frameworks like *Log4j* and *Logback*. It also
+provides additional formatting features for popular client and test libraries like: *Selenide*, *Apache HttpComponents*,
+*Rest Assured*, etc.
+
+Here is the list of supported loggers and setup documentation links.
+
+**Logging frameworks:**
+
+| **Library name**       | **Documentation link**                                      |
+|------------------------|-------------------------------------------------------------|
+| Log4j                  | https://github.com/reportportal/logger-java-log4j           |
+| Logback                | https://github.com/reportportal/logger-java-logback         |
+
+**HTTP clients:**
+
+| **Library name**       | **Documentation link**                                      |
+|------------------------|-------------------------------------------------------------|
+| OkHttp3                | https://github.com/reportportal/logger-java-okhttp3         |
+| Apache HttpComponents  | https://github.com/reportportal/logger-java-httpcomponents  |
+
+**Test frameworks:**
+
+| **Library name** | **Documentation link**                                     |
+|------------------|------------------------------------------------------------|
+| Selenide         | https://github.com/reportportal/logger-java-selenide       |
+| Rest Assured     | https://github.com/reportportal/logger-java-rest-assured   |
+
+## Running tests
+
+We are set. To run set we just need to execute corresponding command in our build system.
+
+#### Maven
+
+`mvn test` or `mvnw test` if you are using Maven wrapper
+
+#### Gradle
+
+`gradle test` or `gradlew test` if you are using Gradle wrapper
+
+## Customization
+
+### Code example How to overload params in run-time
 
 As a sample you can use code for **Override UUID** in run-time
 ```java
@@ -267,7 +191,7 @@ As a sample you can use code for **Override UUID** in run-time
 	}
 ```
 
-## Example repository
+### Example repository
 
 There are two modules under Example project which represent agent usage with Lo4j and Logback loggers:
 * https://github.com/reportportal/examples-java/tree/master/example-testng-log4j
