@@ -20,15 +20,14 @@ The latest version: $LATEST_VERSION. Please use `Maven Central` link above to ge
 To start using Report Portal with TestNG framework please do the following steps:
 
 1. [Configuration](#configuration)
-  * Create/update the `reportportal.properties` configuration file
-  * Build system configuration
-  * Add Listener
+    * Create/update the `reportportal.properties` configuration file
+    * Build system configuration
+    * Add Listener
 2. [Logging configuration](#logging)
-  * Loggers and their types
+    * Loggers and their types
 3. [Running tests](#running-tests)
-  * Build system commands
+    * Build system commands
 4. [Custom use examples](#customization)
-
 
 ## Configuration
 ### 'reportportal.properties' configuration file
