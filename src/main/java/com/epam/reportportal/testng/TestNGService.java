@@ -67,7 +67,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 
 /**
- * TestNG service implements operations for interaction report portal
+ * TestNG service implements operations for interaction ReportPortal
  */
 public class TestNGService implements ITestNGService {
 	private static final Set<TestMethodType> BEFORE_METHODS = Stream.of(
@@ -171,6 +171,7 @@ public class TestNGService implements ITestNGService {
 		Launch myLaunch = launch.get();
 		if (null != rpId) {
 			FinishTestItemRQ rq = buildFinishTestSuiteRq(suite);
+			//noinspection ReactiveStreamsUnusedPublisher
 			myLaunch.finishTestItem(rpId, rq);
 			suite.removeAttribute(RP_ID);
 		}
@@ -216,6 +217,7 @@ public class TestNGService implements ITestNGService {
 	public void finishTest(ITestContext testContext) {
 		if (hasMethodsToRun(testContext)) {
 			FinishTestItemRQ rq = buildFinishTestRq(testContext);
+			//noinspection ReactiveStreamsUnusedPublisher
 			launch.get().finishTestItem(this.getAttribute(testContext, RP_ID), rq);
 			if (launch.get().getParameters().isCallbackReportingEnabled()) {
 				removeFromTree(testContext);
@@ -288,6 +290,7 @@ public class TestNGService implements ITestNGService {
 		}
 		Maybe<String> parentId = getConfigParent(testResult, type);
 		Launch myLaunch = launch.get();
+		//noinspection ReactiveStreamsUnusedPublisher
 		Maybe<String> itemID = myLaunch.startTestItem(parentId, rq);
 		testResult.setAttribute(RP_ID, itemID);
 	}
@@ -431,6 +434,7 @@ public class TestNGService implements ITestNGService {
 					beforeFinish.stream().filter(e -> e.getValue().isRetry() == null || !e.getValue().isRetry()).forEach(e -> {
 						FinishTestItemRQ f = e.getValue();
 						f.setRetry(true);
+						//noinspection ReactiveStreamsUnusedPublisher
 						launch.get().finishTestItem(e.getKey(), f);
 					});
 				}
@@ -611,10 +615,10 @@ public class TestNGService implements ITestNGService {
 	}
 
 	/**
-	 * Extension point to customize Report Portal test parameters
+	 * Extension point to customize ReportPortal test parameters
 	 *
 	 * @param testResult TestNG's testResult context
-	 * @return Test/Step Parameters being sent to Report Portal
+	 * @return Test/Step Parameters being sent to ReportPortal
 	 */
 	protected List<ParameterResource> createStepParameters(ITestResult testResult) {
 		List<ParameterResource> parameters = Lists.newArrayList();
@@ -628,7 +632,7 @@ public class TestNGService implements ITestNGService {
 	 * Process testResult to create parameters provided via {@link Parameters}
 	 *
 	 * @param testResult TestNG's testResult context
-	 * @return Step Parameters being sent to Report Portal
+	 * @return Step Parameters being sent to ReportPortal
 	 */
 	@Nonnull
 	private List<ParameterResource> createAnnotationParameters(@Nonnull ITestResult testResult) {

@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Unified ReportPortal product naming, by @HardNorth
 
 ## [5.3.1]
 ### Changed

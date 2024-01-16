@@ -24,7 +24,7 @@ import org.testng.internal.IResultListener2;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Report portal custom event listener. Support parallel execution of test
+ * ReportPortal custom event listener. Support parallel execution of test
  * methods, suites, test classes.
  * Can be extended by providing {@link ITestNGService} implementation
  */
@@ -120,7 +120,7 @@ public class BaseTestNGListener implements IExecutionListener, ISuiteListener, I
 		testNGService.finishTestMethod(ItemStatus.SKIPPED, testResult);
 	}
 
-	// this action temporary doesn't supported by report portal
+	// this action temporary doesn't supported by ReportPortal
 	@Override
 	public void onTestFailedButWithinSuccessPercentage(ITestResult result) {
 		testNGService.finishTestMethod(ItemStatus.FAILED, result);

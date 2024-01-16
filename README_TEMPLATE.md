@@ -1,4 +1,4 @@
-# Report Portal Listener for TestNG tests
+# ReportPortal Listener for TestNG tests
 A TestNG reporter that uploads the results to a ReportPortal server.
 
 > **DISCLAIMER**: We use Google Analytics for sending anonymous usage information such as agent's and client's names, and their versions
@@ -17,7 +17,7 @@ The latest version: $LATEST_VERSION. Please use `Maven Central` link above to ge
 
 ## Overview: How to Add ReportPortal Logging to Your Project
 
-To start using Report Portal with TestNG framework please do the following steps:
+To start using ReportPortal with TestNG framework please do the following steps:
 
 1. [Configuration](#configuration)
     * Create/update the `reportportal.properties` configuration file
@@ -32,7 +32,7 @@ To start using Report Portal with TestNG framework please do the following steps
 ## Configuration
 ### 'reportportal.properties' configuration file
 
-To start using Report Portal you need to create a file named `reportportal.properties` in your Java project in a source
+To start using ReportPortal you need to create a file named `reportportal.properties` in your Java project in a source
 folder `src/main/resources` or `src/test/resources` (depending on where your tests are located):
 
 **reportportal.properties**
@@ -46,8 +46,8 @@ rp.project = default_personal
 
 **Property description**
 
-* `rp.endpoint` - the URL for the report portal server (actual link).
-* `rp.api.key` - an access token for Report Portal which is used for user identification. It can be found on your report
+* `rp.endpoint` - the URL for the ReportPortal server (actual link).
+* `rp.api.key` - an access token for ReportPortal which is used for user identification. It can be found on your report
   portal user profile page.
 * `rp.project` - a project ID on which the agent will report test launches. Must be set to one of your assigned
   projects.
@@ -106,7 +106,7 @@ That's it! You are all set.
 
 ## Logging
 
-Report Portal provides its own logger implementations for major logging frameworks like *Log4j* and *Logback*. It also
+ReportPortal provides its own logger implementations for major logging frameworks like *Log4j* and *Logback*. It also
 provides additional formatting features for popular client and test libraries like: *Selenide*, *Apache HttpComponents*,
 *Rest Assured*, etc.
 
