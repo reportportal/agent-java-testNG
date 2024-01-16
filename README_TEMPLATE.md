@@ -61,7 +61,7 @@ Java agents): https://github.com/reportportal/client-java
 
 ### Maven
 
-If your project is Maven-based the first thing, which you should do, is to add dependencies to `pom.xml` file:
+If your project is Maven-based you need to add dependencies to `pom.xml` file:
 ```xml
 <project>
   <!-- project declaration omitted -->
@@ -135,7 +135,7 @@ Here is the list of supported loggers and setup documentation links.
 
 ## Running tests
 
-We are set. To run set we just need to execute corresponding command in our build system.
+We are set. To run tests we just need to execute corresponding command in our build system.
 
 #### Maven
 
