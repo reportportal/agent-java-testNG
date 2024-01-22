@@ -375,18 +375,6 @@ public class TestNGService implements ITestNGService {
 		return rq;
 	}
 
-	/**
-	 * @param status     item execution status
-	 * @param testResult TestNG's testResult context
-	 * @return Request to ReportPortal
-	 * @deprecated use {@link #buildFinishTestMethodRq(ItemStatus, ITestResult)}
-	 */
-	@Deprecated
-	@Nonnull
-	protected FinishTestItemRQ buildFinishTestMethodRq(@Nonnull String status, @Nonnull ITestResult testResult) {
-		return buildFinishTestMethodRq(ItemStatus.valueOf(status), testResult);
-	}
-
 	private void updateTestItemTree(Maybe<OperationCompletionRS> finishItemResponse, ITestResult testResult) {
 		ITestContext testContext = testResult.getTestContext();
 		TestItemTree.TestItemLeaf suiteLeaf = ITEM_TREE.getTestItems().get(createKey(testContext.getSuite()));
@@ -492,13 +480,6 @@ public class TestNGService implements ITestNGService {
 		if (launch.get().getParameters().isCallbackReportingEnabled()) {
 			updateTestItemTree(finishItemResponse, testResult);
 		}
-	}
-
-	@Override
-	@Deprecated
-	public void finishTestMethod(String statusStr, ITestResult testResult) {
-		ItemStatus status = ItemStatus.valueOf(statusStr);
-		finishTestMethod(status, testResult);
 	}
 
 	@Override

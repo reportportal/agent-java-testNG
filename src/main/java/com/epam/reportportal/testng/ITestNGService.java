@@ -77,17 +77,6 @@ public interface ITestNGService {
 	 * @param status     Status (PASSED/FAILED)
 	 * @param testResult TestNG's test result
 	 * @see com.epam.reportportal.listeners.ItemStatus
-	 * @deprecated
-	 */
-	@Deprecated
-	void finishTestMethod(String status, ITestResult testResult);
-
-	/**
-	 * Finish test method event handler
-	 *
-	 * @param status     Status (PASSED/FAILED)
-	 * @param testResult TestNG's test result
-	 * @see com.epam.reportportal.listeners.ItemStatus
 	 */
 	void finishTestMethod(ItemStatus status, ITestResult testResult);
 
