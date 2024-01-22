@@ -1,6 +1,13 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Client version updated on [5.2.1](https://github.com/reportportal/client-java/releases/tag/5.2.1), by @HardNorth
+- Unified ReportPortal product naming, by @HardNorth
+### Removed
+- Deprecated code, by @HardNorth
+### Fixed
+- Issue [#147](https://github.com/reportportal/agent-java-testNG/issues/147) Test/Step name logic, by @HardNorth
 
 ## [5.3.1]
 ### Changed
