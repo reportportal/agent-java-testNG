@@ -709,7 +709,8 @@ public class TestNGService implements ITestNGService {
 	 * @return Test/Step Name being sent to ReportPortal
 	 */
 	protected String createStepName(ITestResult testResult) {
-		return testResult.getMethod().getMethodName();
+		String testStepName = testResult.getTestName();
+		return testStepName == null ? testResult.getMethod().getMethodName() : testStepName;
 	}
 
 	/**

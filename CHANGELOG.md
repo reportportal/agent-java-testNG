@@ -6,6 +6,8 @@
 - Unified ReportPortal product naming, by @HardNorth
 ### Removed
 - Deprecated code, by @HardNorth
+### Fixed
+- Issue [#147](https://github.com/reportportal/agent-java-testNG/issues/147) Test/Step name logic, by @HardNorth
 
 ## [5.3.1]
 ### Changed
