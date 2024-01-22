@@ -64,6 +64,10 @@ dependencies {
 
     testImplementation 'org.apache.commons:commons-io:1.3.2'
     testImplementation 'com.ibm.icu:icu4j:67.1'
+    testImplementation ('com.google.inject:guice:5.1.0') {
+        exclude module: 'guice'
+    }
+    testImplementation 'com.google.guava:guava:33.0.0-jre'
 }
 
 test {
