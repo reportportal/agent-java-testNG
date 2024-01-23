@@ -41,7 +41,6 @@ dependencies {
     api 'com.google.code.findbugs:jsr305:3.0.2'
     api 'com.epam.reportportal:commons-model:5.0.0'
 
-    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     implementation 'org.testng:testng:7.9.0'
     implementation 'org.slf4j:slf4j-api:2.0.4'
 
@@ -68,6 +67,7 @@ dependencies {
         exclude module: 'guava'
     }
     testImplementation 'com.google.guava:guava:33.0.0-jre'
+    testImplementation 'com.squareup.okhttp3:okhttp:4.12.0'
 }
 
 test {
