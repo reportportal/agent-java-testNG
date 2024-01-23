@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Move Okhttp3 to test dependencies, by @HardNorth
 
 ## [5.4.0]
 ### Changed
