@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.4.1]
 ### Changed
 - Move Okhttp3 to test dependencies, by @HardNorth
 - Remove `commons-model` dependency to rely on `clinet-java` exclusions in security fixes, by @HardNorth
