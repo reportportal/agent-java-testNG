@@ -7,7 +7,7 @@
 - Move Okhttp3 to test dependencies, by @HardNorth
 - Client version updated on [5.2.4](https://github.com/reportportal/client-java/releases/tag/5.2.4), by @HardNorth
 ### Removed
-- Remove `commons-model` dependency to rely on `clinet-java` exclusions in security fixes, by @HardNorth
+- `commons-model` dependency to rely on `clinet-java` exclusions in security fixes, by @HardNorth
 
 ## [5.4.0]
 ### Changed
