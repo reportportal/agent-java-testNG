@@ -30,7 +30,7 @@ public class TestLaunchFinishShutdownHook {
 		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, Collections.emptyMap(), "files/socket_response.txt");
 		Callable<Process> clientCallable = () -> ProcessUtils.buildProcess(true, clazz,
 				Collections.singletonMap(StatisticsService.DISABLE_PROPERTY, "1"), String.valueOf(ss.getLocalPort()));
-		Pair<List<String>, Process> startResult = SocketUtils.executeServerCallable(serverCallable, clientCallable);
+		Pair<List<String>, Process> startResult = SocketUtils.executeServerCallable(serverCallable, clientCallable, 15);
 		assertThat(startResult.getValue(), notNullValue());
 		assertThat("First request is a launch start", startResult.getKey().get(0), startsWith("POST /api/v2/test-project/launch"));
 

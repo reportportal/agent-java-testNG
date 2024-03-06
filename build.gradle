@@ -39,13 +39,13 @@ repositories {
 }
 
 dependencies {
-    api 'com.epam.reportportal:client-java:5.2.4'
+    api 'com.epam.reportportal:client-java:5.2.5'
     api 'com.google.code.findbugs:jsr305:3.0.2'
 
     implementation 'org.testng:testng:7.9.0'
     implementation 'org.slf4j:slf4j-api:2.0.4'
 
-    testImplementation 'com.epam.reportportal:agent-java-test-utils:0.0.2'
+    testImplementation 'com.epam.reportportal:agent-java-test-utils:0.0.4'
 
     testImplementation("org.junit.platform:junit-platform-runner:${junit5_runner_version}") {
         exclude module: 'junit'
