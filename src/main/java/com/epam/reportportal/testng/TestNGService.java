@@ -15,6 +15,7 @@
  */
 package com.epam.reportportal.testng;
 
+import com.epam.reportportal.annotations.Description;
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.attribute.Attributes;
@@ -720,6 +721,10 @@ public class TestNGService implements ITestNGService {
 	 * @return Test/Step Description being sent to ReportPortal
 	 */
 	protected String createStepDescription(ITestResult testResult) {
+		var methodDescriptionOptional = getMethodAnnotation(Description.class, testResult);
+		if(methodDescriptionOptional.isPresent()){
+			return methodDescriptionOptional.get().value();
+		}
 		return testResult.getMethod().getDescription();
 	}
 

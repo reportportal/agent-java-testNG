@@ -39,7 +39,7 @@ repositories {
 }
 
 dependencies {
-    api 'com.epam.reportportal:client-java:5.2.5'
+    api 'com.epam.reportportal:client-java:5.2.6'
     api 'com.google.code.findbugs:jsr305:3.0.2'
 
     implementation 'org.testng:testng:7.9.0'

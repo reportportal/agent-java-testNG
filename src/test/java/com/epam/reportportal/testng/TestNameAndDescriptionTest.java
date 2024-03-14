@@ -3,6 +3,8 @@ package com.epam.reportportal.testng;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.integration.TestNgListener;
+import com.epam.reportportal.testng.integration.feature.description.DescriptionAnnotatedAndTestNgDescriptionTest;
+import com.epam.reportportal.testng.integration.feature.description.DescriptionAnnotatedTest;
 import com.epam.reportportal.testng.integration.feature.description.DescriptionTest;
 import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedClassTest;
 import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedParameterizedClassTest;
@@ -68,6 +70,36 @@ public class TestNameAndDescriptionTest {
 		StartTestItemRQ startItem = startTestCapture.getAllValues().get(0);
 
 		assertThat(startItem.getDescription(), equalTo(DescriptionTest.TEST_DESCRIPTION));
+	}
+
+	@Test
+	public void test_annotation_description_should_be_passed_to_rp_if_description_annotation_is_specified() {
+		runTests(Collections.singletonList(TestNgListener.class), DescriptionAnnotatedTest.class);
+
+		verify(client, times(1)).startLaunch(any()); // Start launch
+		verify(client, times(1)).startTestItem(any());  // Start parent suites
+		verify(client, times(1)).startTestItem(same(suitedUuid), any()); // Start test class
+
+		ArgumentCaptor<StartTestItemRQ> startTestCapture = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, times(1)).startTestItem(same(testClassUuid), startTestCapture.capture());
+		StartTestItemRQ startItem = startTestCapture.getAllValues().get(0);
+
+		assertThat(startItem.getDescription(), equalTo(DescriptionAnnotatedTest.TEST_DESCRIPTION_ANNOTATION));
+	}
+
+	@Test
+	public void test_annotation_description_should_be_passed_to_rp_if_both_test_description_and_description_annotation_are_specified() {
+		runTests(Collections.singletonList(TestNgListener.class), DescriptionAnnotatedAndTestNgDescriptionTest.class);
+
+		verify(client, times(1)).startLaunch(any()); // Start launch
+		verify(client, times(1)).startTestItem(any());  // Start parent suites
+		verify(client, times(1)).startTestItem(same(suitedUuid), any()); // Start test class
+
+		ArgumentCaptor<StartTestItemRQ> startTestCapture = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, times(1)).startTestItem(same(testClassUuid), startTestCapture.capture());
+		StartTestItemRQ startItem = startTestCapture.getAllValues().get(0);
+
+		assertThat(startItem.getDescription(), equalTo(DescriptionAnnotatedTest.TEST_DESCRIPTION_ANNOTATION));
 	}
 
 	@Test
