@@ -36,6 +36,7 @@ public class Constants {
 	static final Set<ItemAttributesRQ> ATTRIBUTES = new HashSet<>(Collections.singleton(ATTRIBUTE));
 	static final Mode MODE = Mode.DEFAULT;
 	static final String DEFAULT_DESCRIPTION = "default_description";
+	static final String DEFAULT_ANNOTATION_DESCRIPTION = "default_annotation_description";
 	static final Long DEFAULT_TIME = 1515594836210L;
 
 }
