@@ -31,6 +31,7 @@ public class Constants {
 	static final String BASIC_URL = "basic_url";
 	static final String DEFAULT_UUID = "default_uuid";
 	static final String DEFAULT_NAME = "default_name";
+	static final String DEFAULT_NAME_DISPLAY_NAME_ANNOTATION = "default_display_name";
 	static final String DEFAULT_PROJECT = "default_project";
 	static final ItemAttributesRQ ATTRIBUTE = new ItemAttributesRQ("key", "value");
 	static final Set<ItemAttributesRQ> ATTRIBUTES = new HashSet<>(Collections.singleton(ATTRIBUTE));
