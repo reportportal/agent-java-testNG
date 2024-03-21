@@ -94,6 +94,7 @@ public class TestNGService implements ITestNGService {
 	public static final String RP_METHOD_TYPE = "rp_method_type";
 	public static final String NULL_VALUE = "NULL";
 	public static final String TEST_DESCRIPTION = "test_description";
+	public static final String DESCRIPTION_ERROR_FORMAT = "%s\nError: \n%s: %s";
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
 
 	private final Map<Object, Queue<Pair<Maybe<String>, FinishTestItemRQ>>> BEFORE_METHOD_TRACKER = new ConcurrentHashMap<>();
@@ -808,7 +809,7 @@ public class TestNGService implements ITestNGService {
 	 * @return Test/Step Description being sent to ReportPortal
 	 */
 	private String getLogMessage(ITestResult testResult) {
-		return String.format("%s\nError: \n%s: %s",
+		return String.format(DESCRIPTION_ERROR_FORMAT,
 						getAttribute(testResult, TEST_DESCRIPTION),
 						testResult.getThrowable().getClass().getSimpleName(),
 						testResult.getThrowable().getMessage())

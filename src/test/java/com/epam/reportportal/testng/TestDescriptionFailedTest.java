@@ -29,6 +29,14 @@ public class TestDescriptionFailedTest {
 
   private final String suitedUuid = namedUuid("suite");
   private final String testClassUuid = namedUuid("class");
+  private final String assertionError = "AssertionError";
+  private final String noSuchElementException = "NoSuchElementException";
+  private final String empty = "";
+  private final String testDescriptionTestAssertErrorMessage = String.format(DESCRIPTION_ERROR_FORMAT, TEST_DESCRIPTION, assertionError, ASSERT_ERROR);
+  private final String testDescriptionTestExceptionMessage = String.format(DESCRIPTION_ERROR_FORMAT, TEST_DESCRIPTION, noSuchElementException, NO_SUCH_ELEMENT_EXCEPTION);
+  private final String testWithoutDescriptionTestAssertErrorMessage = String.format(DESCRIPTION_ERROR_FORMAT, empty, assertionError, ASSERT_ERROR).trim();
+  private final String testWithoutDescriptionTestExceptionMessage = String.format(DESCRIPTION_ERROR_FORMAT, empty, noSuchElementException, NO_SUCH_ELEMENT_EXCEPTION).trim();
+  private final String testSuiteMessage = String.format(DESCRIPTION_ERROR_FORMAT, empty, noSuchElementException, NO_SUCH_ELEMENT_EXCEPTION).trim();
 
   @Mock
   private ReportPortalClient client;
@@ -65,15 +73,10 @@ public class TestDescriptionFailedTest {
     assertThat(testWithoutDescriptionTestAssertError.getStatus(), equalTo(ItemStatus.FAILED.name()));
     assertThat(testWithoutDescriptionTestException.getStatus(), equalTo(ItemStatus.FAILED.name()));
 
-    assertThat(testDescriptionTestAssertError.getDescription(), equalTo("My test description\n"
-        + "Error: \nAssertionError: Assert Error"));
-    assertThat(testDescriptionTestException.getDescription(), equalTo("My test description\n"
-        + "Error: \nNoSuchElementException: No Such Element Exception"));
-    assertThat(testWithoutDescriptionTestAssertError.getDescription(), equalTo("Error: \n"
-        + "AssertionError: Assert Error"));
-    assertThat(testWithoutDescriptionTestException.getDescription(), equalTo("Error: \n"
-        + "NoSuchElementException: No Such Element Exception"));
-    assertThat(testSuite.getDescription(), equalTo("Error: \n"
-        + "NoSuchElementException: No Such Element Exception"));
+    assertThat(testDescriptionTestAssertError.getDescription(), equalTo(testDescriptionTestAssertErrorMessage));
+    assertThat(testDescriptionTestException.getDescription(), equalTo(testDescriptionTestExceptionMessage));
+    assertThat(testWithoutDescriptionTestAssertError.getDescription(), equalTo(testWithoutDescriptionTestAssertErrorMessage));
+    assertThat(testWithoutDescriptionTestException.getDescription(), equalTo(testWithoutDescriptionTestExceptionMessage));
+    assertThat(testSuite.getDescription(), equalTo(testSuiteMessage));
   }
 }
