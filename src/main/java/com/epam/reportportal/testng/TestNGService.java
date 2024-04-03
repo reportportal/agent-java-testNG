@@ -37,6 +37,7 @@ import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.testng.*;
 import org.testng.annotations.Factory;
@@ -94,8 +95,7 @@ public class TestNGService implements ITestNGService {
 	public static final String RP_RETRY = "rp_retry";
 	public static final String RP_METHOD_TYPE = "rp_method_type";
 	public static final String NULL_VALUE = "NULL";
-	public static final String TEST_DESCRIPTION = "test_description";
-	public static final String DESCRIPTION_ERROR_FORMAT = "%s\nError: \n%s: %s";
+	public static final String DESCRIPTION_ERROR_FORMAT = "%s\nError: \n%s";
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
 
 	private final Map<Object, Queue<Pair<Maybe<String>, FinishTestItemRQ>>> BEFORE_METHOD_TRACKER = new ConcurrentHashMap<>();
@@ -221,10 +221,6 @@ public class TestNGService implements ITestNGService {
 	public void finishTest(ITestContext testContext) {
 		if (hasMethodsToRun(testContext)) {
 			FinishTestItemRQ rq = buildFinishTestRq(testContext);
-			testContext.getFailedTests().getAllResults().stream()
-					.sorted(Comparator.comparingLong(ITestResult::getEndMillis))
-					.reduce((prev, next) -> next)
-					.ifPresent(tr -> rq.setDescription(getLogMessage(tr)));
 			//noinspection ReactiveStreamsUnusedPublisher
 			launch.get().finishTestItem(this.getAttribute(testContext, RP_ID), rq);
 			if (launch.get().getParameters().isCallbackReportingEnabled()) {
@@ -361,7 +357,6 @@ public class TestNGService implements ITestNGService {
 		}
 
 		Launch myLaunch = launch.get();
-		testResult.setAttribute(TEST_DESCRIPTION, rq.getDescription());
 		Maybe<String> stepMaybe = myLaunch.startTestItem(getAttribute(testResult.getTestContext(), RP_ID), rq);
 		testResult.setAttribute(RP_ID, stepMaybe);
 		if (myLaunch.getParameters().isCallbackReportingEnabled()) {
@@ -381,6 +376,9 @@ public class TestNGService implements ITestNGService {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(new Date(testResult.getEndMillis()));
 		rq.setStatus(status.name());
+		if (!testResult.isSuccess()) {
+			rq.setDescription(getLogMessage(testResult));
+		}
 		return rq;
 	}
 
@@ -461,9 +459,6 @@ public class TestNGService implements ITestNGService {
 		}
 
 		FinishTestItemRQ rq = buildFinishTestMethodRq(status, testResult);
-		if (!testResult.isSuccess()) {
-			rq.setDescription(getLogMessage(testResult));
-		}
 
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
 		Object instance = testResult.getInstance();
@@ -815,9 +810,8 @@ public class TestNGService implements ITestNGService {
 	 */
 	private String getLogMessage(ITestResult testResult) {
 		return String.format(DESCRIPTION_ERROR_FORMAT,
-						getAttribute(testResult, TEST_DESCRIPTION),
-						testResult.getThrowable().getClass().getSimpleName(),
-						testResult.getThrowable().getMessage())
+						createStepDescription(testResult),
+						ExceptionUtils.getStackTrace(testResult.getThrowable()))
 				.trim();
 	}
 }

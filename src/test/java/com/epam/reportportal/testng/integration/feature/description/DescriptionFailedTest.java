@@ -1,5 +1,6 @@
 package com.epam.reportportal.testng.integration.feature.description;
 
+import com.epam.reportportal.annotations.Description;
 import java.util.NoSuchElementException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,13 @@ public class DescriptionFailedTest {
 
   @Test
   public void testWithoutDescriptionTestException() {
+    LOGGER.info("Inside 'testWithoutDescriptionTestException' method");
+    throw new NoSuchElementException(NO_SUCH_ELEMENT_EXCEPTION);
+  }
+
+  @Test
+  @Description(TEST_DESCRIPTION)
+  public void testWithDescriptionAnnotationTestException() {
     LOGGER.info("Inside 'testWithoutDescriptionTestException' method");
     throw new NoSuchElementException(NO_SUCH_ELEMENT_EXCEPTION);
   }
