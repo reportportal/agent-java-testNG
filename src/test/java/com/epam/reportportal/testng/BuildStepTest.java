@@ -17,6 +17,7 @@
 package com.epam.reportportal.testng;
 
 import com.epam.reportportal.annotations.Description;
+import com.epam.reportportal.annotations.DisplayName;
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.TestCaseIdKey;
@@ -65,13 +66,9 @@ public class BuildStepTest {
 	@Mock
 	private ConstructorOrMethod constructorOrMethod;
 
-	@Mock
-	private Description descriptionAnnotation;
-
 	@BeforeEach
 	public void initMocks() {
 		testNGService = new TestNGService(new MemoizingSupplier<>(() -> launch));
-		descriptionAnnotation = mock(Description.class);
 	}
 
 	@Test
@@ -82,6 +79,17 @@ public class BuildStepTest {
 		when(testNGMethod.getMethodName()).thenReturn(DEFAULT_NAME);
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
 		assertThat("Incorrect test item name", rq.getName(), is(DEFAULT_NAME));
+	}
+
+	@Test
+	public void testMethodNameDisplayNameAnnotated() {
+		when(testResult.getMethod()).thenReturn(testNGMethod);
+		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
+		when(testNGMethod.isTest()).thenReturn(true);
+		Method method = getTestMethodsExampleByName("testDisplayNameAnnotation");
+		when(constructorOrMethod.getMethod()).thenReturn(method);
+		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
+		assertThat("Incorrect test item name", rq.getName(), is(DEFAULT_NAME_DISPLAY_NAME_ANNOTATION));
 	}
 
 	@Test
@@ -374,6 +382,11 @@ public class BuildStepTest {
 
 		@Description(DEFAULT_ANNOTATION_DESCRIPTION)
 		private void testDescriptionAnnotation() {
+			//just for testing providing annotation
+		}
+
+		@DisplayName(DEFAULT_NAME_DISPLAY_NAME_ANNOTATION)
+		private void testDisplayNameAnnotation() {
 			//just for testing providing annotation
 		}
 	}

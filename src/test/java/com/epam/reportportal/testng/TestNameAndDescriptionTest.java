@@ -8,6 +8,9 @@ import com.epam.reportportal.testng.integration.feature.description.DescriptionA
 import com.epam.reportportal.testng.integration.feature.description.DescriptionTest;
 import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedClassTest;
 import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedParameterizedClassTest;
+import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedTestAndDisplayNameMethodClassTest;
+import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedDisplayNameMethodClassTest;
+import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedDisplayNameParameterizedClassTest;;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,6 +58,36 @@ public class TestNameAndDescriptionTest {
 
 		assertThat(startItem.isRetry(), nullValue());
 		assertThat(startItem.getName(), equalTo(AnnotationNamedClassTest.TEST_NAME));
+	}
+
+	@Test
+	public void test_name_should_be_passed_to_rp_if_display_name_specified() {
+		runTests(Collections.singletonList(TestNgListener.class), AnnotationNamedDisplayNameMethodClassTest.class);
+
+		verify(client, times(1)).startLaunch(any()); // Start launch
+		verify(client, times(1)).startTestItem(any());  // Start parent suites
+		verify(client, times(1)).startTestItem(same(suitedUuid), any()); // Start test class
+
+		ArgumentCaptor<StartTestItemRQ> startTestCapture = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, times(1)).startTestItem(same(testClassUuid), startTestCapture.capture());
+		StartTestItemRQ startItem = startTestCapture.getAllValues().get(0);
+
+		assertThat(startItem.getName(), equalTo(AnnotationNamedDisplayNameMethodClassTest.TEST_NAME_DISPLAY));
+	}
+
+	@Test
+	public void test_name_should_be_passed_to_rp_if_both_test_name_and_display_name_are_specified() {
+		runTests(Collections.singletonList(TestNgListener.class), AnnotationNamedTestAndDisplayNameMethodClassTest.class);
+
+		verify(client, times(1)).startLaunch(any()); // Start launch
+		verify(client, times(1)).startTestItem(any());  // Start parent suites
+		verify(client, times(1)).startTestItem(same(suitedUuid), any()); // Start test class
+
+		ArgumentCaptor<StartTestItemRQ> startTestCapture = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, times(1)).startTestItem(same(testClassUuid), startTestCapture.capture());
+		StartTestItemRQ startItem = startTestCapture.getAllValues().get(0);
+
+		assertThat(startItem.getName(), equalTo(AnnotationNamedDisplayNameMethodClassTest.TEST_NAME_DISPLAY));
 	}
 
 	@Test
@@ -113,5 +146,21 @@ public class TestNameAndDescriptionTest {
 		verify(client, times(2)).startTestItem(same(testClassUuid), any());
 
 		assertThat(startTestCapture.getValue().getName(), equalTo(AnnotationNamedParameterizedClassTest.TEST_NAME));
+	}
+
+	@Test
+	public void test_name_should_be_passed_to_rp_if_specified_parameterized_test_with_display_name_annotation() {
+		runTests(Collections.singletonList(TestNgListener.class), AnnotationNamedDisplayNameParameterizedClassTest.class);
+
+		verify(client, times(1)).startLaunch(any()); // Start launch
+		verify(client, times(1)).startTestItem(any());  // Start parent suites
+		verify(client, times(1)).startTestItem(same(suitedUuid), any()); // Start test class
+
+		ArgumentCaptor<StartTestItemRQ> startTestCapture = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, times(2)).startTestItem(same(testClassUuid), startTestCapture.capture());
+
+		startTestCapture.getAllValues().forEach(startItem -> {
+			assertThat(startItem.getName(), equalTo(AnnotationNamedDisplayNameMethodClassTest.TEST_NAME_DISPLAY));
+		});
 	}
 }
