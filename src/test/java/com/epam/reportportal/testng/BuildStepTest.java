@@ -229,6 +229,7 @@ public class BuildStepTest {
 	@Test
 	public void testBuildFinishRQ() {
 		when(testResult.getEndMillis()).thenReturn(DEFAULT_TIME);
+		when(testResult.isSuccess()).thenReturn(true);
 		FinishTestItemRQ rq = testNGService.buildFinishTestMethodRq(ItemStatus.PASSED, testResult);
 		assertThat("Incorrect end time", rq.getEndTime().getTime(), is(DEFAULT_TIME));
 		assertThat("Incorrect status", rq.getStatus(), is(ItemStatus.PASSED.name()));
