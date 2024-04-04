@@ -376,7 +376,7 @@ public class TestNGService implements ITestNGService {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(new Date(testResult.getEndMillis()));
 		rq.setStatus(status.name());
-		if (!testResult.isSuccess()) {
+		if (!testResult.isSuccess() && ItemStatus.SKIPPED != status) {
 			rq.setDescription(getLogMessage(testResult));
 		}
 		return rq;

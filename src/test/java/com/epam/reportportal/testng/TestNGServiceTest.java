@@ -177,6 +177,7 @@ public class TestNGServiceTest {
 	public void finishTestMethod() {
 		when(launch.getParameters()).thenReturn(new ListenerParameters());
 		when(testResult.getAttribute(RP_ID)).thenReturn(id);
+		when(testResult.isSuccess()).thenReturn(true);
 
 		testNGService.finishTestMethod(ItemStatus.PASSED, testResult);
 		verify(launch, times(1)).finishTestItem(eq(id), any(FinishTestItemRQ.class));
