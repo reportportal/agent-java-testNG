@@ -1,12 +1,22 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `@Description` annotation support, by @oleksandr-fomenko
+- `@DisplayName` annotation support, by @oleksandr-fomenko
+- Putting last error logs of tests to Items' description, by @utdacc
+### Changed
+- Client version updated on [5.2.13](https://github.com/reportportal/client-java/releases/tag/5.2.13), by @HardNorth
+### Removed
+- `TestNG` dependency marked as `compileOnly`, by @HardNorth
+- JSR-305 dependency, by @HardNorth
 
 ## [5.4.1]
 ### Changed
 - Move Okhttp3 to test dependencies, by @HardNorth
-- Remove `commons-model` dependency to rely on `clinet-java` exclusions in security fixes, by @HardNorth
 - Client version updated on [5.2.4](https://github.com/reportportal/client-java/releases/tag/5.2.4), by @HardNorth
+### Removed
+- `commons-model` dependency to rely on `clinet-java` exclusions in security fixes, by @HardNorth
 
 ## [5.4.0]
 ### Changed

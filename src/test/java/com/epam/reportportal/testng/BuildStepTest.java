@@ -16,6 +16,8 @@
 
 package com.epam.reportportal.testng;
 
+import com.epam.reportportal.annotations.Description;
+import com.epam.reportportal.annotations.DisplayName;
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.TestCaseIdKey;
@@ -43,7 +45,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Pavel Bortnik
@@ -80,6 +82,17 @@ public class BuildStepTest {
 	}
 
 	@Test
+	public void testMethodNameDisplayNameAnnotated() {
+		when(testResult.getMethod()).thenReturn(testNGMethod);
+		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
+		when(testNGMethod.isTest()).thenReturn(true);
+		Method method = getTestMethodsExampleByName("testDisplayNameAnnotation");
+		when(constructorOrMethod.getMethod()).thenReturn(method);
+		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
+		assertThat("Incorrect test item name", rq.getName(), is(DEFAULT_NAME_DISPLAY_NAME_ANNOTATION));
+	}
+
+	@Test
 	public void testDescription() {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
@@ -90,17 +103,23 @@ public class BuildStepTest {
 	}
 
 	@Test
+	public void testAnnotatedDescriptionAnnotated() {
+		when(testResult.getMethod()).thenReturn(testNGMethod);
+		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
+		when(testNGMethod.isTest()).thenReturn(true);
+		Method method = getTestMethodsExampleByName("testDescriptionAnnotation");
+		when(constructorOrMethod.getMethod()).thenReturn(method);
+		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
+		assertThat("Incorrect test description", rq.getDescription(), is(DEFAULT_ANNOTATION_DESCRIPTION));
+	}
+
+	@Test
 	public void testParameters() {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		Method[] methods = TestMethodsExamples.class.getDeclaredMethods();
-		Method method = null;
-		for (Method m : methods) {
-			if (m.getName().contains("parametersAnnotation")) {
-				method = m;
-			}
-		}
+		Method method = getTestMethodsExampleByName("parametersAnnotation");
+
 		when(constructorOrMethod.getMethod()).thenReturn(method);
 		when(testResult.getParameters()).thenReturn(new Object[] { "param_0", "param_1" });
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
@@ -118,13 +137,7 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		Method[] methods = TestMethodsExamples.class.getDeclaredMethods();
-		Method method = null;
-		for (Method m : methods) {
-			if (m.getName().contains("dataProviderWithoutKey")) {
-				method = m;
-			}
-		}
+		Method method = getTestMethodsExampleByName("dataProviderWithoutKey");
 
 		when(constructorOrMethod.getMethod()).thenReturn(method);
 		when(testResult.getParameters()).thenReturn(new Object[] { "param_0", "param_1" });
@@ -142,13 +155,7 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		Method[] methods = TestMethodsExamples.class.getDeclaredMethods();
-		Method method = null;
-		for (Method m : methods) {
-			if (m.getName().contains("dataProviderWithParameterKey")) {
-				method = m;
-			}
-		}
+		Method method = getTestMethodsExampleByName("dataProviderWithParameterKey");
 
 		when(constructorOrMethod.getMethod()).thenReturn(method);
 		when(testResult.getParameters()).thenReturn(new Object[] { "param_0", "param_1" });
@@ -222,6 +229,7 @@ public class BuildStepTest {
 	@Test
 	public void testBuildFinishRQ() {
 		when(testResult.getEndMillis()).thenReturn(DEFAULT_TIME);
+		when(testResult.isSuccess()).thenReturn(true);
 		FinishTestItemRQ rq = testNGService.buildFinishTestMethodRq(ItemStatus.PASSED, testResult);
 		assertThat("Incorrect end time", rq.getEndTime().getTime(), is(DEFAULT_TIME));
 		assertThat("Incorrect status", rq.getStatus(), is(ItemStatus.PASSED.name()));
@@ -300,13 +308,10 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		Optional<Method> methodOptional = Arrays.stream(TestMethodsExamples.class.getDeclaredMethods())
-				.filter(it -> it.getName().equals("testCaseId"))
-				.findFirst();
-		assertTrue(methodOptional.isPresent());
+		Method method = getTestMethodsExampleByName("testCaseId");
 		String expectedCodeRef = "com.test.BuildStepTest.codeRefTest";
 
-		when(constructorOrMethod.getMethod()).thenReturn(methodOptional.get());
+		when(constructorOrMethod.getMethod()).thenReturn(method);
 		when(testResult.getMethod().getQualifiedName()).thenReturn(expectedCodeRef);
 
 		StartTestItemRQ request = testNGService.buildStartStepRq(testResult);
@@ -320,14 +325,11 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		Optional<Method> methodOptional = Arrays.stream(TestMethodsExamples.class.getDeclaredMethods())
-				.filter(it -> it.getName().equals("testCaseIdParameterized"))
-				.findFirst();
-		assertTrue(methodOptional.isPresent());
+		Method method = getTestMethodsExampleByName("testCaseIdParameterized");
 		String expectedCodeRef = "com.test.BuildStepTest.codeRefTest";
 		String expectedParam = "test-case-id-key";
 
-		when(constructorOrMethod.getMethod()).thenReturn(methodOptional.get());
+		when(constructorOrMethod.getMethod()).thenReturn(method);
 		when(testResult.getMethod().getQualifiedName()).thenReturn(expectedCodeRef);
 		when(testResult.getParameters()).thenReturn(new Object[] { expectedParam });
 
@@ -335,6 +337,14 @@ public class BuildStepTest {
 
 		assertEquals(expectedCodeRef, request.getCodeRef());
 		assertEquals(expectedParam, request.getTestCaseId());
+	}
+
+	private Method getTestMethodsExampleByName(String methodName){
+		Optional<Method> methodOptional = Arrays.stream(TestMethodsExamples.class.getDeclaredMethods())
+				.filter(it -> it.getName().equals(methodName))
+				.findFirst();
+		assertTrue(methodOptional.isPresent());
+		return methodOptional.get();
 	}
 
 	private static class TestMethodsExamples {
@@ -368,6 +378,16 @@ public class BuildStepTest {
 
 		@TestCaseId(parametrized = true)
 		private void testCaseIdParameterized(@TestCaseIdKey String param) {
+			//just for testing providing annotation
+		}
+
+		@Description(DEFAULT_ANNOTATION_DESCRIPTION)
+		private void testDescriptionAnnotation() {
+			//just for testing providing annotation
+		}
+
+		@DisplayName(DEFAULT_NAME_DISPLAY_NAME_ANNOTATION)
+		private void testDisplayNameAnnotation() {
 			//just for testing providing annotation
 		}
 	}
