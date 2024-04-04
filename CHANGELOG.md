@@ -2,7 +2,10 @@
 
 ## [Unreleased]
 ### Changed
-- Client version updated on [5.2.5](https://github.com/reportportal/client-java/releases/tag/5.2.5), by @HardNorth
+- Client version updated on [5.2.13](https://github.com/reportportal/client-java/releases/tag/5.2.13), by @HardNorth
+### Removed
+- `TestNG` dependency marked as `compileOnly`, by @HardNorth
+- JSR-305 dependency, by @HardNorth
 
 ## [5.4.1]
 ### Changed
