@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.4.2]
 ### Added
 - `@Description` annotation support, by @oleksandr-fomenko
 - `@DisplayName` annotation support, by @oleksandr-fomenko
