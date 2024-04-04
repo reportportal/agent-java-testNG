@@ -37,6 +37,7 @@ import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.testng.*;
 import org.testng.annotations.Factory;
@@ -94,6 +95,7 @@ public class TestNGService implements ITestNGService {
 	public static final String RP_RETRY = "rp_retry";
 	public static final String RP_METHOD_TYPE = "rp_method_type";
 	public static final String NULL_VALUE = "NULL";
+	public static final String DESCRIPTION_ERROR_FORMAT = "%s\nError: \n%s";
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
 
 	private final Map<Object, Queue<Pair<Maybe<String>, FinishTestItemRQ>>> BEFORE_METHOD_TRACKER = new ConcurrentHashMap<>();
@@ -374,6 +376,9 @@ public class TestNGService implements ITestNGService {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(new Date(testResult.getEndMillis()));
 		rq.setStatus(status.name());
+		if (!testResult.isSuccess()) {
+			rq.setDescription(getLogMessage(testResult));
+		}
 		return rq;
 	}
 
@@ -796,5 +801,17 @@ public class TestNGService implements ITestNGService {
 			parentId = getAttribute(testResult.getTestContext(), RP_ID);
 		}
 		return parentId;
+	}
+
+	/**
+	 * Extension point to customize test step description with error message
+	 * @param testResult TestNG's testResult context
+	 * @return Test/Step Description being sent to ReportPortal
+	 */
+	private String getLogMessage(ITestResult testResult) {
+		return String.format(DESCRIPTION_ERROR_FORMAT,
+						createStepDescription(testResult),
+						ExceptionUtils.getStackTrace(testResult.getThrowable()))
+				.trim();
 	}
 }
