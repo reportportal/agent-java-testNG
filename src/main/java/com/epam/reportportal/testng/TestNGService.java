@@ -31,6 +31,7 @@ import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.reportportal.utils.ParameterUtils;
 import com.epam.reportportal.utils.TestCaseIdUtils;
+import com.epam.reportportal.utils.markdown.MarkdownUtils;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
@@ -95,7 +96,7 @@ public class TestNGService implements ITestNGService {
 	public static final String RP_RETRY = "rp_retry";
 	public static final String RP_METHOD_TYPE = "rp_method_type";
 	public static final String NULL_VALUE = "NULL";
-	public static final String DESCRIPTION_ERROR_FORMAT = "%s\nError: \n%s";
+	public static final String DESCRIPTION_ERROR_FORMAT = "Error: \n%s";
 	public static final TestItemTree ITEM_TREE = new TestItemTree();
 
 	private final Map<Object, Queue<Pair<Maybe<String>, FinishTestItemRQ>>> BEFORE_METHOD_TRACKER = new ConcurrentHashMap<>();
@@ -809,9 +810,9 @@ public class TestNGService implements ITestNGService {
 	 * @return Test/Step Description being sent to ReportPortal
 	 */
 	private String getLogMessage(ITestResult testResult) {
-		return String.format(DESCRIPTION_ERROR_FORMAT,
-						createStepDescription(testResult),
-						ExceptionUtils.getStackTrace(testResult.getThrowable()))
-				.trim();
+		return MarkdownUtils.asTwoParts(
+				createStepDescription(testResult),
+				String.format(DESCRIPTION_ERROR_FORMAT, ExceptionUtils.getStackTrace(testResult.getThrowable())).trim()
+		);
 	}
 }
