@@ -38,6 +38,7 @@ import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.testng.*;
@@ -810,9 +811,8 @@ public class TestNGService implements ITestNGService {
 	 * @return Test/Step Description being sent to ReportPortal
 	 */
 	private String getLogMessage(ITestResult testResult) {
-		return MarkdownUtils.asTwoParts(
-				createStepDescription(testResult),
-				String.format(DESCRIPTION_ERROR_FORMAT, ExceptionUtils.getStackTrace(testResult.getThrowable())).trim()
-		);
+		String error = String.format(DESCRIPTION_ERROR_FORMAT, ExceptionUtils.getStackTrace(testResult.getThrowable())).trim();
+		return ofNullable(createStepDescription(testResult)).filter(StringUtils::isNotBlank)
+				.map(description -> MarkdownUtils.asTwoParts(description, error)).orElse(error);
 	}
 }
