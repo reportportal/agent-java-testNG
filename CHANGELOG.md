@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 ### Changed
-- Client version updated on [5.2.14](https://github.com/reportportal/client-java/releases/tag/5.2.14), by @HardNorth
+- Client version updated on [5.2.15](https://github.com/reportportal/client-java/releases/tag/5.2.15), by @HardNorth
 - Format of last error log of test in item description was updated, by @HardNorth
 
 ## [5.4.2]
