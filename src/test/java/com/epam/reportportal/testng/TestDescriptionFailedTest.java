@@ -24,6 +24,7 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.integration.feature.description.DescriptionFailedTest;
 import com.epam.reportportal.utils.MemoizingSupplier;
+import com.epam.reportportal.utils.markdown.MarkdownUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import java.util.Calendar;
@@ -67,11 +68,10 @@ public class TestDescriptionFailedTest {
   private final String testClassUuid = namedUuid("class");
   private final String assertionError = "java.lang.AssertionError: " + ASSERT_ERROR;
   private final String noSuchElementException = "java.util.NoSuchElementException: " + NO_SUCH_ELEMENT_EXCEPTION;
-  private final String empty = "";
-  private final String testDescriptionTestAssertErrorMessage = String.format(DESCRIPTION_ERROR_FORMAT, TEST_DESCRIPTION, assertionError);
-  private final String testDescriptionTestExceptionMessage = String.format(DESCRIPTION_ERROR_FORMAT, TEST_DESCRIPTION, noSuchElementException);
-  private final String testWithoutDescriptionTestAssertErrorMessage = String.format(DESCRIPTION_ERROR_FORMAT, empty, assertionError).trim();
-  private final String testWithoutDescriptionTestExceptionMessage = String.format(DESCRIPTION_ERROR_FORMAT, empty, noSuchElementException).trim();
+  private final String testDescriptionTestAssertErrorMessage = MarkdownUtils.asTwoParts(TEST_DESCRIPTION, String.format(DESCRIPTION_ERROR_FORMAT, assertionError));
+  private final String testDescriptionTestExceptionMessage = MarkdownUtils.asTwoParts(TEST_DESCRIPTION, String.format(DESCRIPTION_ERROR_FORMAT, noSuchElementException));
+  private final String testWithoutDescriptionTestAssertErrorMessage = String.format(DESCRIPTION_ERROR_FORMAT, assertionError).trim();
+  private final String testWithoutDescriptionTestExceptionMessage = String.format(DESCRIPTION_ERROR_FORMAT, noSuchElementException).trim();
 
   @Mock
   private ReportPortalClient client;

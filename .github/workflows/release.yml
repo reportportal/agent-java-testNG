@@ -56,7 +56,7 @@ jobs:
           java-version: '11'
 
       - name: Setup git credentials
-        uses: oleksiyrudenko/gha-git-credentials@v2.1.1
+        uses: oleksiyrudenko/gha-git-credentials@v2-latest
         with:
           name: 'reportportal.io'
           email: 'support@reportportal.io'
