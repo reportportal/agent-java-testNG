@@ -75,16 +75,14 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
  * TestNG service implements operations for interaction ReportPortal
  */
 public class TestNGService implements ITestNGService {
-	private static final Set<TestMethodType> BEFORE_METHODS = Stream.of(
-			TestMethodType.BEFORE_TEST,
+	private static final Set<TestMethodType> BEFORE_METHODS = Stream.of(TestMethodType.BEFORE_TEST,
 			TestMethodType.BEFORE_SUITE,
 			TestMethodType.BEFORE_GROUPS,
 			TestMethodType.BEFORE_CLASS,
 			TestMethodType.BEFORE_METHOD
 	).collect(Collectors.toSet());
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
-	private static final Set<String> TESTNG_INVOKERS = Stream.of(
-			"org.testng.internal.TestInvoker",
+	private static final Set<String> TESTNG_INVOKERS = Stream.of("org.testng.internal.TestInvoker",
 			"org.testng.internal.invokers.TestInvoker"
 	).collect(Collectors.toSet());
 	private static final Predicate<StackTraceElement> IS_RETRY_ELEMENT = e -> TESTNG_INVOKERS.contains(e.getClassName())
@@ -284,7 +282,7 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public void startConfiguration(ITestResult testResult) {
-		if(ofNullable(getAttribute(testResult, RP_ID)).isPresent()) {
+		if (ofNullable(getAttribute(testResult, RP_ID)).isPresent()) {
 			// Already started, E.G. SkipException is thrown
 			return;
 		}
@@ -471,13 +469,11 @@ public class TestNGService implements ITestNGService {
 			if (ItemStatus.FAILED == status && (TestMethodType.BEFORE_METHOD == type || TestMethodType.BEFORE_CLASS == type)) {
 				SKIPPED_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			}
-			if (ItemStatus.SKIPPED == status
-					&& (SKIPPED_STATUS_TRACKER.containsKey(instance)
-					|| (TestMethodType.BEFORE_METHOD == type && getAttribute(testResult, RP_RETRY) != null))
-			) {
+			if (ItemStatus.SKIPPED == status && (SKIPPED_STATUS_TRACKER.containsKey(instance) || (TestMethodType.BEFORE_METHOD == type
+					&& getAttribute(testResult, RP_RETRY) != null))) {
 				rq.setIssue(Launch.NOT_ISSUE);
 			}
-			if(ItemStatus.SKIPPED == status && BEFORE_METHODS.contains(type) && testResult.getThrowable() != null) {
+			if (ItemStatus.SKIPPED == status && BEFORE_METHODS.contains(type) && testResult.getThrowable() != null) {
 				sendReportPortalMsg(testResult);
 				SKIPPED_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			}
@@ -533,13 +529,9 @@ public class TestNGService implements ITestNGService {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		Set<ItemAttributesRQ> attributes = rq.getAttributes() == null ? new HashSet<>() : new HashSet<>(rq.getAttributes());
 		rq.setAttributes(attributes);
-		ofNullable(testContext.getCurrentXmlTest()).map(XmlTest::getXmlClasses).ifPresent(xmlClasses -> xmlClasses.forEach(xmlClass -> {
-			String className = xmlClass.getName();
-			String codeRef = rq.getCodeRef();
-			rq.setCodeRef(codeRef == null ? className : codeRef + ";" + className);
-			ofNullable(xmlClass.getSupportClass()).map(c -> c.getAnnotation(Attributes.class))
-					.ifPresent(a -> attributes.addAll(AttributeParser.retrieveAttributes(a)));
-		}));
+		ofNullable(testContext.getCurrentXmlTest()).map(XmlTest::getXmlClasses)
+				.ifPresent(xmlClasses -> xmlClasses.forEach(xmlClass -> ofNullable(xmlClass.getSupportClass()).map(c -> c.getAnnotation(
+						Attributes.class)).ifPresent(a -> attributes.addAll(AttributeParser.retrieveAttributes(a)))));
 		rq.setName(testContext.getName());
 		rq.setStartTime(testContext.getStartDate());
 		rq.setType("TEST");
@@ -719,7 +711,7 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected String createStepName(ITestResult testResult) {
 		var methodDisplayNameOptional = getMethodAnnotation(DisplayName.class, testResult);
-		if(methodDisplayNameOptional.isPresent()){
+		if (methodDisplayNameOptional.isPresent()) {
 			return methodDisplayNameOptional.get().value();
 		}
 		String testStepName = testResult.getTestName();
@@ -734,7 +726,7 @@ public class TestNGService implements ITestNGService {
 	 */
 	protected String createStepDescription(ITestResult testResult) {
 		var methodDescriptionOptional = getMethodAnnotation(Description.class, testResult);
-		if(methodDescriptionOptional.isPresent()){
+		if (methodDescriptionOptional.isPresent()) {
 			return methodDescriptionOptional.get().value();
 		}
 		return testResult.getMethod().getDescription();
@@ -747,8 +739,13 @@ public class TestNGService implements ITestNGService {
 		List<Object> parameters = ofNullable(testResult.getParameters()).map(Arrays::asList).orElse(null);
 		TestCaseIdEntry id = getMethodAnnotation(TestCaseId.class,
 				testResult
-		).flatMap(a -> ofNullable(method).map(m -> TestCaseIdUtils.getTestCaseId(a, m, codeRef, parameters, instance)))
-				.orElse(TestCaseIdUtils.getTestCaseId(codeRef, parameters));
+		).flatMap(a -> ofNullable(method).map(m -> TestCaseIdUtils.getTestCaseId(
+				a,
+				m,
+				codeRef,
+				parameters,
+				instance
+		))).orElse(TestCaseIdUtils.getTestCaseId(codeRef, parameters));
 
 		return id == null ? null : id.getId().endsWith("[]") ? new TestCaseIdEntry(id.getId().substring(0, id.getId().length() - 2)) : id;
 	}
@@ -807,12 +804,14 @@ public class TestNGService implements ITestNGService {
 
 	/**
 	 * Extension point to customize test step description with error message
+	 *
 	 * @param testResult TestNG's testResult context
 	 * @return Test/Step Description being sent to ReportPortal
 	 */
 	private String getLogMessage(ITestResult testResult) {
 		String error = String.format(DESCRIPTION_ERROR_FORMAT, ExceptionUtils.getStackTrace(testResult.getThrowable())).trim();
 		return ofNullable(createStepDescription(testResult)).filter(StringUtils::isNotBlank)
-				.map(description -> MarkdownUtils.asTwoParts(description, error)).orElse(error);
+				.map(description -> MarkdownUtils.asTwoParts(description, error))
+				.orElse(error);
 	}
 }
