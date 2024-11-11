@@ -39,7 +39,6 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.testng.*;
 import org.testng.annotations.Factory;
@@ -65,11 +64,11 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
+import static com.epam.reportportal.utils.formatting.ExceptionUtils.getStackTrace;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 
 /**
  * TestNG service implements operations for interaction ReportPortal
@@ -300,6 +299,21 @@ public class TestNGService implements ITestNGService {
 	}
 
 	/**
+	 * Extension point to customize test step description
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Test/Step Description being sent to ReportPortal
+	 */
+	@Nonnull
+	protected String createStepDescription(@Nonnull ITestResult testResult) {
+		var methodDescriptionOptional = getMethodAnnotation(Description.class, testResult);
+		if (methodDescriptionOptional.isPresent()) {
+			return methodDescriptionOptional.get().value();
+		}
+		return testResult.getMethod().getDescription();
+	}
+
+	/**
 	 * Extension point to customize test step creation event/request
 	 *
 	 * @param testResult TestNG's testResult context
@@ -362,6 +376,25 @@ public class TestNGService implements ITestNGService {
 		if (myLaunch.getParameters().isCallbackReportingEnabled()) {
 			addToTree(testResult, stepMaybe);
 		}
+	}
+
+	/**
+	 * Extension point to customize test step description with error message
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Test/Step Description being sent to ReportPortal
+	 */
+	@Nullable
+	private String getLogMessage(@Nonnull ITestResult testResult) {
+		String error = ofNullable(testResult.getThrowable()).map(t -> String.format(
+				DESCRIPTION_ERROR_FORMAT,
+				getStackTrace(t, new Throwable())
+		)).orElse(null);
+		if (error == null) {
+			return null;
+		}
+		String description = createStepDescription(testResult);
+		return StringUtils.isNotBlank(description) ? MarkdownUtils.asTwoParts(description, error) : error;
 	}
 
 	/**
@@ -494,7 +527,7 @@ public class TestNGService implements ITestNGService {
 			rq.setItemUuid(itemUuid);
 			rq.setLevel("ERROR");
 			if (result.getThrowable() != null) {
-				rq.setMessage(getStackTrace(result.getThrowable()));
+				rq.setMessage(getStackTrace(result.getThrowable(), new Throwable()));
 			} else {
 				rq.setMessage("Test has failed without exception");
 			}
@@ -718,20 +751,6 @@ public class TestNGService implements ITestNGService {
 		return testStepName == null ? testResult.getMethod().getMethodName() : testStepName;
 	}
 
-	/**
-	 * Extension point to customize test step description
-	 *
-	 * @param testResult TestNG's testResult context
-	 * @return Test/Step Description being sent to ReportPortal
-	 */
-	protected String createStepDescription(ITestResult testResult) {
-		var methodDescriptionOptional = getMethodAnnotation(Description.class, testResult);
-		if (methodDescriptionOptional.isPresent()) {
-			return methodDescriptionOptional.get().value();
-		}
-		return testResult.getMethod().getDescription();
-	}
-
 	@Nullable
 	private TestCaseIdEntry getTestCaseId(@Nonnull String codeRef, @Nonnull ITestResult testResult) {
 		Method method = getMethod(testResult);
@@ -800,18 +819,5 @@ public class TestNGService implements ITestNGService {
 			parentId = getAttribute(testResult.getTestContext(), RP_ID);
 		}
 		return parentId;
-	}
-
-	/**
-	 * Extension point to customize test step description with error message
-	 *
-	 * @param testResult TestNG's testResult context
-	 * @return Test/Step Description being sent to ReportPortal
-	 */
-	private String getLogMessage(ITestResult testResult) {
-		String error = String.format(DESCRIPTION_ERROR_FORMAT, ExceptionUtils.getStackTrace(testResult.getThrowable())).trim();
-		return ofNullable(createStepDescription(testResult)).filter(StringUtils::isNotBlank)
-				.map(description -> MarkdownUtils.asTwoParts(description, error))
-				.orElse(error);
 	}
 }
