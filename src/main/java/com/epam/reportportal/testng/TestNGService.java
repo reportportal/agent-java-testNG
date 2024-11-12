@@ -435,7 +435,7 @@ public class TestNGService implements ITestNGService {
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
 
 		boolean isRetried = testResult.wasRetried();
-		if (TestMethodType.STEP == type && getAttribute(testResult, RP_RETRY) == null && isRetried) {
+		if (TestMethodType.STEP == type && getAttribute(testResult, RP_RETRY) == null && isRetried && rq.getIssue() == null) {
 			RETRY_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			rq.setRetry(Boolean.TRUE);
 			rq.setIssue(Launch.NOT_ISSUE);
@@ -498,14 +498,18 @@ public class TestNGService implements ITestNGService {
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
 		Object instance = testResult.getInstance();
 
+		if (type == TestMethodType.STEP) {
+			rq.setIssue(createIssue(testResult));
+		}
+
 		// TestNG does not repeat before methods if an after method fails during retries. But reports them as skipped.
 		// Mark before methods as not an issue if it is not a culprit.
 		if (instance != null) {
 			if (ItemStatus.FAILED == status && (TestMethodType.BEFORE_METHOD == type || TestMethodType.BEFORE_CLASS == type)) {
 				SKIPPED_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			}
-			if (ItemStatus.SKIPPED == status && (SKIPPED_STATUS_TRACKER.containsKey(instance) || (TestMethodType.BEFORE_METHOD == type
-					&& getAttribute(testResult, RP_RETRY) != null))) {
+			if (status == ItemStatus.SKIPPED && rq.getIssue() == null
+					&& (SKIPPED_STATUS_TRACKER.containsKey(instance) || (TestMethodType.BEFORE_METHOD == type && getAttribute(testResult, RP_RETRY) != null))) {
 				rq.setIssue(Launch.NOT_ISSUE);
 			}
 			if (ItemStatus.SKIPPED == status && BEFORE_METHODS.contains(type) && testResult.getThrowable() != null) {
@@ -515,10 +519,6 @@ public class TestNGService implements ITestNGService {
 		}
 
 		processFinishRetryFlag(testResult, rq);
-
-		if (type == TestMethodType.STEP) {
-			rq.setIssue(createIssue(testResult));
-		}
 
 		Maybe<OperationCompletionRS> finishItemResponse = launch.get().finishTestItem(itemId, rq);
 		if (launch.get().getParameters().isCallbackReportingEnabled()) {
