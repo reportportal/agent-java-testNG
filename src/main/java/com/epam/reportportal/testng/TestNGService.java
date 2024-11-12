@@ -15,10 +15,7 @@
  */
 package com.epam.reportportal.testng;
 
-import com.epam.reportportal.annotations.Description;
-import com.epam.reportportal.annotations.DisplayName;
-import com.epam.reportportal.annotations.ParameterKey;
-import com.epam.reportportal.annotations.TestCaseId;
+import com.epam.reportportal.annotations.*;
 import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
@@ -27,10 +24,7 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.testng.util.internal.LimitedSizeConcurrentHashMap;
-import com.epam.reportportal.utils.AttributeParser;
-import com.epam.reportportal.utils.MemoizingSupplier;
-import com.epam.reportportal.utils.ParameterUtils;
-import com.epam.reportportal.utils.TestCaseIdUtils;
+import com.epam.reportportal.utils.*;
 import com.epam.reportportal.utils.formatting.MarkdownUtils;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.*;
@@ -386,8 +380,7 @@ public class TestNGService implements ITestNGService {
 	 */
 	@Nullable
 	private String getLogMessage(@Nonnull ITestResult testResult) {
-		String error = ofNullable(testResult.getThrowable()).map(t -> String.format(
-				DESCRIPTION_ERROR_FORMAT,
+		String error = ofNullable(testResult.getThrowable()).map(t -> String.format(DESCRIPTION_ERROR_FORMAT,
 				getStackTrace(t, new Throwable())
 		)).orElse(null);
 		if (error == null) {
@@ -479,6 +472,15 @@ public class TestNGService implements ITestNGService {
 	protected void createSkippedSteps(ITestResult testResult) {
 	}
 
+	@Nullable
+	protected com.epam.ta.reportportal.ws.model.issue.Issue createIssue(@Nonnull ITestResult testResult) {
+		String stepName = createStepName(testResult);
+		List<ParameterResource> parameters = createStepParameters(testResult);
+		return getMethodAnnotation(Issues.class, testResult).map(i -> IssueUtils.createIssue(i, stepName, parameters))
+				.orElseGet(() -> getMethodAnnotation(Issue.class, testResult).map(i -> IssueUtils.createIssue(i, stepName, parameters))
+						.orElse(null));
+	}
+
 	@Override
 	public void finishTestMethod(ItemStatus status, ITestResult testResult) {
 		Maybe<String> itemId = getAttribute(testResult, RP_ID);
@@ -513,6 +515,10 @@ public class TestNGService implements ITestNGService {
 		}
 
 		processFinishRetryFlag(testResult, rq);
+
+		if (type == TestMethodType.STEP) {
+			rq.setIssue(createIssue(testResult));
+		}
 
 		Maybe<OperationCompletionRS> finishItemResponse = launch.get().finishTestItem(itemId, rq);
 		if (launch.get().getParameters().isCallbackReportingEnabled()) {
@@ -758,13 +764,8 @@ public class TestNGService implements ITestNGService {
 		List<Object> parameters = ofNullable(testResult.getParameters()).map(Arrays::asList).orElse(null);
 		TestCaseIdEntry id = getMethodAnnotation(TestCaseId.class,
 				testResult
-		).flatMap(a -> ofNullable(method).map(m -> TestCaseIdUtils.getTestCaseId(
-				a,
-				m,
-				codeRef,
-				parameters,
-				instance
-		))).orElse(TestCaseIdUtils.getTestCaseId(codeRef, parameters));
+		).flatMap(a -> ofNullable(method).map(m -> TestCaseIdUtils.getTestCaseId(a, m, codeRef, parameters, instance)))
+				.orElse(TestCaseIdUtils.getTestCaseId(codeRef, parameters));
 
 		return id == null ? null : id.getId().endsWith("[]") ? new TestCaseIdEntry(id.getId().substring(0, id.getId().length() - 2)) : id;
 	}
