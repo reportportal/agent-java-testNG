@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.4.4]
 ### Added
 - Common Stack Trace frames skip in description and logs, by @HardNorth
 - `@Issue` and `@Issues` annotations support, by @HardNorth
