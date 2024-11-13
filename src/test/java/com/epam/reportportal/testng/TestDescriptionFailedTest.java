@@ -24,7 +24,7 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.testng.integration.feature.description.DescriptionFailedTest;
 import com.epam.reportportal.utils.MemoizingSupplier;
-import com.epam.reportportal.utils.markdown.MarkdownUtils;
+import com.epam.reportportal.utils.formatting.MarkdownUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import java.util.Calendar;

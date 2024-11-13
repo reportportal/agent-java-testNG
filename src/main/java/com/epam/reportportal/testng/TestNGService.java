@@ -15,10 +15,7 @@
  */
 package com.epam.reportportal.testng;
 
-import com.epam.reportportal.annotations.Description;
-import com.epam.reportportal.annotations.DisplayName;
-import com.epam.reportportal.annotations.ParameterKey;
-import com.epam.reportportal.annotations.TestCaseId;
+import com.epam.reportportal.annotations.*;
 import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
@@ -27,11 +24,8 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.service.tree.TestItemTree;
 import com.epam.reportportal.testng.util.internal.LimitedSizeConcurrentHashMap;
-import com.epam.reportportal.utils.AttributeParser;
-import com.epam.reportportal.utils.MemoizingSupplier;
-import com.epam.reportportal.utils.ParameterUtils;
-import com.epam.reportportal.utils.TestCaseIdUtils;
-import com.epam.reportportal.utils.markdown.MarkdownUtils;
+import com.epam.reportportal.utils.*;
+import com.epam.reportportal.utils.formatting.MarkdownUtils;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
@@ -39,7 +33,6 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.testng.*;
 import org.testng.annotations.Factory;
@@ -65,11 +58,11 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.epam.reportportal.testng.util.ItemTreeUtils.createKey;
+import static com.epam.reportportal.utils.formatting.ExceptionUtils.getStackTrace;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 
 /**
  * TestNG service implements operations for interaction ReportPortal
@@ -300,6 +293,21 @@ public class TestNGService implements ITestNGService {
 	}
 
 	/**
+	 * Extension point to customize test step description
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Test/Step Description being sent to ReportPortal
+	 */
+	@Nonnull
+	protected String createStepDescription(@Nonnull ITestResult testResult) {
+		var methodDescriptionOptional = getMethodAnnotation(Description.class, testResult);
+		if (methodDescriptionOptional.isPresent()) {
+			return methodDescriptionOptional.get().value();
+		}
+		return testResult.getMethod().getDescription();
+	}
+
+	/**
 	 * Extension point to customize test step creation event/request
 	 *
 	 * @param testResult TestNG's testResult context
@@ -365,6 +373,24 @@ public class TestNGService implements ITestNGService {
 	}
 
 	/**
+	 * Extension point to customize test step description with error message
+	 *
+	 * @param testResult TestNG's testResult context
+	 * @return Test/Step Description being sent to ReportPortal
+	 */
+	@Nullable
+	private String getLogMessage(@Nonnull ITestResult testResult) {
+		String error = ofNullable(testResult.getThrowable()).map(t -> String.format(DESCRIPTION_ERROR_FORMAT,
+				getStackTrace(t, new Throwable())
+		)).orElse(null);
+		if (error == null) {
+			return null;
+		}
+		String description = createStepDescription(testResult);
+		return StringUtils.isNotBlank(description) ? MarkdownUtils.asTwoParts(description, error) : error;
+	}
+
+	/**
 	 * Extension point to customize test method on it's finish
 	 *
 	 * @param status     item execution status
@@ -409,7 +435,7 @@ public class TestNGService implements ITestNGService {
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
 
 		boolean isRetried = testResult.wasRetried();
-		if (TestMethodType.STEP == type && getAttribute(testResult, RP_RETRY) == null && isRetried) {
+		if (TestMethodType.STEP == type && getAttribute(testResult, RP_RETRY) == null && isRetried && rq.getIssue() == null) {
 			RETRY_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			rq.setRetry(Boolean.TRUE);
 			rq.setIssue(Launch.NOT_ISSUE);
@@ -446,6 +472,15 @@ public class TestNGService implements ITestNGService {
 	protected void createSkippedSteps(ITestResult testResult) {
 	}
 
+	@Nullable
+	protected com.epam.ta.reportportal.ws.model.issue.Issue createIssue(@Nonnull ITestResult testResult) {
+		String stepName = createStepName(testResult);
+		List<ParameterResource> parameters = createStepParameters(testResult);
+		return getMethodAnnotation(Issues.class, testResult).map(i -> IssueUtils.createIssue(i, stepName, parameters))
+				.orElseGet(() -> getMethodAnnotation(Issue.class, testResult).map(i -> IssueUtils.createIssue(i, stepName, parameters))
+						.orElse(null));
+	}
+
 	@Override
 	public void finishTestMethod(ItemStatus status, ITestResult testResult) {
 		Maybe<String> itemId = getAttribute(testResult, RP_ID);
@@ -463,14 +498,18 @@ public class TestNGService implements ITestNGService {
 		TestMethodType type = getAttribute(testResult, RP_METHOD_TYPE);
 		Object instance = testResult.getInstance();
 
+		if (type == TestMethodType.STEP) {
+			rq.setIssue(createIssue(testResult));
+		}
+
 		// TestNG does not repeat before methods if an after method fails during retries. But reports them as skipped.
 		// Mark before methods as not an issue if it is not a culprit.
 		if (instance != null) {
 			if (ItemStatus.FAILED == status && (TestMethodType.BEFORE_METHOD == type || TestMethodType.BEFORE_CLASS == type)) {
 				SKIPPED_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			}
-			if (ItemStatus.SKIPPED == status && (SKIPPED_STATUS_TRACKER.containsKey(instance) || (TestMethodType.BEFORE_METHOD == type
-					&& getAttribute(testResult, RP_RETRY) != null))) {
+			if (status == ItemStatus.SKIPPED && rq.getIssue() == null
+					&& (SKIPPED_STATUS_TRACKER.containsKey(instance) || (TestMethodType.BEFORE_METHOD == type && getAttribute(testResult, RP_RETRY) != null))) {
 				rq.setIssue(Launch.NOT_ISSUE);
 			}
 			if (ItemStatus.SKIPPED == status && BEFORE_METHODS.contains(type) && testResult.getThrowable() != null) {
@@ -494,7 +533,7 @@ public class TestNGService implements ITestNGService {
 			rq.setItemUuid(itemUuid);
 			rq.setLevel("ERROR");
 			if (result.getThrowable() != null) {
-				rq.setMessage(getStackTrace(result.getThrowable()));
+				rq.setMessage(getStackTrace(result.getThrowable(), new Throwable()));
 			} else {
 				rq.setMessage("Test has failed without exception");
 			}
@@ -718,20 +757,6 @@ public class TestNGService implements ITestNGService {
 		return testStepName == null ? testResult.getMethod().getMethodName() : testStepName;
 	}
 
-	/**
-	 * Extension point to customize test step description
-	 *
-	 * @param testResult TestNG's testResult context
-	 * @return Test/Step Description being sent to ReportPortal
-	 */
-	protected String createStepDescription(ITestResult testResult) {
-		var methodDescriptionOptional = getMethodAnnotation(Description.class, testResult);
-		if (methodDescriptionOptional.isPresent()) {
-			return methodDescriptionOptional.get().value();
-		}
-		return testResult.getMethod().getDescription();
-	}
-
 	@Nullable
 	private TestCaseIdEntry getTestCaseId(@Nonnull String codeRef, @Nonnull ITestResult testResult) {
 		Method method = getMethod(testResult);
@@ -739,13 +764,8 @@ public class TestNGService implements ITestNGService {
 		List<Object> parameters = ofNullable(testResult.getParameters()).map(Arrays::asList).orElse(null);
 		TestCaseIdEntry id = getMethodAnnotation(TestCaseId.class,
 				testResult
-		).flatMap(a -> ofNullable(method).map(m -> TestCaseIdUtils.getTestCaseId(
-				a,
-				m,
-				codeRef,
-				parameters,
-				instance
-		))).orElse(TestCaseIdUtils.getTestCaseId(codeRef, parameters));
+		).flatMap(a -> ofNullable(method).map(m -> TestCaseIdUtils.getTestCaseId(a, m, codeRef, parameters, instance)))
+				.orElse(TestCaseIdUtils.getTestCaseId(codeRef, parameters));
 
 		return id == null ? null : id.getId().endsWith("[]") ? new TestCaseIdEntry(id.getId().substring(0, id.getId().length() - 2)) : id;
 	}
@@ -800,18 +820,5 @@ public class TestNGService implements ITestNGService {
 			parentId = getAttribute(testResult.getTestContext(), RP_ID);
 		}
 		return parentId;
-	}
-
-	/**
-	 * Extension point to customize test step description with error message
-	 *
-	 * @param testResult TestNG's testResult context
-	 * @return Test/Step Description being sent to ReportPortal
-	 */
-	private String getLogMessage(ITestResult testResult) {
-		String error = String.format(DESCRIPTION_ERROR_FORMAT, ExceptionUtils.getStackTrace(testResult.getThrowable())).trim();
-		return ofNullable(createStepDescription(testResult)).filter(StringUtils::isNotBlank)
-				.map(description -> MarkdownUtils.asTwoParts(description, error))
-				.orElse(error);
 	}
 }
