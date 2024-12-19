@@ -135,8 +135,7 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public void finishLaunch() {
-		FinishExecutionRQ rq = new FinishExecutionRQ();
-		rq.setEndTime(Calendar.getInstance().getTime());
+		FinishExecutionRQ rq = buildFinishLaunchRq(launch.get().getParameters());
 		launch.get().finish(rq);
 		launch.reset();
 		Runtime.getRuntime().removeShutdownHook(shutDownHook);
@@ -605,6 +604,19 @@ public class TestNGService implements ITestNGService {
 			attributes.add(skippedIssueAttribute);
 		}
 		attributes.addAll(SystemAttributesExtractor.extract(AGENT_PROPERTIES_FILE, TestNGService.class.getClassLoader()));
+		return rq;
+	}
+
+	/**
+	 * Extension point to customize launch finishing event/request
+	 *
+	 * @param parameters Launch Configuration parameters
+	 * @return Request to ReportPortal
+	 */
+	@SuppressWarnings("unused")
+	protected FinishExecutionRQ buildFinishLaunchRq(ListenerParameters parameters) {
+		FinishExecutionRQ rq = new FinishExecutionRQ();
+		rq.setEndTime(Calendar.getInstance().getTime());
 		return rq;
 	}
 
