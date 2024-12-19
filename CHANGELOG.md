@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.4.5]
 ### Added
 - `TestNGService.buildFinishLaunchRq` method to allow customization of launch finish request, by @HardNorth
 
