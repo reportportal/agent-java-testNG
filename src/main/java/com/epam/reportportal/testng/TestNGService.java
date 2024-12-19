@@ -474,7 +474,7 @@ public class TestNGService implements ITestNGService {
 	@Nullable
 	protected com.epam.ta.reportportal.ws.model.issue.Issue createIssue(@Nonnull ITestResult testResult) {
 		String stepName = createStepName(testResult);
-		List<ParameterResource> parameters = createStepParameters(testResult);
+		List<ParameterResource> parameters = ofNullable(createStepParameters(testResult)).orElse(Collections.emptyList());
 		return getMethodAnnotation(Issues.class, testResult).map(i -> IssueUtils.createIssue(i, stepName, parameters))
 				.orElseGet(() -> getMethodAnnotation(Issue.class, testResult).map(i -> IssueUtils.createIssue(i, stepName, parameters))
 						.orElse(null));
@@ -548,6 +548,7 @@ public class TestNGService implements ITestNGService {
 	 * @param suite TestNG suite
 	 * @return Request to ReportPortal
 	 */
+	@Nonnull
 	protected StartTestItemRQ buildStartSuiteRq(ISuite suite) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setName(suite.getName());
@@ -582,6 +583,7 @@ public class TestNGService implements ITestNGService {
 	 * @param parameters Launch Configuration parameters
 	 * @return Request to ReportPortal
 	 */
+	@Nonnull
 	protected StartLaunchRQ buildStartLaunchRq(ListenerParameters parameters) {
 		StartLaunchRQ rq = new StartLaunchRQ();
 		rq.setName(parameters.getLaunchName());
@@ -614,6 +616,7 @@ public class TestNGService implements ITestNGService {
 	 * @return Request to ReportPortal
 	 */
 	@SuppressWarnings("unused")
+	@Nonnull
 	protected FinishExecutionRQ buildFinishLaunchRq(ListenerParameters parameters) {
 		FinishExecutionRQ rq = new FinishExecutionRQ();
 		rq.setEndTime(Calendar.getInstance().getTime());
@@ -627,6 +630,7 @@ public class TestNGService implements ITestNGService {
 	 * @return Request to ReportPortal
 	 */
 	@SuppressWarnings("unused")
+	@Nonnull
 	protected FinishTestItemRQ buildFinishTestSuiteRq(ISuite suite) {
 		/* 'real' end time */
 		Date now = Calendar.getInstance().getTime();
@@ -641,6 +645,7 @@ public class TestNGService implements ITestNGService {
 	 * @param testContext TestNG test context
 	 * @return Request to ReportPortal
 	 */
+	@Nonnull
 	protected FinishTestItemRQ buildFinishTestRq(ITestContext testContext) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(testContext.getEndDate());
@@ -653,6 +658,7 @@ public class TestNGService implements ITestNGService {
 	 * @param testResult TestNG's testResult context
 	 * @return Test/Step Parameters being sent to ReportPortal
 	 */
+	@Nullable
 	protected List<ParameterResource> createStepParameters(ITestResult testResult) {
 		List<ParameterResource> parameters = Lists.newArrayList();
 		parameters.addAll(createDataProviderParameters(testResult));
