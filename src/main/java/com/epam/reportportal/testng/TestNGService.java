@@ -531,13 +531,9 @@ public class TestNGService implements ITestNGService {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			rq.setLevel("ERROR");
-			if (result.getThrowable() != null) {
-				rq.setMessage(getStackTrace(result.getThrowable(), new Throwable()));
-			} else {
-				rq.setMessage("Test has failed without exception");
-			}
+			rq.setMessage(ofNullable(result.getThrowable()).map(t -> getStackTrace(result.getThrowable(), new Throwable()))
+					.orElse("Test has failed without exception"));
 			rq.setLogTime(Calendar.getInstance().getTime());
-
 			return rq;
 		});
 	}
