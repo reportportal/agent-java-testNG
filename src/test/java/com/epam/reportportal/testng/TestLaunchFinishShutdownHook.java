@@ -16,7 +16,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -50,24 +49,19 @@ public class TestLaunchFinishShutdownHook {
 				if (startResult.getValue().waitFor(30, TimeUnit.SECONDS)) {
 					return startResult.getValue().exitValue();
 				} else {
-					startResult.getValue().destroy();
+					startResult.getValue().destroyForcibly();
 					return -1;
 				}
 			} catch (InterruptedException e) {
 				return -2;
 			}
 		};
-		try {
-			Pair<List<String>, Integer> finishResult = SocketUtils.executeServerCallable(serverCallable, clientCallableResult, 35);
-			assertThat(
-					"Second request is a launch finish",
-					finishResult.getKey().get(0),
-					startsWith("PUT /api/v2/test-project/launch/b7a79414-287c-452d-b157-c32fe6cb1c72/finish")
-			);
-			assertThat("Exit code should be '0'", finishResult.getValue(), equalTo(0));
-		} catch (TimeoutException e) {
-			startResult.getValue().destroyForcibly();
-			throw e;
-		}
+		Pair<List<String>, Integer> finishResult = SocketUtils.executeServerCallable(serverCallable, clientCallableResult, 35);
+		assertThat(
+				"Second request is a launch finish",
+				finishResult.getKey().get(0),
+				startsWith("PUT /api/v2/test-project/launch/b7a79414-287c-452d-b157-c32fe6cb1c72/finish")
+		);
+		assertThat("Exit code should be '0'", finishResult.getValue(), equalTo(0));
 	}
 }
