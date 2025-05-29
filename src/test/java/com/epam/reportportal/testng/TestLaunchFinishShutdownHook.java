@@ -9,7 +9,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.ServerSocket;
 import java.util.Arrays;
@@ -26,10 +25,9 @@ import static org.hamcrest.Matchers.*;
 public class TestLaunchFinishShutdownHook {
 
 	public static Iterable<Object[]> data() {
-		return Arrays.asList(new Object[][]{
-				{LaunchFinishShutdownHookTest.class, Arrays.asList("files/launch_start_response.txt", "files/launch_finish_response.txt")},
-				{LaunchFinishShutdownHookRemoveTest.class, Collections.singletonList("files/launch_start_response.txt")}
-		});
+		return Arrays.asList(new Object[][] { { LaunchFinishShutdownHookTest.class,
+				Arrays.asList("files/launch_start_response.txt", "files/launch_finish_response.txt") },
+				{ LaunchFinishShutdownHookRemoveTest.class, Collections.singletonList("files/launch_start_response.txt") } });
 	}
 
 	@ParameterizedTest
@@ -37,8 +35,12 @@ public class TestLaunchFinishShutdownHook {
 	public void test_shutdown_hook_finishes_launch_on_java_machine_exit(final Class<?> clazz, List<String> responses) throws Exception {
 		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
 		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, Collections.emptyMap(), responses);
-		Callable<Process> clientCallable = () -> ProcessUtils.buildProcess(true, clazz,
-				Collections.singletonMap(LaunchImpl.DISABLE_PROPERTY, "1"), String.valueOf(ss.getLocalPort()));
+		Callable<Process> clientCallable = () -> ProcessUtils.buildProcess(
+				true,
+				clazz,
+				Collections.singletonMap(LaunchImpl.DISABLE_PROPERTY, "1"),
+				String.valueOf(ss.getLocalPort())
+		);
 		Pair<List<String>, Process> startResult = SocketUtils.executeServerCallable(serverCallable, clientCallable, 20);
 		assertThat(startResult.getValue(), notNullValue());
 		assertThat("First request is a launch start", startResult.getKey().get(0), startsWith("POST /api/v2/test-project/launch"));
@@ -57,12 +59,13 @@ public class TestLaunchFinishShutdownHook {
 		};
 		try {
 			Pair<List<String>, Integer> finishResult = SocketUtils.executeServerCallable(serverCallable, clientCallableResult, 35);
-			assertThat("Second request is a launch finish",
+			assertThat(
+					"Second request is a launch finish",
 					finishResult.getKey().get(0),
 					startsWith("PUT /api/v2/test-project/launch/b7a79414-287c-452d-b157-c32fe6cb1c72/finish")
 			);
 			assertThat("Exit code should be '0'", finishResult.getValue(), equalTo(0));
-		} catch (TimeoutException e){
+		} catch (TimeoutException e) {
 			startResult.getValue().destroyForcibly();
 			throw e;
 		}
