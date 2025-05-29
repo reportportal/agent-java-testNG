@@ -727,7 +727,7 @@ public class TestNGService implements ITestNGService {
 				Class<?> boxedClass = ParameterUtils.toBoxedType(type);
 				// If value is null we can't get class, assume it suites.
 				return ofNullable(parameters[i]).map(p -> boxedClass == p.getClass()).orElse(true);
-			}).allMatch(b -> b == Boolean.TRUE);
+			}).allMatch(b -> b);
 		}).findAny().orElse(null);
 		if (parameters == null || parameters.length <= 0 || constructor == null) {
 			return Collections.emptyList();
