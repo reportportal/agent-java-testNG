@@ -44,7 +44,7 @@ dependencies {
     compileOnly "org.testng:testng:${testng_version}"
     implementation 'org.slf4j:slf4j-api:2.0.7'
 
-    testImplementation 'com.epam.reportportal:agent-java-test-utils:0.0.11'
+    testImplementation 'com.epam.reportportal:agent-java-test-utils:0.0.12'
 
     testImplementation "org.testng:testng:${testng_version}"
     testImplementation("org.junit.platform:junit-platform-runner:${junit5_runner_version}") {
