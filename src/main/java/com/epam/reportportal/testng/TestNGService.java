@@ -531,13 +531,9 @@ public class TestNGService implements ITestNGService {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			rq.setLevel("ERROR");
-			if (result.getThrowable() != null) {
-				rq.setMessage(getStackTrace(result.getThrowable(), new Throwable()));
-			} else {
-				rq.setMessage("Test has failed without exception");
-			}
+			rq.setMessage(ofNullable(result.getThrowable()).map(t -> getStackTrace(result.getThrowable(), new Throwable()))
+					.orElse("Test has failed without exception"));
 			rq.setLogTime(Calendar.getInstance().getTime());
-
 			return rq;
 		});
 	}
@@ -731,7 +727,7 @@ public class TestNGService implements ITestNGService {
 				Class<?> boxedClass = ParameterUtils.toBoxedType(type);
 				// If value is null we can't get class, assume it suites.
 				return ofNullable(parameters[i]).map(p -> boxedClass == p.getClass()).orElse(true);
-			}).allMatch(b -> b == Boolean.TRUE);
+			}).allMatch(b -> b);
 		}).findAny().orElse(null);
 		if (parameters == null || parameters.length <= 0 || constructor == null) {
 			return Collections.emptyList();
