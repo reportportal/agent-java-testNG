@@ -21,7 +21,7 @@ public class LaunchFinishShutdownHookRemoveTest {
 		int port = Integer.parseInt(args[0]);
 		System.out.println("Executing using port: " + port);
 
-		ExecutorService myExecutor = MultithreadingUtils.buildExecutorService("rp-test", 3);
+		ExecutorService myExecutor = MultithreadingUtils.buildExecutorService("rp-test", 2);
 
 		ListenerParameters parameters = TestUtils.standardParameters();
 		parameters.setReportingTimeout(5);
