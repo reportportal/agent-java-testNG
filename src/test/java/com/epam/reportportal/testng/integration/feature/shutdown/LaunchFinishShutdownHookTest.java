@@ -4,9 +4,9 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.testng.TestNGService;
 import com.epam.reportportal.testng.integration.util.TestUtils;
+import com.epam.reportportal.utils.MultithreadingUtils;
 
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class LaunchFinishShutdownHookTest {
@@ -21,11 +21,7 @@ public class LaunchFinishShutdownHookTest {
 		int port = Integer.parseInt(args[0]);
 		System.out.println("Executing using port: " + port);
 
-		ExecutorService myExecutor = Executors.newSingleThreadExecutor(r -> {
-			Thread t = new Thread(r);
-			t.setDaemon(true);
-			return t;
-		});
+		ExecutorService myExecutor = MultithreadingUtils.buildExecutorService("rp-test", 2);
 
 		ListenerParameters parameters = TestUtils.standardParameters();
 		parameters.setReportingTimeout(5);
@@ -38,5 +34,4 @@ public class LaunchFinishShutdownHookTest {
 		Thread.sleep(TimeUnit.SECONDS.toMillis(3));
 		System.out.println("Exiting...");
 	}
-
 }
