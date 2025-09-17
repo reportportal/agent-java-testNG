@@ -48,6 +48,7 @@ public class NestedStepTest {
 	@BeforeEach
 	public void initMocks() {
 		mockLaunch(client, "launchUuid", testSuiteId, testClassId, testMethodId);
+		mockLogging(client);
 		TestNgListener.initReportPortal(ReportPortal.create(client, standardParameters()));
 	}
 

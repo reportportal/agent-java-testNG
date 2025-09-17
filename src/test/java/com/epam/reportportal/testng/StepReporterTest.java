@@ -58,6 +58,7 @@ public class StepReporterTest {
 	@BeforeEach
 	public void initMocks() {
 		mockLaunch(client, "launchUuid", suitedUuid, testClassUuid, testMethodUuid);
+		mockLogging(client);
 		ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
 		TestNgListener.initReportPortal(reportPortal);
 	}
