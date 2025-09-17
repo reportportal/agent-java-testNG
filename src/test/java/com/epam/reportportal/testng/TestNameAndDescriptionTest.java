@@ -6,11 +6,7 @@ import com.epam.reportportal.testng.integration.TestNgListener;
 import com.epam.reportportal.testng.integration.feature.description.DescriptionAnnotatedAndTestNgDescriptionTest;
 import com.epam.reportportal.testng.integration.feature.description.DescriptionAnnotatedTest;
 import com.epam.reportportal.testng.integration.feature.description.DescriptionTest;
-import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedClassTest;
-import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedParameterizedClassTest;
-import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedTestAndDisplayNameMethodClassTest;
-import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedDisplayNameMethodClassTest;
-import com.epam.reportportal.testng.integration.feature.name.AnnotationNamedDisplayNameParameterizedClassTest;;
+import com.epam.reportportal.testng.integration.feature.name.*;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +36,7 @@ public class TestNameAndDescriptionTest {
 	@BeforeEach
 	public void initMocks() {
 		mockLaunch(client, namedUuid("launchUuid"), suitedUuid, testClassUuid, stepUuid);
+		mockLogging(client);
 		ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
 		TestNgListener.initReportPortal(reportPortal);
 	}
@@ -159,8 +156,10 @@ public class TestNameAndDescriptionTest {
 		ArgumentCaptor<StartTestItemRQ> startTestCapture = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, times(2)).startTestItem(same(testClassUuid), startTestCapture.capture());
 
-		startTestCapture.getAllValues().forEach(startItem -> {
-			assertThat(startItem.getName(), equalTo(AnnotationNamedDisplayNameMethodClassTest.TEST_NAME_DISPLAY));
-		});
+		startTestCapture.getAllValues()
+				.forEach(startItem -> assertThat(
+						startItem.getName(),
+						equalTo(AnnotationNamedDisplayNameMethodClassTest.TEST_NAME_DISPLAY)
+				));
 	}
 }

@@ -50,6 +50,7 @@ public class ParametersBypassTest {
 	@BeforeEach
 	public void initMocks() {
 		TestUtils.mockLaunch(client, "launchUuid", suitedUuid, testClassUuid, testMethodUuidList);
+		TestUtils.mockLogging(client);
 
 		final ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
 		TestReportPortalListener.initReportPortal(reportPortal);
