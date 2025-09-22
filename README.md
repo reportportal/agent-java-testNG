@@ -12,7 +12,7 @@ A TestNG reporter that uploads the results to a ReportPortal server.
 [![stackoverflow](https://img.shields.io/badge/reportportal-stackoverflow-orange.svg?style=flat)](http://stackoverflow.com/questions/tagged/reportportal)
 [![Build with Love](https://img.shields.io/badge/build%20with-❤%EF%B8%8F%E2%80%8D-lightgrey.svg)](http://reportportal.io?style=flat)
 
-The latest version: 5.5.1. Please use `Maven Central` link above to get the agent.
+The latest version: 5.5.2. Please use `Maven Central` link above to get the agent.
 **For TestNG version [7.1.0](https://central.sonatype.com/artifact/org.testng/testng/7.1.0) and higher**
 
 ## Overview: How to Add ReportPortal Logging to Your Project
@@ -69,7 +69,7 @@ If your project is Maven-based you need to add dependencies to `pom.xml` file:
   <dependency>
     <groupId>com.epam.reportportal</groupId>
     <artifactId>agent-java-testng</artifactId>
-    <version>5.5.1</version>
+    <version>5.5.2</version>
     <scope>test</scope>
   </dependency>
 
@@ -84,7 +84,7 @@ be still OK, it will use transitive TestNG version.
 For Gradle-based projects please update dependencies section in `build.gradle` file:
 ```groovy
 dependencies {
-    testImplementation 'com.epam.reportportal:agent-java-testng:5.5.1'
+    testImplementation 'com.epam.reportportal:agent-java-testng:5.5.2'
 }
 ```
 
