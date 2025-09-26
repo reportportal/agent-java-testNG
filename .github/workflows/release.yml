@@ -107,7 +107,6 @@ jobs:
           body: ${{ steps.readChangelogEntry.outputs.changes }}
 
       - name: Checkout develop branch
-        if: ${{ github.ref }} == 'master'
         uses: actions/checkout@v4
         with:
           ref: 'develop'
@@ -115,7 +114,6 @@ jobs:
 
       - name: Merge release branch into develop
         id: mergeIntoDevelop
-        if: ${{ github.ref }} == 'master'
         run: |
           git merge -m 'Merge master branch into develop after a release' origin/master
           git status | (! grep -Fq 'both modified:') || git status | grep -F 'both modified:' \
