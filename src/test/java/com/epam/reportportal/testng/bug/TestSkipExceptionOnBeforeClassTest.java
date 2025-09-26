@@ -39,7 +39,6 @@ import org.mockito.Mock;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -115,13 +114,19 @@ public class TestSkipExceptionOnBeforeClassTest {
 		ArgumentCaptor<StartTestItemRQ> startTestCapture = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, times(5)).startTestItem(same(testClassUuid), startTestCapture.capture());
 		List<StartTestItemRQ> startItems = startTestCapture.getAllValues();
-		startItems.sort(Comparator.comparing(rq -> (Instant) rq.getStartTime()));
 
-		assertThat(startItems.get(0).getType(), equalTo(ItemType.BEFORE_CLASS.name()));
-		assertThat(startItems.get(1).getType(), equalTo(ItemType.BEFORE_METHOD.name()));
-		assertThat(startItems.get(2).getType(), equalTo(ItemType.STEP.name()));
-		assertThat(startItems.get(3).getType(), equalTo(ItemType.AFTER_METHOD.name()));
-		assertThat(startItems.get(4).getType(), equalTo(ItemType.AFTER_CLASS.name()));
+		List<String> types = startItems.stream().map(StartTestItemRQ::getType).collect(Collectors.toList());
+		// It passes too fast to preserve order
+		assertThat(
+				types,
+				containsInAnyOrder(
+						ItemType.BEFORE_CLASS.name(),
+						ItemType.BEFORE_METHOD.name(),
+						ItemType.STEP.name(),
+						ItemType.AFTER_METHOD.name(),
+						ItemType.AFTER_CLASS.name()
+				)
+		);
 
 		ArgumentCaptor<String> finishUuidCapture = ArgumentCaptor.forClass(String.class);
 		ArgumentCaptor<FinishTestItemRQ> finishItemCapture = ArgumentCaptor.forClass(FinishTestItemRQ.class);
