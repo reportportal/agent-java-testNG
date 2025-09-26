@@ -29,6 +29,7 @@ import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import io.reactivex.Maybe;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -38,6 +39,7 @@ import org.mockito.Mock;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,8 +49,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestSkipExceptionOnBeforeClassTest {
@@ -98,6 +99,7 @@ public class TestSkipExceptionOnBeforeClassTest {
 	public void initMocks() {
 		mockLaunch(client, namedUuid("launchUuid"), suitedUuid, testClassUuid, testUuidList);
 		mockLogging(client);
+		when(client.getApiInfo()).thenReturn(Maybe.just(testApiInfo()));
 		ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
 		TestListener.initReportPortal(reportPortal);
 	}
@@ -113,6 +115,7 @@ public class TestSkipExceptionOnBeforeClassTest {
 		ArgumentCaptor<StartTestItemRQ> startTestCapture = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, times(5)).startTestItem(same(testClassUuid), startTestCapture.capture());
 		List<StartTestItemRQ> startItems = startTestCapture.getAllValues();
+		startItems.sort(Comparator.comparing(rq -> (Instant) rq.getStartTime()));
 
 		assertThat(startItems.get(0).getType(), equalTo(ItemType.BEFORE_CLASS.name()));
 		assertThat(startItems.get(1).getType(), equalTo(ItemType.BEFORE_METHOD.name()));

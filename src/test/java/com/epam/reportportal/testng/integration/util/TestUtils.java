@@ -2,8 +2,10 @@ package com.epam.reportportal.testng.integration.util;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.LaunchImpl;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
+import com.epam.ta.reportportal.ws.model.ApiInfo;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -158,5 +160,13 @@ public class TestUtils {
 		result.setProjectName("test-project");
 		result.setEnable(true);
 		return result;
+	}
+
+	public static ApiInfo testApiInfo() {
+		ApiInfo apiInfo = new ApiInfo();
+		ApiInfo.Build build = new ApiInfo.Build();
+		apiInfo.setBuild(build);
+		build.setVersion(LaunchImpl.MICROSECONDS_MIN_VERSION);
+		return apiInfo;
 	}
 }
