@@ -31,7 +31,7 @@ public class TestLaunchFinishShutdownHook {
 		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(
 				ss,
 				Collections.emptyMap(),
-				Arrays.asList("files/launch_start_response.txt", "files/launch_finish_response.txt")
+				Arrays.asList("files/info_response_microseconds.txt", "files/launch_start_response.txt", "files/launch_finish_response.txt")
 		);
 		Callable<Process> clientCallable = () -> ProcessUtils.buildProcess(
 				true,
@@ -41,7 +41,7 @@ public class TestLaunchFinishShutdownHook {
 		);
 		Pair<List<String>, Process> startResult = SocketUtils.executeServerCallable(serverCallable, clientCallable, 20);
 		assertThat(startResult.getValue(), notNullValue());
-		assertThat("First request is a launch start", startResult.getKey().get(0), startsWith("POST /api/v2/test-project/launch"));
+		assertThat("Second request is a launch start", startResult.getKey().get(1), startsWith("POST /api/v2/test-project/launch"));
 
 		Callable<Integer> clientCallableResult = () -> {
 			try {
@@ -55,12 +55,14 @@ public class TestLaunchFinishShutdownHook {
 				return -2;
 			}
 		};
-		Integer finishResult = CommonUtils.testExecutor().submit(clientCallableResult).get(35, TimeUnit.SECONDS);
-		assertThat(
-				"Second request is a launch finish",
-				startResult.getKey().get(1),
-				startsWith("PUT /api/v2/test-project/launch/b7a79414-287c-452d-b157-c32fe6cb1c72/finish")
-		);
-		assertThat("Exit code should be '0'", finishResult, equalTo(0));
+		try (CommonUtils.ExecutorService executor = CommonUtils.testExecutor()) {
+			Integer finishResult = executor.submit(clientCallableResult).get(35, TimeUnit.SECONDS);
+			assertThat(
+					"Second request is a launch finish",
+					startResult.getKey().get(2),
+					startsWith("PUT /api/v2/test-project/launch/b7a79414-287c-452d-b157-c32fe6cb1c72/finish")
+			);
+			assertThat("Exit code should be '0'", finishResult, equalTo(0));
+		}
 	}
 }
