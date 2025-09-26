@@ -16,11 +16,7 @@
 
 package com.epam.reportportal.testng;
 
-import com.epam.reportportal.annotations.Description;
-import com.epam.reportportal.annotations.DisplayName;
-import com.epam.reportportal.annotations.ParameterKey;
-import com.epam.reportportal.annotations.TestCaseId;
-import com.epam.reportportal.annotations.TestCaseIdKey;
+import com.epam.reportportal.annotations.*;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.utils.MemoizingSupplier;
@@ -37,7 +33,11 @@ import org.testng.annotations.Parameters;
 import org.testng.internal.ConstructorOrMethod;
 
 import java.lang.reflect.Method;
-import java.util.*;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Iterator;
+import java.util.Optional;
 
 import static com.epam.reportportal.testng.Constants.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,7 +45,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Pavel Bortnik
@@ -195,7 +195,7 @@ public class BuildStepTest {
 		instance.setTimeInMillis(DEFAULT_TIME);
 		when(testResult.getStartMillis()).thenReturn(instance.getTimeInMillis());
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
-		assertThat("Incorrect start time", rq.getStartTime(), is(instance.getTime()));
+		assertThat("Incorrect start time", rq.getStartTime(), is(Instant.ofEpochMilli(instance.getTimeInMillis())));
 	}
 
 	@Test
@@ -231,7 +231,7 @@ public class BuildStepTest {
 		when(testResult.getEndMillis()).thenReturn(DEFAULT_TIME);
 		when(testResult.isSuccess()).thenReturn(true);
 		FinishTestItemRQ rq = testNGService.buildFinishTestMethodRq(ItemStatus.PASSED, testResult);
-		assertThat("Incorrect end time", rq.getEndTime().getTime(), is(DEFAULT_TIME));
+		assertThat("Incorrect end time", rq.getEndTime(), is(Instant.ofEpochMilli(DEFAULT_TIME)));
 		assertThat("Incorrect status", rq.getStatus(), is(ItemStatus.PASSED.name()));
 		assertThat("Incorrect issue", rq.getIssue(), nullValue());
 	}
@@ -247,7 +247,7 @@ public class BuildStepTest {
 
 		assertThat("Incorrect method name", rq.getName(), is(DEFAULT_NAME));
 		assertThat("Incorrect method description", rq.getDescription(), is(DEFAULT_DESCRIPTION));
-		assertThat("Incorrect start time", rq.getStartTime(), is(new Date(DEFAULT_TIME)));
+		assertThat("Incorrect start time", rq.getStartTime(), is(Instant.ofEpochMilli(DEFAULT_TIME)));
 		assertThat("Incorrect test method type", rq.getType(), is(TestMethodType.BEFORE_TEST.name()));
 	}
 
@@ -339,7 +339,7 @@ public class BuildStepTest {
 		assertEquals(expectedParam, request.getTestCaseId());
 	}
 
-	private Method getTestMethodsExampleByName(String methodName){
+	private Method getTestMethodsExampleByName(String methodName) {
 		Optional<Method> methodOptional = Arrays.stream(TestMethodsExamples.class.getDeclaredMethods())
 				.filter(it -> it.getName().equals(methodName))
 				.findFirst();

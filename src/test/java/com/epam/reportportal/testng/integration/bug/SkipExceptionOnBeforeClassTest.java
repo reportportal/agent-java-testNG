@@ -20,30 +20,30 @@ import org.testng.SkipException;
 import org.testng.annotations.*;
 
 public class SkipExceptionOnBeforeClassTest {
-    public static final String SKIP_EXCEPTION = "Just skip the test!";
+	public static final String SKIP_EXCEPTION = "Just skip the test!";
 
-    @BeforeClass
-    public void beforeClass() {
-        throw new SkipException(SKIP_EXCEPTION);
-    }
+	@BeforeClass
+	public void beforeClass() {
+		throw new SkipException(SKIP_EXCEPTION);
+	}
 
-    @BeforeMethod
-    public void beforeMethod() {
-        // should just be skipped
-    }
+	@BeforeMethod
+	public void beforeMethod() {
+		// should just be skipped
+	}
 
-    @Test
-    public void theTest() {
-        // should just be skipped
-    }
+	@Test
+	public void theTest() {
+		// should just be skipped
+	}
 
-    @AfterMethod
-    public void afterMethod() {
-        // should just be skipped
-    }
+	@AfterMethod
+	public void afterMethod() {
+		// should just be skipped
+	}
 
-    @AfterClass
-    public void afterClass() {
-        // should just be skipped
-    }
+	@AfterClass
+	public void afterClass() {
+		// should just be skipped
+	}
 }

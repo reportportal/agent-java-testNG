@@ -23,8 +23,8 @@ import static com.epam.reportportal.testng.integration.util.TestUtils.extractReq
 import static com.epam.reportportal.testng.integration.util.TestUtils.extractRequests;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
 
 /**
  * @author <a href="mailto:ihar_kahadouski@epam.com">Ihar Kahadouski</a>
@@ -138,7 +138,8 @@ public class TestCaseIdTest {
 
 	@Test
 	public void verify_test_case_id_parameterized_no_marked_parameters() {
-		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class),
+		TestUtils.runTests(
+				Collections.singletonList(TestReportPortalListener.class),
 				TestCaseIdFromAnnotationValueParametrizedNoParam.class
 		);
 
@@ -158,7 +159,8 @@ public class TestCaseIdTest {
 	@Test
 	public void verify_test_case_id_not_parameterized_no_marked_parameters() {
 		String testCaseId = TestCaseIdFromAnnotationValueNotParametrizedNoParam.TEST_CASE_ID;
-		TestUtils.runTests(Collections.singletonList(TestReportPortalListener.class),
+		TestUtils.runTests(
+				Collections.singletonList(TestReportPortalListener.class),
 				TestCaseIdFromAnnotationValueNotParametrizedNoParam.class
 		);
 
@@ -189,7 +191,8 @@ public class TestCaseIdTest {
 				.filter(rq -> ItemType.STEP.name().equals(rq.getType()))
 				.collect(Collectors.toList());
 		assertThat(stepRequests, hasSize(1));
-		assertThat(stepRequests.get(0).getTestCaseId(),
+		assertThat(
+				stepRequests.get(0).getTestCaseId(),
 				equalTo(TestCaseIdTemplateTest.TEST_CASE_ID_VALUE.replace("{this.FIELD}", TestCaseIdTemplateTest.FIELD))
 		);
 	}

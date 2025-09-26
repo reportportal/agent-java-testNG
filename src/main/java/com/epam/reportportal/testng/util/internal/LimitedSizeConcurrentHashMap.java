@@ -1,6 +1,7 @@
 package com.epam.reportportal.testng.util.internal;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
+
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;

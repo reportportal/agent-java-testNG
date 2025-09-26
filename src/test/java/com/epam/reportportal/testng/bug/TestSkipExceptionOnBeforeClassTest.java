@@ -29,14 +29,15 @@ import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import io.reactivex.Maybe;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
+import java.time.Instant;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -47,97 +48,107 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestSkipExceptionOnBeforeClassTest {
 
-    public static class TestListener extends BaseTestNGListener {
-        public static final ThreadLocal<ReportPortal> REPORT_PORTAL_THREAD_LOCAL = new ThreadLocal<>();
+	public static class TestListener extends BaseTestNGListener {
+		public static final ThreadLocal<ReportPortal> REPORT_PORTAL_THREAD_LOCAL = new ThreadLocal<>();
 
-        public TestListener() {
-            super(new TestNGService(new MemoizingSupplier<>(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters()))));
-        }
+		public TestListener() {
+			super(new TestNGService(new MemoizingSupplier<>(() -> getLaunch(REPORT_PORTAL_THREAD_LOCAL.get().getParameters()))));
+		}
 
-        public static void initReportPortal(ReportPortal reportPortal) {
-            REPORT_PORTAL_THREAD_LOCAL.set(reportPortal);
-        }
+		public static void initReportPortal(ReportPortal reportPortal) {
+			REPORT_PORTAL_THREAD_LOCAL.set(reportPortal);
+		}
 
-        private static Launch getLaunch(ListenerParameters parameters) {
+		private static Launch getLaunch(ListenerParameters parameters) {
 
-            ReportPortal reportPortal = REPORT_PORTAL_THREAD_LOCAL.get();
-            StartLaunchRQ rq = new StartLaunchRQ();
-            rq.setName(parameters.getLaunchName());
-            rq.setStartTime(Calendar.getInstance().getTime());
-            rq.setMode(parameters.getLaunchRunningMode());
-            rq.setStartTime(Calendar.getInstance().getTime());
+			ReportPortal reportPortal = REPORT_PORTAL_THREAD_LOCAL.get();
+			StartLaunchRQ rq = new StartLaunchRQ();
+			rq.setName(parameters.getLaunchName());
+			rq.setStartTime(Instant.now());
+			rq.setMode(parameters.getLaunchRunningMode());
+			rq.setStartTime(Instant.now());
 
-            return reportPortal.newLaunch(rq);
+			return reportPortal.newLaunch(rq);
 
-        }
-    }
+		}
+	}
 
-    private final String suitedUuid = namedUuid("suite");
-    private final String testClassUuid = namedUuid("class");
-    private final List<String> testUuidList =
-            Arrays.asList(namedUuid("beforeClass"), namedUuid("beforeMethod"), namedUuid("test"),
-                    namedUuid("afterMethod"), namedUuid("afterClass"));
+	private final String suitedUuid = namedUuid("suite");
+	private final String testClassUuid = namedUuid("class");
+	private final List<String> testUuidList = Arrays.asList(
+			namedUuid("beforeClass"),
+			namedUuid("beforeMethod"),
+			namedUuid("test"),
+			namedUuid("afterMethod"),
+			namedUuid("afterClass")
+	);
 
-    private final List<String> finishUuidOrder =
-            Stream.concat(testUuidList.stream(), Stream.of(testClassUuid, suitedUuid)).collect(Collectors.toList());
+	private final List<String> finishUuidOrder = Stream.concat(testUuidList.stream(), Stream.of(testClassUuid, suitedUuid))
+			.collect(Collectors.toList());
 
+	@Mock
+	private ReportPortalClient client;
 
-    @Mock
-    private ReportPortalClient client;
+	@BeforeEach
+	public void initMocks() {
+		mockLaunch(client, namedUuid("launchUuid"), suitedUuid, testClassUuid, testUuidList);
+		mockLogging(client);
+		when(client.getApiInfo()).thenReturn(Maybe.just(testApiInfo()));
+		ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
+		TestListener.initReportPortal(reportPortal);
+	}
 
-    @BeforeEach
-    public void initMocks() {
-        mockLaunch(client, namedUuid("launchUuid"), suitedUuid, testClassUuid, testUuidList);
-        mockLogging(client);
-        ReportPortal reportPortal = ReportPortal.create(client, standardParameters());
-        TestListener.initReportPortal(reportPortal);
-    }
+	@Test
+	public void verify_step_integrity_in_case_of_before_class_failed_with_skip_exception() {
+		runTests(Collections.singletonList(TestListener.class), SkipExceptionOnBeforeClassTest.class);
 
-    @Test
-    public void verify_step_integrity_in_case_of_before_class_failed_with_skip_exception() {
-        runTests(Collections.singletonList(TestListener.class), SkipExceptionOnBeforeClassTest.class);
+		verify(client, times(1)).startLaunch(any()); // Start launch
+		verify(client, times(1)).startTestItem(any());  // Start parent suites
+		verify(client, times(1)).startTestItem(same(suitedUuid), any()); // Start test class
 
-        verify(client, times(1)).startLaunch(any()); // Start launch
-        verify(client, times(1)).startTestItem(any());  // Start parent suites
-        verify(client, times(1)).startTestItem(same(suitedUuid), any()); // Start test class
+		ArgumentCaptor<StartTestItemRQ> startTestCapture = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, times(5)).startTestItem(same(testClassUuid), startTestCapture.capture());
+		List<StartTestItemRQ> startItems = startTestCapture.getAllValues();
 
-        ArgumentCaptor<StartTestItemRQ> startTestCapture = ArgumentCaptor.forClass(StartTestItemRQ.class);
-        verify(client, times(5)).startTestItem(same(testClassUuid), startTestCapture.capture());
-        List<StartTestItemRQ> startItems = startTestCapture.getAllValues();
+		List<String> types = startItems.stream().map(StartTestItemRQ::getType).collect(Collectors.toList());
+		// It passes too fast to preserve order
+		assertThat(
+				types,
+				containsInAnyOrder(
+						ItemType.BEFORE_CLASS.name(),
+						ItemType.BEFORE_METHOD.name(),
+						ItemType.STEP.name(),
+						ItemType.AFTER_METHOD.name(),
+						ItemType.AFTER_CLASS.name()
+				)
+		);
 
-        assertThat(startItems.get(0).getType(), equalTo(ItemType.BEFORE_CLASS.name()));
-        assertThat(startItems.get(1).getType(), equalTo(ItemType.BEFORE_METHOD.name()));
-        assertThat(startItems.get(2).getType(), equalTo(ItemType.STEP.name()));
-        assertThat(startItems.get(3).getType(), equalTo(ItemType.AFTER_METHOD.name()));
-        assertThat(startItems.get(4).getType(), equalTo(ItemType.AFTER_CLASS.name()));
+		ArgumentCaptor<String> finishUuidCapture = ArgumentCaptor.forClass(String.class);
+		ArgumentCaptor<FinishTestItemRQ> finishItemCapture = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(client, times(finishUuidOrder.size())).finishTestItem(finishUuidCapture.capture(), finishItemCapture.capture());
+		List<String> finishUuids = finishUuidCapture.getAllValues();
+		assertThat(finishUuids, containsInAnyOrder(finishUuidOrder.toArray(new String[0])));
 
-        ArgumentCaptor<String> finishUuidCapture = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<FinishTestItemRQ> finishItemCapture = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-        verify(client, times(finishUuidOrder.size())).finishTestItem(finishUuidCapture.capture(), finishItemCapture.capture());
-        List<String> finishUuids = finishUuidCapture.getAllValues();
-        assertThat(finishUuids, containsInAnyOrder(finishUuidOrder.toArray(new String[0])));
+		List<FinishTestItemRQ> finishItems = finishItemCapture.getAllValues();
 
-        List<FinishTestItemRQ> finishItems = finishItemCapture.getAllValues();
+		FinishTestItemRQ beforeClassFinish = finishItems.get(0);
+		assertThat(beforeClassFinish.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
+		assertThat(beforeClassFinish.getIssue(), nullValue());
 
-        FinishTestItemRQ beforeClassFinish = finishItems.get(0);
-        assertThat(beforeClassFinish.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
-        assertThat(beforeClassFinish.getIssue(), nullValue());
+		finishItems.subList(1, finishItems.size() - 2).forEach(finishTestItemRQ -> {
+			assertThat(finishTestItemRQ.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
+			assertThat(finishTestItemRQ.getIssue(), notNullValue());
+			assertThat(finishTestItemRQ.getIssue().getIssueType(), equalTo(Launch.NOT_ISSUE.getIssueType()));
+		});
 
-        finishItems.subList(1, finishItems.size() - 2).forEach(finishTestItemRQ -> {
-            assertThat(finishTestItemRQ.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
-            assertThat(finishTestItemRQ.getIssue(), notNullValue());
-            assertThat(finishTestItemRQ.getIssue().getIssueType(), equalTo(Launch.NOT_ISSUE.getIssueType()));
-        });
-
-        finishItems.subList(finishItems.size() - 2, finishItems.size()).forEach(finishTestItemRQ -> {
-            assertThat(finishTestItemRQ.getStatus(), nullValue());
-            assertThat(finishTestItemRQ.getIssue(), nullValue());
-        });
-    }
+		finishItems.subList(finishItems.size() - 2, finishItems.size()).forEach(finishTestItemRQ -> {
+			assertThat(finishTestItemRQ.getStatus(), nullValue());
+			assertThat(finishTestItemRQ.getIssue(), nullValue());
+		});
+	}
 }

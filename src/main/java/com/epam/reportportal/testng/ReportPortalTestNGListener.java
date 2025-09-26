@@ -28,8 +28,7 @@ import java.util.function.Supplier;
 public class ReportPortalTestNGListener extends BaseTestNGListener {
 
 	/* static instance with lazy init */
-	public static final Supplier<ITestNGService> SERVICE =
-			new MemoizingSupplier<>(() -> new TestNGService(ReportPortal.builder().build()));
+	public static final Supplier<ITestNGService> SERVICE = new MemoizingSupplier<>(() -> new TestNGService(ReportPortal.builder().build()));
 
 	public ReportPortalTestNGListener() {
 		super(SERVICE.get());

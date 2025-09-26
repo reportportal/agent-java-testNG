@@ -18,8 +18,8 @@ import org.junit.jupiter.api.TestInstance;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
+import java.time.Instant;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -52,9 +52,9 @@ public class TestWithFailedRetryAndDependentMethods {
 			ReportPortal reportPortal = REPORT_PORTAL_THREAD_LOCAL.get();
 			StartLaunchRQ rq = new StartLaunchRQ();
 			rq.setName(parameters.getLaunchName());
-			rq.setStartTime(Calendar.getInstance().getTime());
+			rq.setStartTime(Instant.now());
 			rq.setMode(parameters.getLaunchRunningMode());
-			rq.setStartTime(Calendar.getInstance().getTime());
+			rq.setStartTime(Instant.now());
 
 			return reportPortal.newLaunch(rq);
 
@@ -65,8 +65,8 @@ public class TestWithFailedRetryAndDependentMethods {
 	private final String testClassUuid = namedUuid("class");
 	private final List<String> testUuidList = Arrays.asList(namedUuid("test1"), namedUuid("test1"), namedUuid("test2"), namedUuid("test3"));
 
-	private final List<String> finishUuidOrder =
-			Stream.concat(testUuidList.stream(), Stream.of(testClassUuid, suitedUuid)).collect(Collectors.toList());
+	private final List<String> finishUuidOrder = Stream.concat(testUuidList.stream(), Stream.of(testClassUuid, suitedUuid))
+			.collect(Collectors.toList());
 
 	@Mock
 	private ReportPortalClient client;

@@ -18,18 +18,19 @@ package com.epam.reportportal.testng;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributeResource;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import org.hamcrest.Matchers;
-import com.epam.reportportal.utils.MemoizingSupplier;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.testng.*;
+import org.testng.ISuite;
+import org.testng.ITestContext;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -149,7 +150,7 @@ public class BuildTestTest {
 		StartTestItemRQ rq = testNGService.buildStartTestItemRq(testContext);
 		assertThat("Incorrect test item type", rq.getType(), is("TEST"));
 		assertThat("Incorrect test item name", rq.getName(), is(DEFAULT_NAME));
-		assertThat("Incorrect suite start time", rq.getStartTime(), is(instance.getTime()));
+		assertThat("Incorrect suite start time", rq.getStartTime(), is(instance.getTime().toInstant()));
 	}
 
 	@Test
@@ -158,7 +159,7 @@ public class BuildTestTest {
 		when(testContext.getEndDate()).thenReturn(endTime);
 
 		FinishTestItemRQ rq = testNGService.buildFinishTestRq(testContext);
-		assertThat("Incorrect end time", rq.getEndTime(), is(endTime));
+		assertThat("Incorrect end time", rq.getEndTime(), is(endTime.toInstant()));
 	}
 
 	private ListenerParameters defaultListenerParameters() {

@@ -67,7 +67,8 @@ public class ItemTreeUtils {
 	}
 
 	public static Optional<TestItemTree.TestItemLeaf> retrieveLeaf(ITestResult testResult, TestItemTree testItemTree) {
-		Optional<TestItemTree.TestItemLeaf> testClassLeaf = retrieveLeaf(testResult.getTestContext(),
+		Optional<TestItemTree.TestItemLeaf> testClassLeaf = retrieveLeaf(
+				testResult.getTestContext(),
 				testResult.getTestClass(),
 				testItemTree
 		);

@@ -2,7 +2,9 @@ package com.epam.reportportal.testng.integration.feature.skipped;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 public class BeforeClassFailedTest {
 	private static final Logger LOGGER = LoggerFactory.getLogger(BeforeClassFailedTest.class);
