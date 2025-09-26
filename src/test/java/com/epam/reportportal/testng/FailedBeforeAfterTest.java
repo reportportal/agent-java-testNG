@@ -39,7 +39,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static com.epam.reportportal.testng.integration.util.TestUtils.*;
+import static com.epam.reportportal.testng.integration.util.TestUtils.mockLaunch;
+import static com.epam.reportportal.testng.integration.util.TestUtils.namedUuid;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -61,11 +62,13 @@ public class FailedBeforeAfterTest {
 
 	private final Maybe<String> suitedUuid = Maybe.just(namedUuid("suite"));
 	private final Maybe<String> testClassUuid = Maybe.just(namedUuid("class"));
-	private final List<Maybe<String>> testMethodUuidList = Arrays.asList(Maybe.just(namedUuid("before")),
+	private final List<Maybe<String>> testMethodUuidList = Arrays.asList(
+			Maybe.just(namedUuid("before")),
 			Maybe.just(namedUuid("test")),
 			Maybe.just(namedUuid("after"))
 	);
-	private final List<String> finishUuidOrder = Stream.concat(testMethodUuidList.stream().map(Maybe::blockingGet),
+	private final List<String> finishUuidOrder = Stream.concat(
+					testMethodUuidList.stream().map(Maybe::blockingGet),
 					Stream.of(testClassUuid.blockingGet(), suitedUuid.blockingGet())
 			)
 			.collect(Collectors.toList());
@@ -75,7 +78,8 @@ public class FailedBeforeAfterTest {
 
 	@BeforeEach
 	public void setupMock() {
-		mockLaunch(launch,
+		mockLaunch(
+				launch,
 				Maybe.just("launchUuid"),
 				suitedUuid,
 				testClassUuid,
@@ -195,7 +199,8 @@ public class FailedBeforeAfterTest {
 		verify(launch, times(8)).finishTestItem(finishUuidCapture.capture(), finishItemCapture.capture());
 
 		List<String> finishUuids = finishUuidCapture.getAllValues().stream().map(Maybe::blockingGet).collect(Collectors.toList());
-		assertThat(finishUuids,
+		assertThat(
+				finishUuids,
 				equalTo(Stream.concat(testMethodUuidList.stream().map(Maybe::blockingGet), finishUuidOrder.stream())
 						.collect(Collectors.toList()))
 		);

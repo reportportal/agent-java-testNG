@@ -86,7 +86,8 @@ public class IssueReportingTest {
 		when(launch.startTestItem(any(), any())).thenAnswer((Answer<Maybe<String>>) invocation -> CommonUtils.createMaybeUuid());
 		when(launch.startTestItem(same(suiteMaybe), any())).thenAnswer((Answer<Maybe<String>>) invocation -> stepIds.poll());
 		when(launch.startTestItem(same(stepOneMaybe), any())).thenAnswer((Answer<Maybe<String>>) invocation -> stepIds.poll());
-		when(launch.finishTestItem(any(),
+		when(launch.finishTestItem(
+				any(),
 				any()
 		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> Maybe.just(new OperationCompletionRS("OK")));
 		TestReportPortalListener.initLaunch(launch);

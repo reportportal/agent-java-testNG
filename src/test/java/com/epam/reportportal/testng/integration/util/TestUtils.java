@@ -8,7 +8,6 @@ import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
-import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.tuple.Pair;
@@ -17,9 +16,7 @@ import org.mockito.stubbing.Answer;
 import org.testng.ITestNGListener;
 import org.testng.TestNG;
 
-import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -55,26 +52,6 @@ public class TestUtils {
 
 	public static List<StartTestItemRQ> extractRequests(ArgumentCaptor<StartTestItemRQ> captor, String methodType) {
 		return captor.getAllValues().stream().filter(it -> methodType.equalsIgnoreCase(it.getType())).collect(Collectors.toList());
-	}
-
-	/**
-	 * Generates a unique ID shorter than UUID based on current time in milliseconds and thread ID.
-	 *
-	 * @return a unique ID string
-	 */
-	public static String generateUniqueId() {
-		return System.currentTimeMillis() + "-" + Thread.currentThread().getId() + "-" + ThreadLocalRandom.current().nextInt(9999);
-	}
-
-	public static StartTestItemRQ standardStartStepRequest() {
-        StartTestItemRQ rq = new StartTestItemRQ();
-        rq.setStartTime(Instant.now());
-		String id = generateUniqueId();
-		rq.setName("Step_" + id);
-		rq.setDescription("Test step description");
-		rq.setUniqueId(id);
-		rq.setType("STEP");
-		return rq;
 	}
 
 	public static void mockLaunch(Launch launch, Maybe<String> launchUuid, Maybe<String> suiteUuid, Maybe<String> testClassUuid,
@@ -161,7 +138,8 @@ public class TestUtils {
 			Maybe<ItemCreatedRS>[] other = responses.subList(1, responses.size()).toArray(new Maybe[0]);
 			when(client.startTestItem(same(k), any())).thenReturn(first, other);
 		});
-		parentNestedPairs.forEach(p -> when(client.finishTestItem(same(p.getValue()),
+		parentNestedPairs.forEach(p -> when(client.finishTestItem(
+				same(p.getValue()),
 				any()
 		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> Maybe.just(new OperationCompletionRS())));
 	}
@@ -179,14 +157,6 @@ public class TestUtils {
 		result.setLaunchName("My-test-launch" + CommonUtils.generateUniqueId());
 		result.setProjectName("test-project");
 		result.setEnable(true);
-		return result;
-	}
-
-	public static StartLaunchRQ launchRQ(ListenerParameters parameters) {
-        StartLaunchRQ result = new StartLaunchRQ();
-        result.setName(parameters.getLaunchName());
-        result.setStartTime(Instant.now());
-		result.setMode(parameters.getLaunchRunningMode());
 		return result;
 	}
 }

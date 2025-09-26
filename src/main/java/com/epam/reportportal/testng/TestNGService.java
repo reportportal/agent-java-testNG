@@ -32,6 +32,8 @@ import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.testng.*;
@@ -43,12 +45,10 @@ import org.testng.internal.ConstructorOrMethod;
 import org.testng.xml.XmlClass;
 import org.testng.xml.XmlTest;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
-import java.time.Instant;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -69,14 +69,16 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
  * TestNG service implements operations for interaction ReportPortal
  */
 public class TestNGService implements ITestNGService {
-	private static final Set<TestMethodType> BEFORE_METHODS = Stream.of(TestMethodType.BEFORE_TEST,
+	private static final Set<TestMethodType> BEFORE_METHODS = Stream.of(
+			TestMethodType.BEFORE_TEST,
 			TestMethodType.BEFORE_SUITE,
 			TestMethodType.BEFORE_GROUPS,
 			TestMethodType.BEFORE_CLASS,
 			TestMethodType.BEFORE_METHOD
 	).collect(Collectors.toSet());
 	private static final String AGENT_PROPERTIES_FILE = "agent.properties";
-	private static final Set<String> TESTNG_INVOKERS = Stream.of("org.testng.internal.TestInvoker",
+	private static final Set<String> TESTNG_INVOKERS = Stream.of(
+			"org.testng.internal.TestInvoker",
 			"org.testng.internal.invokers.TestInvoker"
 	).collect(Collectors.toSet());
 	private static final Predicate<StackTraceElement> IS_RETRY_ELEMENT = e -> TESTNG_INVOKERS.contains(e.getClassName())
@@ -101,10 +103,10 @@ public class TestNGService implements ITestNGService {
 
 	private volatile Thread shutDownHook;
 
-    private static Thread getShutdownHook(final Supplier<Launch> launch) {
+	private static Thread getShutdownHook(final Supplier<Launch> launch) {
 		return new Thread(() -> {
 			FinishExecutionRQ rq = new FinishExecutionRQ();
-            rq.setEndTime(Instant.now());
+			rq.setEndTime(Instant.now());
 			launch.get().finish(rq);
 		});
 	}
@@ -113,8 +115,8 @@ public class TestNGService implements ITestNGService {
 		this.launch = new MemoizingSupplier<>(() -> {
 			//this reads property, so we want to
 			//init ReportPortal object each time Launch object is going to be created
-            StartLaunchRQ startRq = buildStartLaunchRq(reportPortal.getParameters());
-            startRq.setStartTime(Instant.now());
+			StartLaunchRQ startRq = buildStartLaunchRq(reportPortal.getParameters());
+			startRq.setStartTime(Instant.now());
 			Launch newLaunch = reportPortal.newLaunch(startRq);
 			shutDownHook = getShutdownHook(() -> newLaunch);
 			Runtime.getRuntime().addShutdownHook(shutDownHook);
@@ -264,7 +266,7 @@ public class TestNGService implements ITestNGService {
 		rq.setName(createConfigurationName(testResult));
 		rq.setCodeRef(testResult.getMethod().getQualifiedName());
 		rq.setDescription(createConfigurationDescription(testResult));
-        rq.setStartTime(Instant.ofEpochMilli(testResult.getStartMillis()));
+		rq.setStartTime(Instant.ofEpochMilli(testResult.getStartMillis()));
 		rq.setType(type == null ? null : type.toString());
 		boolean retry = isRetry(testResult);
 		if (retry) {
@@ -324,7 +326,7 @@ public class TestNGService implements ITestNGService {
 		rq.setAttributes(createStepAttributes(testResult));
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
-        rq.setStartTime(Instant.ofEpochMilli(testResult.getStartMillis()));
+		rq.setStartTime(Instant.ofEpochMilli(testResult.getStartMillis()));
 		rq.setType(type.toString());
 		boolean retry = isRetry(testResult);
 		if (retry) {
@@ -380,7 +382,8 @@ public class TestNGService implements ITestNGService {
 	 */
 	@Nullable
 	private String getLogMessage(@Nonnull ITestResult testResult) {
-		String error = ofNullable(testResult.getThrowable()).map(t -> String.format(DESCRIPTION_ERROR_FORMAT,
+		String error = ofNullable(testResult.getThrowable()).map(t -> String.format(
+				DESCRIPTION_ERROR_FORMAT,
 				getStackTrace(t, new Throwable())
 		)).orElse(null);
 		if (error == null) {
@@ -400,7 +403,7 @@ public class TestNGService implements ITestNGService {
 	@Nonnull
 	protected FinishTestItemRQ buildFinishTestMethodRq(@Nonnull ItemStatus status, @Nonnull ITestResult testResult) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
-        rq.setEndTime(Instant.ofEpochMilli(testResult.getEndMillis()));
+		rq.setEndTime(Instant.ofEpochMilli(testResult.getEndMillis()));
 		rq.setStatus(status.name());
 		if (!testResult.isSuccess() && ItemStatus.SKIPPED != status) {
 			rq.setDescription(getLogMessage(testResult));
@@ -508,8 +511,8 @@ public class TestNGService implements ITestNGService {
 			if (ItemStatus.FAILED == status && (TestMethodType.BEFORE_METHOD == type || TestMethodType.BEFORE_CLASS == type)) {
 				SKIPPED_STATUS_TRACKER.put(instance, Boolean.TRUE);
 			}
-			if (status == ItemStatus.SKIPPED && rq.getIssue() == null
-					&& (SKIPPED_STATUS_TRACKER.containsKey(instance) || (TestMethodType.BEFORE_METHOD == type && getAttribute(testResult, RP_RETRY) != null))) {
+			if (status == ItemStatus.SKIPPED && rq.getIssue() == null && (SKIPPED_STATUS_TRACKER.containsKey(instance) || (
+					TestMethodType.BEFORE_METHOD == type && getAttribute(testResult, RP_RETRY) != null))) {
 				rq.setIssue(Launch.NOT_ISSUE);
 			}
 			if (ItemStatus.SKIPPED == status && BEFORE_METHODS.contains(type) && testResult.getThrowable() != null) {
@@ -528,13 +531,13 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public void sendReportPortalMsg(final ITestResult result) {
-        ReportPortal.emitLog(itemUuid -> {
+		ReportPortal.emitLog(itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			rq.setLevel("ERROR");
 			rq.setMessage(ofNullable(result.getThrowable()).map(t -> getStackTrace(result.getThrowable(), new Throwable()))
 					.orElse("Test has failed without exception"));
-            rq.setLogTime(Instant.now());
+			rq.setLogTime(Instant.now());
 			return rq;
 		});
 	}
@@ -549,7 +552,7 @@ public class TestNGService implements ITestNGService {
 	protected StartTestItemRQ buildStartSuiteRq(ISuite suite) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setName(suite.getName());
-        rq.setStartTime(Instant.now());
+		rq.setStartTime(Instant.now());
 		rq.setType("SUITE");
 		return rq;
 	}
@@ -568,8 +571,8 @@ public class TestNGService implements ITestNGService {
 		ofNullable(testContext.getCurrentXmlTest()).map(XmlTest::getXmlClasses)
 				.ifPresent(xmlClasses -> xmlClasses.forEach(xmlClass -> ofNullable(xmlClass.getSupportClass()).map(c -> c.getAnnotation(
 						Attributes.class)).ifPresent(a -> attributes.addAll(AttributeParser.retrieveAttributes(a)))));
-        rq.setName(testContext.getName());
-        rq.setStartTime(ofNullable(testContext.getStartDate()).map(java.util.Date::toInstant).orElse(null));
+		rq.setName(testContext.getName());
+		rq.setStartTime(ofNullable(testContext.getStartDate()).map(java.util.Date::toInstant).orElseGet(Instant::now));
 		rq.setType("TEST");
 		return rq;
 	}
@@ -583,8 +586,8 @@ public class TestNGService implements ITestNGService {
 	@Nonnull
 	protected StartLaunchRQ buildStartLaunchRq(ListenerParameters parameters) {
 		StartLaunchRQ rq = new StartLaunchRQ();
-        rq.setName(parameters.getLaunchName());
-        rq.setStartTime(Instant.now());
+		rq.setName(parameters.getLaunchName());
+		rq.setStartTime(Instant.now());
 		Set<ItemAttributesRQ> attributes = new HashSet<>(parameters.getAttributes());
 		rq.setAttributes(attributes);
 		rq.setMode(parameters.getLaunchRunningMode());
@@ -615,8 +618,8 @@ public class TestNGService implements ITestNGService {
 	@SuppressWarnings("unused")
 	@Nonnull
 	protected FinishExecutionRQ buildFinishLaunchRq(ListenerParameters parameters) {
-        FinishExecutionRQ rq = new FinishExecutionRQ();
-        rq.setEndTime(Instant.now());
+		FinishExecutionRQ rq = new FinishExecutionRQ();
+		rq.setEndTime(Instant.now());
 		return rq;
 	}
 
@@ -629,8 +632,8 @@ public class TestNGService implements ITestNGService {
 	@SuppressWarnings("unused")
 	@Nonnull
 	protected FinishTestItemRQ buildFinishTestSuiteRq(ISuite suite) {
-        /* 'real' end time */
-        Instant now = Instant.now();
+		/* 'real' end time */
+		Instant now = Instant.now();
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(now);
 		return rq;
@@ -645,7 +648,7 @@ public class TestNGService implements ITestNGService {
 	@Nonnull
 	protected FinishTestItemRQ buildFinishTestRq(ITestContext testContext) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
-        rq.setEndTime(ofNullable(testContext.getEndDate()).map(java.util.Date::toInstant).orElse(null));
+		rq.setEndTime(ofNullable(testContext.getEndDate()).map(java.util.Date::toInstant).orElse(null));
 		return rq;
 	}
 
@@ -777,10 +780,16 @@ public class TestNGService implements ITestNGService {
 		Method method = getMethod(testResult);
 		Object instance = testResult.getInstance();
 		List<Object> parameters = ofNullable(testResult.getParameters()).map(Arrays::asList).orElse(null);
-		TestCaseIdEntry id = getMethodAnnotation(TestCaseId.class,
+		TestCaseIdEntry id = getMethodAnnotation(
+				TestCaseId.class,
 				testResult
-		).flatMap(a -> ofNullable(method).map(m -> TestCaseIdUtils.getTestCaseId(a, m, codeRef, parameters, instance)))
-				.orElse(TestCaseIdUtils.getTestCaseId(codeRef, parameters));
+		).flatMap(a -> ofNullable(method).map(m -> TestCaseIdUtils.getTestCaseId(
+				a,
+				m,
+				codeRef,
+				parameters,
+				instance
+		))).orElse(TestCaseIdUtils.getTestCaseId(codeRef, parameters));
 
 		return id == null ? null : id.getId().endsWith("[]") ? new TestCaseIdEntry(id.getId().substring(0, id.getId().length() - 2)) : id;
 	}

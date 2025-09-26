@@ -49,21 +49,24 @@ public class CallbackReportingTest {
 		FinishTestItemRQ finishTestItemRQ = new FinishTestItemRQ();
 		finishTestItemRQ.setDescription(description);
 		finishTestItemRQ.setStatus(status);
-        finishTestItemRQ.setEndTime(Instant.now());
+		finishTestItemRQ.setEndTime(Instant.now());
 		//noinspection ResultOfMethodCallIgnored
-		ofNullable(Launch.currentLaunch()).ifPresent(l ->
-				ItemTreeReporter.finishItem(l.getClient(), finishTestItemRQ, ITEM_TREE.getLaunchId(), testResultLeaf)
-						.cache()
-						.blockingGet());
+		ofNullable(Launch.currentLaunch()).ifPresent(l -> ItemTreeReporter.finishItem(
+				l.getClient(),
+				finishTestItemRQ,
+				ITEM_TREE.getLaunchId(),
+				testResultLeaf
+		).cache().blockingGet());
 	}
 
 	private void attachLog(TestItemTree.TestItemLeaf testItemLeaf) {
-        ofNullable(Launch.currentLaunch()).ifPresent(l -> ItemTreeReporter.sendLog(l.getClient(),
-                "ERROR",
-                "Error message",
-                Instant.now(),
-                ITEM_TREE.getLaunchId(),
-                testItemLeaf
-        ));
+		ofNullable(Launch.currentLaunch()).ifPresent(l -> ItemTreeReporter.sendLog(
+				l.getClient(),
+				"ERROR",
+				"Error message",
+				Instant.now(),
+				ITEM_TREE.getLaunchId(),
+				testItemLeaf
+		));
 	}
 }

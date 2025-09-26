@@ -42,13 +42,15 @@ public class RetryTest {
 
 	private final Maybe<String> suitedUuid = Maybe.just(namedUuid("suite"));
 	private final Maybe<String> testClassUuid = Maybe.just(namedUuid("class"));
-	private final List<Maybe<String>> testUuidList = Stream.concat(Stream.concat(
-			Stream.generate(() -> Maybe.just(namedUuid("before1"))).limit(3),
-			Stream.generate(() -> Maybe.just(namedUuid("before2"))).limit(3)
-	), Stream.concat(
-			Stream.generate(() -> Maybe.just(namedUuid("test"))).limit(3),
-			Stream.generate(() -> Maybe.just(namedUuid("after"))).limit(3)
-	)).collect(Collectors.toList());
+	private final List<Maybe<String>> testUuidList = Stream.concat(
+			Stream.concat(
+					Stream.generate(() -> Maybe.just(namedUuid("before1"))).limit(3),
+					Stream.generate(() -> Maybe.just(namedUuid("before2"))).limit(3)
+			), Stream.concat(
+					Stream.generate(() -> Maybe.just(namedUuid("test"))).limit(3),
+					Stream.generate(() -> Maybe.just(namedUuid("after"))).limit(3)
+			)
+	).collect(Collectors.toList());
 
 	private final List<String> finishMethodUuidOrder = Stream.of(
 			// BASIC CASE

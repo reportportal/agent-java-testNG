@@ -54,9 +54,9 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 			ReportPortal reportPortal = REPORT_PORTAL_THREAD_LOCAL.get();
 			StartLaunchRQ rq = new StartLaunchRQ();
 			rq.setName(parameters.getLaunchName());
-            rq.setStartTime(Instant.now());
+			rq.setStartTime(Instant.now());
 			rq.setMode(parameters.getLaunchRunningMode());
-            rq.setStartTime(Instant.now());
+			rq.setStartTime(Instant.now());
 
 			return reportPortal.newLaunch(rq);
 

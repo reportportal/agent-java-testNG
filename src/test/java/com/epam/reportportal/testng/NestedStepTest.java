@@ -38,7 +38,8 @@ public class NestedStepTest {
 	private final String testClassId = namedId("class_");
 	private final String testMethodId = namedId("test_");
 	private final List<String> stepIdList = Stream.generate(() -> namedId("step_")).limit(2).collect(Collectors.toList());
-	private final List<Pair<String, String>> testStepIdOrder = Arrays.asList(Pair.of(testMethodId, stepIdList.get(0)),
+	private final List<Pair<String, String>> testStepIdOrder = Arrays.asList(
+			Pair.of(testMethodId, stepIdList.get(0)),
 			Pair.of(stepIdList.get(0), stepIdList.get(1))
 	);
 
