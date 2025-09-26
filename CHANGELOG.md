@@ -6,7 +6,6 @@
 - Replace "jsr305" annotations with "jakarta.annotation-api", by @HardNorth
 - Switch on use of `Instant` class instead of `Date` to get more timestamp precision, by @HardNorth
 
-
 ## [5.5.2]
 ### Changed
 - Client version updated on [5.3.17](https://github.com/reportportal/client-java/releases/tag/5.3.17), by @HardNorth
