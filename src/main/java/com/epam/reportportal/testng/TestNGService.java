@@ -43,8 +43,9 @@ import org.testng.internal.ConstructorOrMethod;
 import org.testng.xml.XmlClass;
 import org.testng.xml.XmlTest;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import java.time.Instant;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -100,10 +101,10 @@ public class TestNGService implements ITestNGService {
 
 	private volatile Thread shutDownHook;
 
-	private static Thread getShutdownHook(final Supplier<Launch> launch) {
+    private static Thread getShutdownHook(final Supplier<Launch> launch) {
 		return new Thread(() -> {
 			FinishExecutionRQ rq = new FinishExecutionRQ();
-			rq.setEndTime(Calendar.getInstance().getTime());
+            rq.setEndTime(Instant.now());
 			launch.get().finish(rq);
 		});
 	}
@@ -112,8 +113,8 @@ public class TestNGService implements ITestNGService {
 		this.launch = new MemoizingSupplier<>(() -> {
 			//this reads property, so we want to
 			//init ReportPortal object each time Launch object is going to be created
-			StartLaunchRQ startRq = buildStartLaunchRq(reportPortal.getParameters());
-			startRq.setStartTime(Calendar.getInstance().getTime());
+            StartLaunchRQ startRq = buildStartLaunchRq(reportPortal.getParameters());
+            startRq.setStartTime(Instant.now());
 			Launch newLaunch = reportPortal.newLaunch(startRq);
 			shutDownHook = getShutdownHook(() -> newLaunch);
 			Runtime.getRuntime().addShutdownHook(shutDownHook);
@@ -263,7 +264,7 @@ public class TestNGService implements ITestNGService {
 		rq.setName(createConfigurationName(testResult));
 		rq.setCodeRef(testResult.getMethod().getQualifiedName());
 		rq.setDescription(createConfigurationDescription(testResult));
-		rq.setStartTime(new Date(testResult.getStartMillis()));
+        rq.setStartTime(Instant.ofEpochMilli(testResult.getStartMillis()));
 		rq.setType(type == null ? null : type.toString());
 		boolean retry = isRetry(testResult);
 		if (retry) {
@@ -323,7 +324,7 @@ public class TestNGService implements ITestNGService {
 		rq.setAttributes(createStepAttributes(testResult));
 		rq.setDescription(createStepDescription(testResult));
 		rq.setParameters(createStepParameters(testResult));
-		rq.setStartTime(new Date(testResult.getStartMillis()));
+        rq.setStartTime(Instant.ofEpochMilli(testResult.getStartMillis()));
 		rq.setType(type.toString());
 		boolean retry = isRetry(testResult);
 		if (retry) {
@@ -399,7 +400,7 @@ public class TestNGService implements ITestNGService {
 	@Nonnull
 	protected FinishTestItemRQ buildFinishTestMethodRq(@Nonnull ItemStatus status, @Nonnull ITestResult testResult) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(new Date(testResult.getEndMillis()));
+        rq.setEndTime(Instant.ofEpochMilli(testResult.getEndMillis()));
 		rq.setStatus(status.name());
 		if (!testResult.isSuccess() && ItemStatus.SKIPPED != status) {
 			rq.setDescription(getLogMessage(testResult));
@@ -527,13 +528,13 @@ public class TestNGService implements ITestNGService {
 
 	@Override
 	public void sendReportPortalMsg(final ITestResult result) {
-		ReportPortal.emitLog(itemUuid -> {
+        ReportPortal.emitLog(itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			rq.setLevel("ERROR");
 			rq.setMessage(ofNullable(result.getThrowable()).map(t -> getStackTrace(result.getThrowable(), new Throwable()))
 					.orElse("Test has failed without exception"));
-			rq.setLogTime(Calendar.getInstance().getTime());
+            rq.setLogTime(Instant.now());
 			return rq;
 		});
 	}
@@ -548,7 +549,7 @@ public class TestNGService implements ITestNGService {
 	protected StartTestItemRQ buildStartSuiteRq(ISuite suite) {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setName(suite.getName());
-		rq.setStartTime(Calendar.getInstance().getTime());
+        rq.setStartTime(Instant.now());
 		rq.setType("SUITE");
 		return rq;
 	}
@@ -567,8 +568,8 @@ public class TestNGService implements ITestNGService {
 		ofNullable(testContext.getCurrentXmlTest()).map(XmlTest::getXmlClasses)
 				.ifPresent(xmlClasses -> xmlClasses.forEach(xmlClass -> ofNullable(xmlClass.getSupportClass()).map(c -> c.getAnnotation(
 						Attributes.class)).ifPresent(a -> attributes.addAll(AttributeParser.retrieveAttributes(a)))));
-		rq.setName(testContext.getName());
-		rq.setStartTime(testContext.getStartDate());
+        rq.setName(testContext.getName());
+        rq.setStartTime(ofNullable(testContext.getStartDate()).map(java.util.Date::toInstant).orElse(null));
 		rq.setType("TEST");
 		return rq;
 	}
@@ -582,8 +583,8 @@ public class TestNGService implements ITestNGService {
 	@Nonnull
 	protected StartLaunchRQ buildStartLaunchRq(ListenerParameters parameters) {
 		StartLaunchRQ rq = new StartLaunchRQ();
-		rq.setName(parameters.getLaunchName());
-		rq.setStartTime(Calendar.getInstance().getTime());
+        rq.setName(parameters.getLaunchName());
+        rq.setStartTime(Instant.now());
 		Set<ItemAttributesRQ> attributes = new HashSet<>(parameters.getAttributes());
 		rq.setAttributes(attributes);
 		rq.setMode(parameters.getLaunchRunningMode());
@@ -614,8 +615,8 @@ public class TestNGService implements ITestNGService {
 	@SuppressWarnings("unused")
 	@Nonnull
 	protected FinishExecutionRQ buildFinishLaunchRq(ListenerParameters parameters) {
-		FinishExecutionRQ rq = new FinishExecutionRQ();
-		rq.setEndTime(Calendar.getInstance().getTime());
+        FinishExecutionRQ rq = new FinishExecutionRQ();
+        rq.setEndTime(Instant.now());
 		return rq;
 	}
 
@@ -628,8 +629,8 @@ public class TestNGService implements ITestNGService {
 	@SuppressWarnings("unused")
 	@Nonnull
 	protected FinishTestItemRQ buildFinishTestSuiteRq(ISuite suite) {
-		/* 'real' end time */
-		Date now = Calendar.getInstance().getTime();
+        /* 'real' end time */
+        Instant now = Instant.now();
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(now);
 		return rq;
@@ -644,7 +645,7 @@ public class TestNGService implements ITestNGService {
 	@Nonnull
 	protected FinishTestItemRQ buildFinishTestRq(ITestContext testContext) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(testContext.getEndDate());
+        rq.setEndTime(ofNullable(testContext.getEndDate()).map(java.util.Date::toInstant).orElse(null));
 		return rq;
 	}
 

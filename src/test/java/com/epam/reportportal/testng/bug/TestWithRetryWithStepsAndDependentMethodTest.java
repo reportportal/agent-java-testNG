@@ -20,8 +20,8 @@ import org.junit.jupiter.api.TestInstance;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
+import java.time.Instant;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -54,9 +54,9 @@ public class TestWithRetryWithStepsAndDependentMethodTest {
 			ReportPortal reportPortal = REPORT_PORTAL_THREAD_LOCAL.get();
 			StartLaunchRQ rq = new StartLaunchRQ();
 			rq.setName(parameters.getLaunchName());
-			rq.setStartTime(Calendar.getInstance().getTime());
+            rq.setStartTime(Instant.now());
 			rq.setMode(parameters.getLaunchRunningMode());
-			rq.setStartTime(Calendar.getInstance().getTime());
+            rq.setStartTime(Instant.now());
 
 			return reportPortal.newLaunch(rq);
 

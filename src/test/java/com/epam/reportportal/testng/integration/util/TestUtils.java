@@ -17,6 +17,7 @@ import org.mockito.stubbing.Answer;
 import org.testng.ITestNGListener;
 import org.testng.TestNG;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -66,8 +67,8 @@ public class TestUtils {
 	}
 
 	public static StartTestItemRQ standardStartStepRequest() {
-		StartTestItemRQ rq = new StartTestItemRQ();
-		rq.setStartTime(Calendar.getInstance().getTime());
+        StartTestItemRQ rq = new StartTestItemRQ();
+        rq.setStartTime(Instant.now());
 		String id = generateUniqueId();
 		rq.setName("Step_" + id);
 		rq.setDescription("Test step description");
@@ -182,9 +183,9 @@ public class TestUtils {
 	}
 
 	public static StartLaunchRQ launchRQ(ListenerParameters parameters) {
-		StartLaunchRQ result = new StartLaunchRQ();
-		result.setName(parameters.getLaunchName());
-		result.setStartTime(Calendar.getInstance().getTime());
+        StartLaunchRQ result = new StartLaunchRQ();
+        result.setName(parameters.getLaunchName());
+        result.setStartTime(Instant.now());
 		result.setMode(parameters.getLaunchRunningMode());
 		return result;
 	}

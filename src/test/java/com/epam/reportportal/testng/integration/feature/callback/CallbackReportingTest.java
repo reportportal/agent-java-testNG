@@ -9,7 +9,7 @@ import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
-import java.util.Calendar;
+import java.time.Instant;
 
 import static com.epam.reportportal.testng.TestNGService.ITEM_TREE;
 import static java.util.Optional.ofNullable;
@@ -49,7 +49,7 @@ public class CallbackReportingTest {
 		FinishTestItemRQ finishTestItemRQ = new FinishTestItemRQ();
 		finishTestItemRQ.setDescription(description);
 		finishTestItemRQ.setStatus(status);
-		finishTestItemRQ.setEndTime(Calendar.getInstance().getTime());
+        finishTestItemRQ.setEndTime(Instant.now());
 		//noinspection ResultOfMethodCallIgnored
 		ofNullable(Launch.currentLaunch()).ifPresent(l ->
 				ItemTreeReporter.finishItem(l.getClient(), finishTestItemRQ, ITEM_TREE.getLaunchId(), testResultLeaf)
@@ -58,12 +58,12 @@ public class CallbackReportingTest {
 	}
 
 	private void attachLog(TestItemTree.TestItemLeaf testItemLeaf) {
-		ofNullable(Launch.currentLaunch()).ifPresent(l -> ItemTreeReporter.sendLog(l.getClient(),
-				"ERROR",
-				"Error message",
-				Calendar.getInstance().getTime(),
-				ITEM_TREE.getLaunchId(),
-				testItemLeaf
-		));
+        ofNullable(Launch.currentLaunch()).ifPresent(l -> ItemTreeReporter.sendLog(l.getClient(),
+                "ERROR",
+                "Error message",
+                Instant.now(),
+                ITEM_TREE.getLaunchId(),
+                testItemLeaf
+        ));
 	}
 }

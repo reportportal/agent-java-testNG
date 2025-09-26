@@ -27,7 +27,7 @@ import com.epam.reportportal.utils.MemoizingSupplier;
 import com.epam.reportportal.utils.formatting.MarkdownUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
-import java.util.Calendar;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,9 +55,9 @@ public class TestDescriptionFailedTest {
       ReportPortal reportPortal = REPORT_PORTAL_THREAD_LOCAL.get();
       StartLaunchRQ rq = new StartLaunchRQ();
       rq.setName(parameters.getLaunchName());
-      rq.setStartTime(Calendar.getInstance().getTime());
+      rq.setStartTime(Instant.now());
       rq.setMode(parameters.getLaunchRunningMode());
-      rq.setStartTime(Calendar.getInstance().getTime());
+      rq.setStartTime(Instant.now());
 
       return reportPortal.newLaunch(rq);
 

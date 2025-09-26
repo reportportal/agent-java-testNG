@@ -37,6 +37,7 @@ import org.testng.annotations.Parameters;
 import org.testng.internal.ConstructorOrMethod;
 
 import java.lang.reflect.Method;
+import java.time.Instant;
 import java.util.*;
 
 import static com.epam.reportportal.testng.Constants.*;
@@ -191,11 +192,11 @@ public class BuildStepTest {
 		when(testResult.getMethod()).thenReturn(testNGMethod);
 		when(testNGMethod.getConstructorOrMethod()).thenReturn(constructorOrMethod);
 		when(testNGMethod.isTest()).thenReturn(true);
-		Calendar instance = Calendar.getInstance();
-		instance.setTimeInMillis(DEFAULT_TIME);
-		when(testResult.getStartMillis()).thenReturn(instance.getTimeInMillis());
+        Calendar instance = Calendar.getInstance();
+        instance.setTimeInMillis(DEFAULT_TIME);
+        when(testResult.getStartMillis()).thenReturn(instance.getTimeInMillis());
 		StartTestItemRQ rq = testNGService.buildStartStepRq(testResult);
-		assertThat("Incorrect start time", rq.getStartTime(), is(instance.getTime()));
+        assertThat("Incorrect start time", rq.getStartTime(), is(Instant.ofEpochMilli(instance.getTimeInMillis())));
 	}
 
 	@Test
@@ -228,10 +229,10 @@ public class BuildStepTest {
 
 	@Test
 	public void testBuildFinishRQ() {
-		when(testResult.getEndMillis()).thenReturn(DEFAULT_TIME);
+        when(testResult.getEndMillis()).thenReturn(DEFAULT_TIME);
 		when(testResult.isSuccess()).thenReturn(true);
-		FinishTestItemRQ rq = testNGService.buildFinishTestMethodRq(ItemStatus.PASSED, testResult);
-		assertThat("Incorrect end time", rq.getEndTime().getTime(), is(DEFAULT_TIME));
+        FinishTestItemRQ rq = testNGService.buildFinishTestMethodRq(ItemStatus.PASSED, testResult);
+        assertThat("Incorrect end time", rq.getEndTime(), is(Instant.ofEpochMilli(DEFAULT_TIME)));
 		assertThat("Incorrect status", rq.getStatus(), is(ItemStatus.PASSED.name()));
 		assertThat("Incorrect issue", rq.getIssue(), nullValue());
 	}
@@ -247,7 +248,7 @@ public class BuildStepTest {
 
 		assertThat("Incorrect method name", rq.getName(), is(DEFAULT_NAME));
 		assertThat("Incorrect method description", rq.getDescription(), is(DEFAULT_DESCRIPTION));
-		assertThat("Incorrect start time", rq.getStartTime(), is(new Date(DEFAULT_TIME)));
+        assertThat("Incorrect start time", rq.getStartTime(), is(Instant.ofEpochMilli(DEFAULT_TIME)));
 		assertThat("Incorrect test method type", rq.getType(), is(TestMethodType.BEFORE_TEST.name()));
 	}
 
