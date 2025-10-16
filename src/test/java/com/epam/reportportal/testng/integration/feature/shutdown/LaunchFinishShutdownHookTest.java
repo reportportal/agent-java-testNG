@@ -26,6 +26,7 @@ public class LaunchFinishShutdownHookTest {
 		ListenerParameters parameters = TestUtils.standardParameters();
 		parameters.setReportingTimeout(5);
 		parameters.setBaseUrl("http://localhost:" + port);
+		parameters.setApiKey("apiKey");
 		ReportPortal client = ReportPortal.builder().withParameters(parameters).withExecutorService(myExecutor).build();
 		MyTestNgService service = new MyTestNgService(client);
 
