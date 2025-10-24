@@ -4,7 +4,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.testng.TestNGService;
 import com.epam.reportportal.testng.integration.util.TestUtils;
-import com.epam.reportportal.utils.MultithreadingUtils;
+import com.epam.reportportal.utils.concurrency.MultithreadingUtils;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
