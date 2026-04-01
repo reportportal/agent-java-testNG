@@ -1,4 +1,5 @@
-# Copyright 2022 EPAM Systems
+# Copyright 2025 EPAM Systems
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -25,97 +26,9 @@ on:
       - README_TEMPLATE.md
       - CHANGELOG.md
 
-env:
-  VERSION_FILE: gradle.properties
-  VERSION_EXTRACT_PATTERN: '(?<=version=).+'
-  CHANGE_LOG_FILE: CHANGELOG.md
-  CHANGE_LOG_TMP_FILE: CHANGELOG_updated.md
-  REPOSITORY_URL: 'https://maven.pkg.github.com/'
-  README_FILE: README.md
-  README_TEMPLATE_FILE: README_TEMPLATE.md
-  README_VERSION_PLACEHOLDER: $LATEST_VERSION
-
 jobs:
   release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Generate versions
-        uses: HardNorth/github-version-generate@v1
-        with:
-          version-source: file
-          version-file: ${{ env.VERSION_FILE }}
-          version-file-extraction-pattern: ${{ env.VERSION_EXTRACT_PATTERN }}
-
-      - name: Set up JDK 11
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '11'
-
-      - name: Setup git credentials
-        uses: oleksiyrudenko/gha-git-credentials@v2-latest
-        with:
-          name: 'reportportal.io'
-          email: 'support@reportportal.io'
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Release with Gradle
-        id: release
-        run: |
-          ./gradlew release -Prelease.useAutomaticVersion=true -Prelease.releaseVersion=${{ env.RELEASE_VERSION }} \
-          -Prelease.newVersion=${{ env.NEXT_VERSION }} -PpublishRepo=${{ env.REPOSITORY_URL }}${{ github.repository }} \
-          -PgithubUserName=${{ github.actor }} -PgithubToken=${{ secrets.GITHUB_TOKEN }} \
-          -PgpgPassphrase=${{  secrets.GPG_PASSPHRASE  }} -PgpgPrivateKey="${{ secrets.GPG_PRIVATE_KEY }}"
-
-      - name: Update README.md
-        id: readmeUpdate
-        run: |
-          sed 's/${{ env.README_VERSION_PLACEHOLDER }}/${{ env.RELEASE_VERSION }}/g' ${{ env.README_TEMPLATE_FILE }} > ${{ env.README_FILE }}
-          git add ${{ env.README_FILE }}
-          git commit -m "Readme update"
-
-      - name: Update CHANGELOG.md
-        id: changelogUpdate
-        run: |
-          sed '/\[Unreleased\]/q' ${{ env.CHANGE_LOG_FILE }} >> ${{ env.CHANGE_LOG_TMP_FILE }}
-          sed -E '1,/#?#\s*\[Unreleased\]/d' ${{ env.CHANGE_LOG_FILE }} | sed -E '/#?#\s*\[/q' | \
-          { echo -e '\n## [${{env.RELEASE_VERSION}}]'; sed '$d'; } >> ${{ env.CHANGE_LOG_TMP_FILE }}
-          grep -E '#?#\s*\[[0-9]' ${{ env.CHANGE_LOG_FILE }} | head -n1 >> ${{ env.CHANGE_LOG_TMP_FILE }}
-          sed -E '1,/#?#\s*\[[0-9]/d' ${{ env.CHANGE_LOG_FILE }} >> ${{ env.CHANGE_LOG_TMP_FILE }}
-          rm ${{ env.CHANGE_LOG_FILE }}
-          mv ${{ env.CHANGE_LOG_TMP_FILE }} ${{ env.CHANGE_LOG_FILE }}
-          git add ${{ env.CHANGE_LOG_FILE }}
-          git commit -m "Changelog update"
-          git push
-
-      - name: Read changelog Entry
-        id: readChangelogEntry
-        uses: mindsers/changelog-reader-action@v2
-        with:
-          version: ${{ env.RELEASE_VERSION }}
-          path: ./${{ env.CHANGE_LOG_FILE }}
-
-      - name: Create Release
-        id: createRelease
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ env.RELEASE_VERSION }}
-          name: Release ${{ env.RELEASE_VERSION }}
-          body: ${{ steps.readChangelogEntry.outputs.changes }}
-
-      - name: Checkout develop branch
-        uses: actions/checkout@v4
-        with:
-          ref: 'develop'
-          fetch-depth: 0
-
-      - name: Merge release branch into develop
-        id: mergeIntoDevelop
-        run: |
-          git merge -m 'Merge master branch into develop after a release' origin/master
-          git status | (! grep -Fq 'both modified:') || git status | grep -F 'both modified:' \
-          | { echo -e 'Unable to merge master into develop, merge conflicts:'; (! grep -Eo '[^ ]+$') }
-          git push origin develop
+    uses: reportportal/.github/.github/workflows/agent-java-release.yml@main
+    secrets:
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
